@@ -1,0 +1,197 @@
+---
+title: "Unrest Service"
+description: "Social unrest and protest event aggregation from ACLED and GDELT"
+---
+
+The **UnrestService** provides aggregated social unrest data including protests, riots, and civil disorder events from dual sources (ACLED and GDELT) with Haversine-based deduplication.
+
+## Base Path
+
+```
+/api/unrest/v1
+```
+
+## Endpoints
+
+### ListUnrestEvents
+
+Retrieves protest, riot, and civil unrest events from ACLED and GDELT with geographic and temporal filtering.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/unrest/v1/list-unrest-events`
+
+#### Request Parameters
+
+<ParamField path="days" type="number" default="7">
+  Time window in days (1-30)
+</ParamField>
+
+<ParamField path="country" type="string">
+  ISO-3166 alpha-2 country code filter (e.g., `US`, `FR`, `CN`)
+</ParamField>
+
+<ParamField path="region" type="string">
+  Geographic region filter: `americas`, `europe`, `asia`, `africa`, `mena`, `oceania`
+</ParamField>
+
+<ParamField path="event_type" type="string">
+  Event type filter: `protest`, `riot`, `violence`, `strike`, `demonstration`
+</ParamField>
+
+<ParamField path="min_participants" type="number">
+  Minimum estimated participant count
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="events" type="array">
+  Array of unrest events (deduplicated across ACLED and GDELT sources)
+  
+  <Expandable title="event object">
+    <ResponseField name="event_id" type="string">
+      Unique event identifier
+    </ResponseField>
+    
+    <ResponseField name="event_date" type="string">
+      Event date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="event_type" type="string">
+      Type: `protest`, `riot`, `violence_against_civilians`, `demonstration`, `strike`
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      ISO-3166 alpha-2 country code
+    </ResponseField>
+    
+    <ResponseField name="location" type="string">
+      City or location name
+    </ResponseField>
+    
+    <ResponseField name="latitude" type="number">
+      Event latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="number">
+      Event longitude
+    </ResponseField>
+    
+    <ResponseField name="actor1" type="string">
+      Primary actor/group involved
+    </ResponseField>
+    
+    <ResponseField name="notes" type="string">
+      Event description and context
+    </ResponseField>
+    
+    <ResponseField name="fatalities" type="number">
+      Reported fatalities (if available)
+    </ResponseField>
+    
+    <ResponseField name="participants" type="number">
+      Estimated participant count (if available)
+    </ResponseField>
+    
+    <ResponseField name="source" type="string">
+      Data source: `ACLED`, `GDELT`, or `ACLED+GDELT` (deduplicated)
+    </ResponseField>
+    
+    <ResponseField name="source_scale" type="number">
+      GDELT GoldsteinScale (-10 to +10, negative = conflict)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_count" type="number">
+  Total events after deduplication
+</ResponseField>
+
+<ResponseField name="dedup_removed" type="number">
+  Number of duplicate events removed via Haversine matching
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl "https://worldmonitor.app/api/unrest/v1/list-unrest-events?days=7&region=europe&event_type=protest"
+```
+
+#### Example Response
+
+```json
+{
+  "events": [
+    {
+      "event_id": "ACLED-2024-03-001",
+      "event_date": "2024-03-01T14:00:00Z",
+      "event_type": "protest",
+      "country": "FR",
+      "location": "Paris",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "actor1": "Labor unions",
+      "notes": "Protest against pension reform legislation",
+      "fatalities": 0,
+      "participants": 50000,
+      "source": "ACLED",
+      "source_scale": null
+    }
+  ],
+  "total_count": 1,
+  "dedup_removed": 3
+}
+```
+
+## Deduplication Logic
+
+Unrest events from ACLED and GDELT are deduplicated using:
+
+1. **Haversine distance**: Events within 5km of each other
+2. **Temporal proximity**: Events within 24 hours
+3. **Event type matching**: Same protest/riot classification
+
+When duplicates are found, ACLED is preferred as the canonical source due to higher data quality and human verification.
+
+## Event Type Taxonomy
+
+| Type | Description | Examples |
+|------|-------------|----------|
+| `protest` | Peaceful demonstrations | Marches, rallies, sit-ins |
+| `riot` | Violent disorder | Property damage, clashes with police |
+| `violence_against_civilians` | Targeted violence | Attacks on protesters, police brutality |
+| `demonstration` | General demonstration | Multi-issue protests, symbolic actions |
+| `strike` | Labor actions | Work stoppages, walkouts |
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Stability monitoring">
+    Track protest activity and civil unrest for geopolitical risk assessment and Country Instability Index (CII) scoring.
+  </Accordion>
+  
+  <Accordion title="Event forecasting">
+    Identify emerging protest movements before they escalate, based on frequency and participant trends.
+  </Accordion>
+  
+  <Accordion title="Supply chain risk">
+    Monitor unrest near ports, manufacturing hubs, and logistics corridors for business continuity planning.
+  </Accordion>
+  
+  <Accordion title="Media analysis">
+    Correlate protest events with news coverage to detect under-reported or suppressed demonstrations.
+  </Accordion>
+</AccordionGroup>
+
+## Data Sources
+
+- **ACLED**: Armed Conflict Location & Event Data Project (human-verified, researcher-curated)
+- **GDELT**: Global Database of Events, Language, and Tone (machine-coded, near-real-time)
+
+<Note>
+  ACLED data requires a researcher account. See [API Keys](/configuration/api-keys#acled) for setup.
+</Note>
+
+<Info>
+  GDELT provides faster coverage but ACLED offers higher accuracy. Dual-source aggregation balances speed and quality.
+</Info>

@@ -118,7 +118,12 @@
               "api/services/displacement",
               "api/services/prediction",
               "api/services/economic",
-              "api/services/trade"
+              "api/services/trade",
+              "api/services/wildfire",
+              "api/services/unrest",
+              "api/services/research",
+              "api/services/positive-events",
+              "api/services/giving"
             ]
           },
           {

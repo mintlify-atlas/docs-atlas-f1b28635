@@ -1,0 +1,191 @@
+---
+title: "Positive Events Service"
+description: "Geocoded positive news events for the Happy Monitor variant"
+---
+
+The **PositiveEventsService** provides geocoded positive news events from GDELT filtered for uplifting content, used exclusively by the Happy Monitor variant.
+
+## Base Path
+
+```
+/api/positive-events/v1
+```
+
+## Endpoints
+
+### ListPositiveGeoEvents
+
+Retrieves geocoded positive news events from GDELT GEO API with sentiment filtering.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/positive-events/v1/list-positive-geo-events`
+
+#### Request Parameters
+
+<ParamField path="hours" type="number" default="24">
+  Time window in hours (1-72)
+</ParamField>
+
+<ParamField path="min_tone" type="number" default="5.0">
+  Minimum positive tone threshold (0-10, higher = more positive)
+</ParamField>
+
+<ParamField path="categories" type="string">
+  Comma-separated categories: `science`, `conservation`, `humanitarian`, `progress`, `achievement`
+</ParamField>
+
+<ParamField path="region" type="string">
+  Geographic filter: `global`, `americas`, `europe`, `asia`, `africa`, `oceania`
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="events" type="array">
+  Array of positive geo-events
+  
+  <Expandable title="event object">
+    <ResponseField name="event_id" type="string">
+      GDELT event ID
+    </ResponseField>
+    
+    <ResponseField name="date" type="string">
+      Event date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Event headline
+    </ResponseField>
+    
+    <ResponseField name="source_url" type="string">
+      Article URL
+    </ResponseField>
+    
+    <ResponseField name="latitude" type="number">
+      Event latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="number">
+      Event longitude
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      ISO-3166 alpha-2 country code
+    </ResponseField>
+    
+    <ResponseField name="location_name" type="string">
+      City or location name
+    </ResponseField>
+    
+    <ResponseField name="tone" type="number">
+      GDELT average tone (-10 to +10, positive values indicate positive sentiment)
+    </ResponseField>
+    
+    <ResponseField name="goldstein_scale" type="number">
+      Goldstein scale (-10 to +10, positive values indicate cooperative events)
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Event category: `science`, `conservation`, `humanitarian`, `progress`, `achievement`
+    </ResponseField>
+    
+    <ResponseField name="themes" type="array">
+      GDELT themes (e.g., `ENV_CONSERVATION`, `SCIENCE_BREAKTHROUGH`, `HUMANITARIAN_AID`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_count" type="number">
+  Total positive events
+</ResponseField>
+
+<ResponseField name="average_tone" type="number">
+  Average tone across all events
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl "https://happy.worldmonitor.app/api/positive-events/v1/list-positive-geo-events?hours=24&min_tone=7&categories=science,conservation"
+```
+
+#### Example Response
+
+```json
+{
+  "events": [
+    {
+      "event_id": "GDELT-20240301-12345",
+      "date": "2024-03-01T10:30:00Z",
+      "title": "Scientists discover breakthrough in renewable energy storage",
+      "source_url": "https://example.com/renewable-breakthrough",
+      "latitude": 37.7749,
+      "longitude": -122.4194,
+      "country": "US",
+      "location_name": "San Francisco",
+      "tone": 8.2,
+      "goldstein_scale": 7.5,
+      "category": "science",
+      "themes": ["SCIENCE_BREAKTHROUGH", "ENV_RENEWABLE"]
+    }
+  ],
+  "total_count": 1,
+  "average_tone": 8.2
+}
+```
+
+## Positive Content Filtering
+
+Events are classified as positive using:
+
+1. **GDELT Tone**: Average tone > 5.0 (configurable via `min_tone`)
+2. **Goldstein Scale**: Cooperative/positive events (> 0)
+3. **Theme filtering**: Includes positive themes, excludes conflict/disaster themes
+4. **Keyword exclusion**: Filters out negation keywords ("disaster", "crisis", "war", etc.)
+
+### Positive Categories
+
+| Category | GDELT Themes | Examples |
+|----------|--------------|----------|
+| `science` | SCIENCE_BREAKTHROUGH, RESEARCH | Medical advances, space exploration |
+| `conservation` | ENV_CONSERVATION, ENV_RENEWABLE | Wildlife protection, reforestation |
+| `humanitarian` | HUMANITARIAN_AID, CHARITY | Disaster relief, community support |
+| `progress` | DEVELOPMENT, INFRASTRUCTURE | Poverty reduction, education access |
+| `achievement` | SPORT, CULTURE, INNOVATION | Records broken, cultural milestones |
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Positive news aggregation">
+    Power the Happy Monitor variant with uplifting stories to counter negative news bias.
+  </Accordion>
+  
+  <Accordion title="Progress tracking">
+    Monitor long-term global improvements in health, education, poverty, and environmental metrics.
+  </Accordion>
+  
+  <Accordion title="Morale boosting">
+    Display positive news in waiting rooms, public spaces, or mental health applications.
+  </Accordion>
+  
+  <Accordion title="Sentiment research">
+    Analyze positive news coverage patterns by region, topic, and time for media studies.
+  </Accordion>
+</AccordionGroup>
+
+## Happy Monitor Integration
+
+Positive events are displayed on the Happy Monitor variant at `happy.worldmonitor.app` with:
+
+- **Warm theme**: Cream background (#FAFAF5) for a calming aesthetic
+- **Progress charts**: Long-term trends in global health, poverty, renewable energy
+- **Hero cards**: Featured positive breakthroughs with large visuals
+- **TV Mode**: Shift+T for full-screen positive news rotation
+
+<Info>
+  The Happy Monitor variant uses a multi-layer filtering system to exclude negative content, even if GDELT tone is positive (e.g., "war ends" has positive tone but mentions war).
+</Info>
+
+<Note>
+  GDELT tone is calculated from news article text sentiment and may not perfectly align with human perception of "positive" news.
+</Note>

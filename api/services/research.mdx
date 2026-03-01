@@ -1,0 +1,270 @@
+---
+title: "Research Service"
+description: "Academic papers, trending repositories, tech news, and event tracking"
+---
+
+The **ResearchService** aggregates research publications, trending GitHub repositories, Hacker News discussions, and upcoming tech events for the Tech Monitor variant.
+
+## Base Path
+
+```
+/api/research/v1
+```
+
+## Endpoints
+
+### ListArxivPapers
+
+Retrieves recent research papers from arXiv with category filtering.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/research/v1/list-arxiv-papers`
+
+#### Request Parameters
+
+<ParamField path="category" type="string" default="cs.AI">
+  arXiv category: `cs.AI`, `cs.LG`, `cs.CV`, `cs.CL`, `cs.CR`, `cs.NE`, `stat.ML`
+</ParamField>
+
+<ParamField path="max_results" type="number" default="50">
+  Maximum papers to return (1-100)
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="papers" type="array">
+  Array of arXiv papers
+  
+  <Expandable title="paper object">
+    <ResponseField name="id" type="string">
+      arXiv ID (e.g., `2403.12345`)
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Paper title
+    </ResponseField>
+    
+    <ResponseField name="authors" type="array">
+      Author names
+    </ResponseField>
+    
+    <ResponseField name="summary" type="string">
+      Paper abstract
+    </ResponseField>
+    
+    <ResponseField name="published" type="string">
+      Publication date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="updated" type="string">
+      Last update date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="categories" type="array">
+      arXiv category tags
+    </ResponseField>
+    
+    <ResponseField name="pdf_url" type="string">
+      PDF download link
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### ListTrendingRepos
+
+Retrieves trending GitHub repositories with language and timeframe filtering.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/research/v1/list-trending-repos`
+
+#### Request Parameters
+
+<ParamField path="language" type="string" default="">
+  Language filter: `typescript`, `python`, `rust`, `go`, `javascript`, etc.
+</ParamField>
+
+<ParamField path="since" type="string" default="daily">
+  Timeframe: `daily`, `weekly`, `monthly`
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="repos" type="array">
+  Array of trending repositories
+  
+  <Expandable title="repo object">
+    <ResponseField name="author" type="string">
+      Repository owner
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Repository name
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      GitHub repository URL
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Repository description
+    </ResponseField>
+    
+    <ResponseField name="language" type="string">
+      Primary programming language
+    </ResponseField>
+    
+    <ResponseField name="stars" type="number">
+      Total star count
+    </ResponseField>
+    
+    <ResponseField name="forks" type="number">
+      Total fork count
+    </ResponseField>
+    
+    <ResponseField name="stars_today" type="number">
+      Stars gained today
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### ListHackernewsItems
+
+Retrieves top stories from Hacker News with score filtering.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/research/v1/list-hackernews-items`
+
+#### Request Parameters
+
+<ParamField path="limit" type="number" default="30">
+  Maximum items to return (1-100)
+</ParamField>
+
+<ParamField path="min_score" type="number" default="50">
+  Minimum HN score threshold
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="items" type="array">
+  Array of Hacker News items
+  
+  <Expandable title="item object">
+    <ResponseField name="id" type="number">
+      HN item ID
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Story title
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      External URL (if link post)
+    </ResponseField>
+    
+    <ResponseField name="score" type="number">
+      HN score (upvotes - downvotes)
+    </ResponseField>
+    
+    <ResponseField name="by" type="string">
+      Author username
+    </ResponseField>
+    
+    <ResponseField name="time" type="number">
+      Unix timestamp
+    </ResponseField>
+    
+    <ResponseField name="descendants" type="number">
+      Comment count
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### ListTechEvents
+
+Retrieves upcoming tech conferences and events from curated sources.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/research/v1/list-tech-events`
+
+#### Request Parameters
+
+<ParamField path="days_ahead" type="number" default="90">
+  Number of days to look ahead (1-365)
+</ParamField>
+
+<ParamField path="region" type="string">
+  Geographic filter: `americas`, `europe`, `asia`, `global`
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="events" type="array">
+  Array of tech events
+  
+  <Expandable title="event object">
+    <ResponseField name="name" type="string">
+      Event name
+    </ResponseField>
+    
+    <ResponseField name="start_date" type="string">
+      Start date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="end_date" type="string">
+      End date (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="location" type="string">
+      City and country
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      Event website
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Event type: `conference`, `hackathon`, `meetup`, `workshop`
+    </ResponseField>
+    
+    <ResponseField name="topics" type="array">
+      Topic tags (AI, blockchain, cloud, etc.)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="AI research tracking">
+    Monitor cutting-edge AI papers from arXiv to stay ahead of industry trends and breakthroughs.
+  </Accordion>
+  
+  <Accordion title="Open source intelligence">
+    Track trending GitHub repos to identify emerging technologies and developer sentiment.
+  </Accordion>
+  
+  <Accordion title="Tech news aggregation">
+    Aggregate Hacker News discussions with academic research for comprehensive tech intelligence.
+  </Accordion>
+  
+  <Accordion title="Conference planning">
+    Plan event attendance and track industry gatherings for networking and business development.
+  </Accordion>
+</AccordionGroup>
+
+## Data Sources
+
+- **arXiv**: Cornell University preprint repository (RSS API)
+- **GitHub Trending**: Scraped from trending page (updated hourly)
+- **Hacker News**: Firebase API (real-time)
+- **dev.events**: RSS feed of developer conferences
+- **Techmeme ICS**: Tech conference calendar
+
+<Note>
+  ResearchService is primarily used by the Tech Monitor variant. Enable it via feature toggles in production.
+</Note>

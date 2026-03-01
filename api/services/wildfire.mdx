@@ -1,0 +1,176 @@
+---
+title: "Wildfire Service"
+description: "Satellite-detected active fire monitoring from NASA FIRMS"
+---
+
+The **WildfireService** provides real-time active fire detection data from NASA's Fire Information for Resource Management System (FIRMS), using VIIRS and MODIS satellite sensors.
+
+## Base Path
+
+```
+/api/wildfire/v1
+```
+
+## Endpoints
+
+### ListFireDetections
+
+Retrieves satellite-detected active fires from NASA FIRMS with confidence scores and brightness values.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/wildfire/v1/list-fire-detections`
+
+#### Request Parameters
+
+<ParamField path="hours" type="number" default="24">
+  Time window in hours for fire detections (1-48)
+</ParamField>
+
+<ParamField path="min_confidence" type="number" default="50">
+  Minimum confidence threshold (0-100). VIIRS uses nominal/low/high, MODIS uses percentage.
+</ParamField>
+
+<ParamField path="region" type="string">
+  Optional geographic filter: `global`, `americas`, `europe`, `asia`, `africa`, `oceania`
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="detections" type="array">
+  Array of fire detection events
+  
+  <Expandable title="detection object">
+    <ResponseField name="latitude" type="number">
+      Fire detection latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="number">
+      Fire detection longitude
+    </ResponseField>
+    
+    <ResponseField name="brightness" type="number">
+      Brightness temperature in Kelvin (VIIRS channel I-4, MODIS channel 21/22)
+    </ResponseField>
+    
+    <ResponseField name="scan" type="number">
+      Along-scan pixel size in km
+    </ResponseField>
+    
+    <ResponseField name="track" type="number">
+      Along-track pixel size in km
+    </ResponseField>
+    
+    <ResponseField name="acq_date" type="string">
+      Acquisition date (YYYY-MM-DD)
+    </ResponseField>
+    
+    <ResponseField name="acq_time" type="string">
+      Acquisition time (HHMM UTC)
+    </ResponseField>
+    
+    <ResponseField name="satellite" type="string">
+      Satellite: `NOAA-20`, `NOAA-21`, `SUOMI-NPP`, `Terra`, `Aqua`
+    </ResponseField>
+    
+    <ResponseField name="confidence" type="string">
+      VIIRS: `low`, `nominal`, `high`. MODIS: 0-100 percentage
+    </ResponseField>
+    
+    <ResponseField name="version" type="string">
+      FIRMS data version
+    </ResponseField>
+    
+    <ResponseField name="bright_t31" type="number">
+      MODIS-specific: Channel 31 brightness temperature in Kelvin
+    </ResponseField>
+    
+    <ResponseField name="frp" type="number">
+      Fire Radiative Power in MW (megawatts)
+    </ResponseField>
+    
+    <ResponseField name="daynight" type="string">
+      `D` (day) or `N` (night)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_count" type="number">
+  Total number of fire detections in response
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source: `NASA_FIRMS_VIIRS` or `NASA_FIRMS_MODIS`
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl "https://worldmonitor.app/api/wildfire/v1/list-fire-detections?hours=24&min_confidence=75&region=americas"
+```
+
+#### Example Response
+
+```json
+{
+  "detections": [
+    {
+      "latitude": 34.52,
+      "longitude": -118.24,
+      "brightness": 362.5,
+      "scan": 0.42,
+      "track": 0.42,
+      "acq_date": "2024-03-01",
+      "acq_time": "1830",
+      "satellite": "NOAA-20",
+      "confidence": "high",
+      "version": "2.0NRT",
+      "bright_t31": null,
+      "frp": 12.8,
+      "daynight": "D"
+    }
+  ],
+  "total_count": 1,
+  "source": "NASA_FIRMS_VIIRS"
+}
+```
+
+## Data Sources
+
+- **NASA FIRMS**: Fire Information for Resource Management System
+- **VIIRS**: Visible Infrared Imaging Radiometer Suite (375m resolution)
+- **MODIS**: Moderate Resolution Imaging Spectroradiometer (1km resolution)
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Wildfire tracking">
+    Monitor active wildfires globally with near-real-time satellite detections for emergency response and evacuation planning.
+  </Accordion>
+  
+  <Accordion title="Agricultural burning">
+    Track controlled burns and agricultural fires that may impact air quality or signal land-use changes.
+  </Accordion>
+  
+  <Accordion title="Infrastructure risk">
+    Identify fires near critical infrastructure (power lines, pipelines, datacenters) for risk assessment.
+  </Accordion>
+  
+  <Accordion title="Climate monitoring">
+    Aggregate fire activity over time to track deforestation, peatland fires, and climate-related fire season changes.
+  </Accordion>
+</AccordionGroup>
+
+## Notes
+
+<Note>
+  VIIRS has higher spatial resolution (375m) than MODIS (1km), making it better for detecting smaller fires.
+</Note>
+
+<Info>
+  Fire detections are near-real-time but not instant. Satellite overpass schedules mean fires may be detected 3-6 hours after ignition.
+</Info>
+
+<Warning>
+  High brightness values (>400K) often indicate very intense fires or industrial heat sources (gas flares, steel mills).
+</Warning>

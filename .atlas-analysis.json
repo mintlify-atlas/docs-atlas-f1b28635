@@ -189,6 +189,11 @@
     "DisplacementService - Refugee flows, humanitarian data",
     "PredictionService - Polymarket integration, forecast aggregation",
     "EconomicService - Government spending, economic indicators",
-    "TradeService - WTO data, trade routes, tariff tracking"
+    "TradeService - WTO data, trade routes, tariff tracking",
+    "WildfireService - NASA FIRMS satellite fire detection",
+    "UnrestService - Social unrest and protest event aggregation",
+    "ResearchService - Academic papers, trending repos, tech news",
+    "PositiveEventsService - Geocoded positive news for Happy variant",
+    "GivingService - Global philanthropy and charitable giving tracking"
   ]
 }

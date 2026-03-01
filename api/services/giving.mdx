@@ -1,0 +1,212 @@
+---
+title: "Giving Service"
+description: "Global philanthropy and personal giving activity tracking"
+---
+
+The **GivingService** provides aggregated data on global personal giving, charitable donations, and philanthropy trends for the Happy Monitor variant.
+
+## Base Path
+
+```
+/api/giving/v1
+```
+
+## Endpoints
+
+### GetGivingSummary
+
+Retrieves a composite global giving activity index with platform-specific breakdowns.
+
+**HTTP Method**: `GET`
+
+**Path**: `/api/giving/v1/get-giving-summary`
+
+#### Request Parameters
+
+<ParamField path="include_platforms" type="boolean" default="true">
+  Include platform-specific breakdowns (GoFundMe, JustGiving, etc.)
+</ParamField>
+
+<ParamField path="timeframe" type="string" default="24h">
+  Timeframe for aggregation: `24h`, `7d`, `30d`, `ytd`
+</ParamField>
+
+#### Response Fields
+
+<ResponseField name="global_index" type="number">
+  Composite giving activity index (0-100, normalized)
+</ResponseField>
+
+<ResponseField name="total_campaigns" type="number">
+  Total active campaigns across all platforms
+</ResponseField>
+
+<ResponseField name="total_donors" type="number">
+  Estimated total donors (deduplicated where possible)
+</ResponseField>
+
+<ResponseField name="total_amount_usd" type="number">
+  Total donations in USD (estimated from public data)
+</ResponseField>
+
+<ResponseField name="top_categories" type="array">
+  Top donation categories by volume
+  
+  <Expandable title="category object">
+    <ResponseField name="category" type="string">
+      Category: `medical`, `emergency`, `education`, `community`, `memorial`, `animals`, `environment`
+    </ResponseField>
+    
+    <ResponseField name="campaign_count" type="number">
+      Number of campaigns
+    </ResponseField>
+    
+    <ResponseField name="percentage" type="number">
+      Percentage of total campaigns
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="platforms" type="array">
+  Platform-specific breakdowns (if `include_platforms=true`)
+  
+  <Expandable title="platform object">
+    <ResponseField name="platform" type="string">
+      Platform name: `GoFundMe`, `JustGiving`, `GlobalGiving`, `DonorsChoose`, `Kiva`
+    </ResponseField>
+    
+    <ResponseField name="active_campaigns" type="number">
+      Active campaigns on platform
+    </ResponseField>
+    
+    <ResponseField name="total_raised_usd" type="number">
+      Total raised on platform (if public)
+    </ResponseField>
+    
+    <ResponseField name="geographic_reach" type="array">
+      Countries with active campaigns
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="trends" type="object">
+  Trend indicators
+  
+  <Expandable title="trends object">
+    <ResponseField name="hour_over_hour_change" type="number">
+      Percentage change vs previous hour
+    </ResponseField>
+    
+    <ResponseField name="day_over_day_change" type="number">
+      Percentage change vs previous day
+    </ResponseField>
+    
+    <ResponseField name="trending_causes" type="array">
+      Rapidly growing cause categories
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Example Request
+
+```bash
+curl "https://happy.worldmonitor.app/api/giving/v1/get-giving-summary?timeframe=24h&include_platforms=true"
+```
+
+#### Example Response
+
+```json
+{
+  "global_index": 68.5,
+  "total_campaigns": 125000,
+  "total_donors": 3400000,
+  "total_amount_usd": 48500000,
+  "top_categories": [
+    {
+      "category": "medical",
+      "campaign_count": 42000,
+      "percentage": 33.6
+    },
+    {
+      "category": "emergency",
+      "campaign_count": 28000,
+      "percentage": 22.4
+    }
+  ],
+  "platforms": [
+    {
+      "platform": "GoFundMe",
+      "active_campaigns": 95000,
+      "total_raised_usd": 35000000,
+      "geographic_reach": ["US", "CA", "GB", "AU"]
+    }
+  ],
+  "trends": {
+    "hour_over_hour_change": 2.3,
+    "day_over_day_change": 8.7,
+    "trending_causes": ["disaster_relief", "community_support"]
+  }
+}
+```
+
+## Data Aggregation
+
+The Giving Index is calculated from:
+
+1. **Campaign velocity**: New campaigns created per hour
+2. **Donor activity**: Unique donors per platform (deduplicated by email hash where possible)
+3. **Donation volume**: Total USD raised across platforms
+4. **Geographic spread**: Number of countries with active campaigns
+
+Normalized to 0-100 scale with historical baseline (90-day rolling average).
+
+## Supported Platforms
+
+| Platform | Coverage | Data Frequency |
+|----------|----------|----------------|
+| GoFundMe | Public campaigns | Hourly scrape |
+| JustGiving | Charity campaigns | Daily API |
+| GlobalGiving | International projects | Daily API |
+| DonorsChoose | Education campaigns | Daily API |
+| Kiva | Microloans | Daily API |
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Philanthropy tracking">
+    Monitor global giving trends to understand humanitarian response and charitable activity.
+  </Accordion>
+  
+  <Accordion title="Disaster response">
+    Track spike in emergency campaigns following natural disasters or humanitarian crises.
+  </Accordion>
+  
+  <Accordion title="Social good measurement">
+    Quantify collective generosity as a positive global indicator for the Happy Monitor variant.
+  </Accordion>
+  
+  <Accordion title="Cause analysis">
+    Identify trending causes and emerging social needs based on campaign category distribution.
+  </Accordion>
+</AccordionGroup>
+
+## Happy Monitor Integration
+
+Giving data is displayed on the Happy Monitor variant with:
+
+- **Live humanity counters**: Real-time tallies of active donors and campaigns
+- **Giving gauge**: Animated 0-100 index with trend arrow
+- **Top causes carousel**: Rotating display of trending categories
+- **Platform leaderboard**: Comparative giving activity across platforms
+
+<Info>
+  The Giving Index is designed to show collective human generosity and compassion, providing a counterweight to negative news.
+</Info>
+
+<Note>
+  Donation amounts are estimated from public data and may undercount private or offline giving.
+</Note>
+
+<Warning>
+  Not all platforms provide real-time APIs. Some data (e.g., JustGiving) may lag by 24 hours.
+</Warning>
