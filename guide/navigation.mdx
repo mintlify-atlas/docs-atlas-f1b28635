@@ -1,0 +1,291 @@
+---
+title: Map Navigation
+description: Regional presets, map controls, and shareable URL state
+---
+
+World Monitor's interactive globe provides multiple ways to navigate and share specific views. Master these controls to quickly access regions of interest.
+
+## Regional Presets
+
+Eight predefined views provide instant access to key regions:
+
+<CardGroup cols={2}>
+  <Card title="Global" icon="earth-americas">
+    World overview - centered on Atlantic
+  </Card>
+  <Card title="Americas" icon="map-location-dot">
+    North and South America
+  </Card>
+  <Card title="Europe" icon="landmark">
+    European continent and surroundings
+  </Card>
+  <Card title="MENA" icon="mosque">
+    Middle East and North Africa
+  </Card>
+  <Card title="Asia" icon="pagoda">
+    East, South, and Southeast Asia
+  </Card>
+  <Card title="Africa" icon="mountain-sun">
+    African continent
+  </Card>
+  <Card title="Oceania" icon="water">
+    Australia, New Zealand, Pacific islands
+  </Card>
+  <Card title="Latin America" icon="flag">
+    Central and South America, Caribbean
+  </Card>
+</CardGroup>
+
+### Using Regional Presets
+
+<Steps>
+  <Step title="Locate the View Controls">
+    Find the regional preset buttons on the right side of the map interface.
+  </Step>
+  <Step title="Click a Region">
+    Click any preset button to instantly center and zoom to that region.
+  </Step>
+  <Step title="Fine-Tune Your View">
+    Use pan and zoom controls to adjust the view after selecting a preset.
+  </Step>
+</Steps>
+
+## Manual Navigation
+
+### Pan (Move the Map)
+
+- **Mouse**: Click and drag anywhere on the globe
+- **Touch**: Single-finger drag on touchscreen devices
+- **Momentum**: Release while dragging for smooth inertia scrolling
+
+### Zoom
+
+- **Mouse wheel**: Scroll up to zoom in, down to zoom out
+- **Touch**: Pinch gesture on touchscreen devices
+- **Zoom buttons**: Use +/- controls in the sidebar
+- **Double-click**: Zoom in on a specific location
+
+### Rotate (3D Mode Only)
+
+- **Pitch**: Ctrl/Cmd + drag vertically to tilt the globe
+- **Rotation**: Ctrl/Cmd + drag horizontally to spin the globe
+
+<Tip>
+  Hold **Shift** while dragging to temporarily lock rotation and enable pure panning.
+</Tip>
+
+## Zoom-Adaptive Layers
+
+Certain data layers only appear at appropriate zoom levels to reduce clutter:
+
+| Layer | Minimum Zoom | Label Zoom |
+|-------|--------------|------------|
+| **Military Bases** | 3 | 5 |
+| **Nuclear Facilities** | 2 | — |
+| **Conflicts** | 1 | 3 |
+| **Economic Centers** | 2 | — |
+| **Natural Events** | 1 | 2 |
+
+### Progressive Disclosure
+
+- **Detail layers** (bases, nuclear, datacenters) appear when zoomed in
+- **Opacity fading** - Markers fade from 0.2 at world view to 1.0 at street level
+- **Label deconfliction** - Overlapping labels are automatically suppressed by priority
+
+<Info>
+  This zoom-adaptive behavior ensures the map remains readable at all zoom levels while providing rich detail when you need it.
+</Info>
+
+## Smart Clustering
+
+World Monitor uses Supercluster to intelligently group nearby markers:
+
+### How Clustering Works
+
+- **Low zoom** (world view): Many markers grouped into clusters
+- **Medium zoom** (regional view): Clusters begin to separate
+- **High zoom** (city view): Individual markers visible
+
+### Cluster Interaction
+
+<Steps>
+  <Step title="Identify Clusters">
+    Clusters display as circles with a count badge showing the number of contained markers.
+  </Step>
+  <Step title="Click to Expand">
+    Click any cluster to zoom in and reveal its contents.
+  </Step>
+  <Step title="View Individual Markers">
+    Continue zooming until individual events are visible.
+  </Step>
+</Steps>
+
+### Cluster Thresholds
+
+Thresholds adapt based on zoom level:
+
+- **Zoom 0-2**: Aggressive clustering (100+ markers per cluster)
+- **Zoom 3-5**: Moderate clustering (10-50 markers)
+- **Zoom 6+**: Minimal clustering (5 or fewer markers)
+
+## URL State Sharing
+
+World Monitor encodes map state in the URL for easy sharing:
+
+### URL Parameters
+
+Every view change updates the URL with these parameters:
+
+| Parameter | Description | Example |
+|-----------|-------------|----------|
+| `view` | Regional preset | `?view=mena` |
+| `zoom` | Zoom level (0-20) | `&zoom=4` |
+| `lat` | Latitude coordinate | `&lat=25.276` |
+| `lng` | Longitude coordinate | `&lng=55.296` |
+| `layers` | Active layers (comma-separated) | `&layers=conflicts,bases` |
+| `time` | Time range filter | `&time=24h` |
+
+### Sharing a View
+
+<Steps>
+  <Step title="Configure Your View">
+    Set up the map exactly as you want others to see it:
+    - Select a region or zoom to a specific location
+    - Enable/disable relevant data layers
+    - Set the time range filter
+  </Step>
+  <Step title="Copy the URL">
+    Copy the URL from your browser's address bar. It will look like:
+    ```
+    https://worldmonitor.app/?view=mena&zoom=4&layers=conflicts,bases,nuclear&time=24h
+    ```
+  </Step>
+  <Step title="Share the Link">
+    Send the URL to colleagues. When they open it, they'll see your exact view configuration.
+  </Step>
+</Steps>
+
+### Deep Linking to Countries
+
+You can link directly to a country brief page:
+
+```
+https://worldmonitor.app/?country=IR
+https://worldmonitor.app/?country=UA
+https://worldmonitor.app/?country=CN
+```
+
+Use ISO 3166-1 alpha-2 country codes (2-letter codes).
+
+<Tip>
+  Combine view parameters with country codes:
+  ```
+  ?view=mena&country=IR&layers=conflicts,military
+  ```
+</Tip>
+
+## Map Pinning
+
+Keep the map visible while scrolling through panels:
+
+<Steps>
+  <Step title="Locate the Pin Button">
+    Find the 📌 pin button near the map controls.
+  </Step>
+  <Step title="Click to Pin">
+    Click the pin button to fix the map in a static position.
+  </Step>
+  <Step title="Scroll Panels">
+    Scroll down to view panels while the map remains visible above.
+  </Step>
+  <Step title="Unpin When Done">
+    Click the pin button again to restore normal scrolling behavior.
+  </Step>
+</Steps>
+
+<Info>
+  Pin state is persisted to localStorage and restored on reload.
+</Info>
+
+## Country Click Behavior
+
+Clicking on a country triggers different actions based on context:
+
+### Opening Country Briefs
+
+<Steps>
+  <Step title="Click Any Country">
+    Click directly on a country's territory on the map.
+  </Step>
+  <Step title="Local Geometry Resolution">
+    World Monitor uses local GeoJSON polygons to instantly identify the country - no network request needed.
+  </Step>
+  <Step title="Brief Page Opens">
+    A full-page intelligence dossier appears with:
+    - Country Instability Index (CII) score
+    - AI-generated analysis
+    - Top news headlines
+    - Active signals and events
+    - 7-day timeline
+    - Prediction markets
+    - Infrastructure exposure
+  </Step>
+</Steps>
+
+### Country Detection Algorithm
+
+World Monitor uses a sophisticated local-first approach:
+
+1. **Bounding box pre-filter** - Quick elimination of non-matching countries
+2. **Ray-casting algorithm** - Precise point-in-polygon testing
+3. **MultiPolygon support** - Handles countries with non-contiguous territories
+4. **Sub-millisecond performance** - No network latency
+
+<Tip>
+  For countries not in the GeoJSON database, World Monitor falls back to hardcoded bounding boxes, then network reverse-geocoding as a last resort.
+</Tip>
+
+## Marker Interaction
+
+Click individual markers to view detailed information:
+
+### Hotspots
+- Escalation score and trend
+- Related news articles
+- Nearby military activity
+- Geographic convergence alerts
+
+### Military Bases
+- Operator country
+- Base type and name
+- Associated aircraft
+- Theater assignment
+
+### Undersea Cables
+- Cable name and route
+- Landing points
+- Health status and advisories
+- Repair ship locations
+
+### Natural Events
+- Event type and severity
+- Magnitude/intensity
+- Population exposure estimate
+- Source data and timestamp
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Map Controls" icon="sliders" href="/guide/map-controls">
+    Master time filtering and layer toggles
+  </Card>
+  <Card title="Data Layers" icon="layer-group" href="/guide/map-controls#data-layers">
+    Explore 40+ available data layers
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick layer commands and navigation
+  </Card>
+  <Card title="News Feeds" icon="newspaper" href="/guide/news-feeds">
+    Filter and monitor RSS feeds
+  </Card>
+</CardGroup>

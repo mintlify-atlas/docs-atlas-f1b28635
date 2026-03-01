@@ -1,0 +1,353 @@
+---
+title: Signal Intelligence
+description: Understanding threat signals, convergence detection, and automated alerts
+---
+
+World Monitor aggregates **real-time signals** from multiple data sources to build a unified geospatial intelligence picture. Signals represent events that may indicate instability, military activity, or infrastructure disruption.
+
+## Signal Types
+
+World Monitor tracks 10+ signal types across geopolitical, military, and infrastructure domains:
+
+<CardGroup cols={2}>
+  <Card title="Protests" icon="users">
+    **Data sources**: ACLED + GDELT
+    
+    Social unrest events with fatality counts, event types (demonstration, riot, violence), and Haversine-based deduplication.
+    
+    **Severity factors**:
+    - Fatalities
+    - Violence level
+    - Internet outages during protests
+  </Card>
+  
+  <Card title="Conflicts" icon="gun">
+    **Data sources**: UCDP + ACLED
+    
+    Active conflict zones with battle death counts and escalation tracking.
+    
+    **Severity factors**:
+    - Battle deaths (1,000+ = active war)
+    - Civilian casualties
+    - Multi-actor involvement
+  </Card>
+  
+  <Card title="Military Flights" icon="plane">
+    **Data source**: ADS-B transponders
+    
+    Detected aircraft enriched via Wingbits API with registration, manufacturer, model, and operator.
+    
+    **Confidence levels**:
+    - **Confirmed**: Operator matches military branch
+    - **Likely**: Aircraft type is military-exclusive (tanker, AWACS)
+    - **Possible**: Gov't-registered in military area
+  </Card>
+  
+  <Card title="Naval Vessels" icon="ship">
+    **Data sources**: AIS tracking + USNI fleet reports
+    
+    Maritime activity with vessel type classification, strike group assignments, and chokepoint monitoring.
+    
+    **Notable features**:
+    - Dark ship detection (AIS gaps)
+    - Carrier strike group tracking
+    - 8 strategic chokepoint monitors
+  </Card>
+  
+  <Card title="Internet Outages" icon="wifi">
+    **Data source**: Cloudflare Radar
+    
+    AS-level outage detection with severity scoring.
+    
+    **CII impact**: Outages during protests increase unrest score by 20%
+  </Card>
+  
+  <Card title="Earthquakes" icon="earth-americas">
+    **Data source**: USGS
+    
+    Magnitude 4.5+ earthquakes with population exposure estimation (WorldPop density data).
+    
+    **Severity factors**:
+    - Magnitude
+    - Depth
+    - Population within 100km
+  </Card>
+  
+  <Card title="GPS/GNSS Jamming" icon="satellite-dish">
+    **Data source**: gpsjam.org (ADS-B analysis)
+    
+    H3 hex cells where aircraft report GPS anomalies.
+    
+    **Classification**:
+    - **Medium** (amber): >2% interference
+    - **High** (red): >10% interference
+    
+    **CII impact**: Up to +35 security score
+  </Card>
+  
+  <Card title="Satellite Fires" icon="fire">
+    **Data source**: NASA FIRMS (VIIRS)
+    
+    Thermal hotspots indicating wildfires, industrial activity, or conflict-related burns.
+    
+    **Filtering**: Only high-confidence detections (>70%) are shown
+  </Card>
+  
+  <Card title="Displacement Flows" icon="arrows-turn-right">
+    **Data source**: UNHCR + HAPI
+    
+    Refugee and IDP movements with origin/destination tracking.
+    
+    **Dual perspective**:
+    - **Origin countries**: CII boost for instability
+    - **Host countries**: Infrastructure stress indicator
+  </Card>
+  
+  <Card title="Climate Anomalies" icon="temperature-high">
+    **Data source**: ERA5 reanalysis
+    
+    Temperature/precipitation deviations vs 30-day baselines for 15 conflict-prone zones.
+    
+    **Severity classification**: Feeds into CII scoring
+  </Card>
+</CardGroup>
+
+## Geographic Convergence Detection
+
+When **3+ distinct signal types** occur in the same geographic area within a 24-hour window, World Monitor fires a **convergence alert**.
+
+### How It Works
+
+<Steps>
+  <Step title="Spatial Binning">
+    Events are binned into **1°×1° geographic cells** (approximately 111km × 111km at the equator).
+  </Step>
+  
+  <Step title="Type Diversity Scoring">
+    Each unique signal type in a cell contributes **25 points**:
+    
+    - 3 types = 75 points
+    - 4 types = 100 points
+    - 5+ types = 100 points (capped)
+  </Step>
+  
+  <Step title="Event Count Bonus">
+    Additional **2 points per event** beyond the first of each type:
+    
+    - 1 protest + 1 military flight + 1 earthquake = 75 base
+    - 3 protests + 2 flights + 1 earthquake = 75 + (2×2 protests) + (1×2 flights) = **85 total**
+  </Step>
+  
+  <Step title="Reverse Geocoding">
+    The cell is reverse-geocoded to a human-readable name using:
+    
+    - Conflict zone database
+    - Strategic waterway names
+    - Hotspot locations
+    - Country boundaries
+  </Step>
+  
+  <Step title="Alert Emission">
+    A convergence alert is displayed in the **Intelligence Findings** badge with:
+    
+    - Location name
+    - Severity score (color-coded)
+    - List of contributing signal types
+    - Time window (24h)
+  </Step>
+</Steps>
+
+### Example: Eastern Mediterranean Convergence
+
+```
+🟠 CONVERGENCE ALERT
+Location: Eastern Mediterranean
+Severity: 92/100
+
+Signals detected in 1°×1° cell (35°N, 34°E):
+- 4 protests (Cyprus, Lebanon border)
+- 3 military flights (Israeli Air Force)
+- 2 naval vessels (US Carrier Strike Group 2)
+- 1 satellite fire (industrial complex)
+
+Time window: Last 24 hours
+```
+
+<Warning>
+Convergence alerts do not imply causation — they simply indicate that multiple event types are co-located. Further investigation is required to determine relationships.
+</Warning>
+
+## Regional Convergence Scoring
+
+Convergence detection also operates at the **country and region level**:
+
+- **Per-country clustering** — All signals within a country's borders are aggregated
+- **Per-region clustering** — Signals are grouped into 12 operational theaters (Iran-Iraq, Ukraine-Russia, Levant, Baltic, etc.)
+
+**CII Impact**: Countries with active convergence alerts receive a boost to their instability score based on severity.
+
+## Temporal Baseline Anomaly Detection
+
+World Monitor uses **Welford's online algorithm** to detect statistical anomalies in signal frequency:
+
+<Steps>
+  <Step title="Streaming Mean/Variance Calculation">
+    For each signal type, World Monitor maintains a rolling 90-day window of event counts, computing streaming mean and variance without storing all historical data.
+  </Step>
+  
+  <Step title="Contextual Grouping">
+    Baselines are computed per:
+    
+    - **Event type** (protests, flights, conflicts)
+    - **Region** (Middle East, Europe, Asia)
+    - **Weekday** (Monday vs Sunday patterns differ)
+    - **Month** (seasonal variation)
+  </Step>
+  
+  <Step title="Z-Score Thresholds">
+    Current event counts are compared to the baseline:
+    
+    - **Z > 1.5** → Low anomaly (yellow)
+    - **Z > 2.0** → Medium anomaly (orange)
+    - **Z > 3.0** → High anomaly (red)
+  </Step>
+  
+  <Step title="Example Anomaly">
+    ```
+    ⚠️ ANOMALY DETECTED
+    Signal: Military flights
+    Region: Baltic Sea
+    Current: 24 flights (Thursday, January)
+    Baseline: 7.2 ± 2.1 flights
+    Z-score: 3.2 (HIGH)
+    
+    Interpretation: Military flights are 3.2x normal for Thursday in January
+    ```
+  </Step>
+</Steps>
+
+<Info>
+**Minimum samples**: 10 historical data points are required before anomalies are reported, preventing false positives during the learning phase.
+</Info>
+
+## Strategic Theater Posture Assessment
+
+Nine operational theaters are continuously assessed for **military posture escalation**:
+
+| Theater               | Key Triggers                                 |
+| --------------------- | -------------------------------------------- |
+| **Iran / Persian Gulf**   | Carrier groups, tanker activity, AWACS       |
+| **Taiwan Strait**         | PLAAF sorties, USN carrier presence          |
+| **Baltic / Kaliningrad**  | Russian Western Military District flights    |
+| **Korean Peninsula**      | B-52/B-1 deployments, DPRK missile activity  |
+| **Eastern Mediterranean** | Multi-national naval exercises               |
+| **Horn of Africa**        | Anti-piracy patrols, drone activity          |
+| **South China Sea**       | Freedom of navigation operations             |
+| **Arctic**                | Long-range aviation patrols                  |
+| **Black Sea**             | ISR flights, naval movements                 |
+
+### Posture Levels
+
+Each theater is assigned a posture level based on a composite of signals:
+
+<Tabs>
+  <Tab title="NORMAL">
+    **Green** — Routine peacetime operations
+    
+    - Low aircraft count
+    - No strike packaging (tankers + AWACS + fighters)
+    - Minimal naval presence
+    - Low CII scores for adjacent countries
+  </Tab>
+  
+  <Tab title="ELEVATED">
+    **Yellow** — Increased activity
+    
+    - Moderate aircraft count
+    - Partial strike packaging detected
+    - Carrier groups in transit
+    - Rising CII scores
+  </Tab>
+  
+  <Tab title="CRITICAL">
+    **Red** — High alert
+    
+    - High aircraft count
+    - Full strike packaging (tankers + AWACS + fighters)
+    - Carrier strike groups on station
+    - CII scores ≥ 60 for adjacent countries
+  </Tab>
+</Tabs>
+
+## Focal Point Detection
+
+When the same entity (country, location, organization, person) surfaces across **multiple independent data sources**, World Monitor identifies it as a **focal point** and escalates its prominence:
+
+### Data Source Matching
+
+<CardGroup cols={2}>
+  <Card title="News Mentions">
+    Entity extraction from headlines (NER, keyword matching)
+  </Card>
+  
+  <Card title="Military Activity">
+    Aircraft callsigns, vessel names, base locations
+  </Card>
+  
+  <Card title="Protest Feeds">
+    Location names, actor entities
+  </Card>
+  
+  <Card title="Market Signals">
+    Prediction market contract titles
+  </Card>
+</CardGroup>
+
+### Confidence Scoring
+
+Matches are weighted by confidence:
+
+- **Exact name match**: 1.0
+- **Alias match**: 0.85–0.95
+- **Keyword match**: 0.7
+
+**Example**: If "Iran" appears in:
+- 12 news headlines (news signal)
+- 3 military flights near Iranian airspace (military signal)
+- 2 protests in Tehran (protest signal)
+- 1 Polymarket contract about Iran nuclear talks (market signal)
+
+World Monitor identifies **Iran** as a focal point with 4-source convergence and escalates it in the intelligence picture.
+
+<Tip>
+Focal points are displayed with a 🎯 icon in the Intelligence Findings badge and receive priority in the World Brief.
+</Tip>
+
+## Intelligence Alert Popups
+
+By default, World Monitor accumulates signals silently in the **Intelligence Findings** badge. You can opt in to **automatic popup notifications** for high-priority alerts:
+
+<Steps>
+  <Step title="Click the Intelligence Findings badge">
+    The dropdown shows all recent signals and alerts.
+  </Step>
+  
+  <Step title="Toggle the popup switch">
+    Enabled: Popups appear automatically for CRITICAL/HIGH alerts  
+    Disabled (default): Badge pulses and counts, but no popups
+  </Step>
+  
+  <Step title="Popup preference persists">
+    Your choice is stored in localStorage and survives page reloads.
+  </Step>
+</Steps>
+
+<Warning>
+Popups can be disruptive during active monitoring. Only enable them if you need immediate alerts for high-severity events.
+</Warning>
+
+## Related Features
+
+- [Country Analysis](/guide/country-analysis) — CII scoring and country-level signals
+- [Keyword Monitoring](/guide/keyword-monitoring) — Custom alerts for specific terms
+- [World Brief](/guide/world-brief) — AI-synthesized global intelligence summary

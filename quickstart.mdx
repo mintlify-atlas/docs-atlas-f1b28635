@@ -1,80 +1,270 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Get World Monitor running in 5 minutes"
 ---
 
-## Get started in three steps
+Get World Monitor up and running in minutes. Choose your preferred platform and follow the steps below.
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+## Choose Your Path
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Web App" icon="globe" href="#web-app">
+    Access instantly via browser with PWA support
+  </Card>
+  <Card title="Desktop App" icon="desktop" href="#desktop-app">
+    Native app for macOS, Windows, and Linux
+  </Card>
 </CardGroup>
 
+## Web App
+
+The fastest way to start using World Monitor is through the web application.
+
+<Steps>
+  <Step title="Visit the live dashboard">
+    Open your browser and navigate to one of the live variants:
+    
+    - **World Monitor**: [worldmonitor.app](https://worldmonitor.app) - Geopolitical intelligence
+    - **Tech Monitor**: [tech.worldmonitor.app](https://tech.worldmonitor.app) - Tech industry tracking
+    - **Finance Monitor**: [finance.worldmonitor.app](https://finance.worldmonitor.app) - Market intelligence
+    - **Happy Monitor**: [happy.worldmonitor.app](https://happy.worldmonitor.app) - Positive news
+  </Step>
+
+  <Step title="Install as PWA (optional)">
+    For offline access and a native app experience:
+    
+    **Chrome/Edge**: Click the install icon in the address bar (⊕ or computer icon)
+    
+    **Safari**: Tap Share → Add to Home Screen
+    
+    **Firefox**: Click the three dots → Install
+  </Step>
+
+  <Step title="Explore the dashboard">
+    Start exploring:
+    - Pan and zoom the 3D globe
+    - Toggle data layers in the left panel
+    - Browse live news feeds
+    - Watch live video streams
+  </Step>
+</Steps>
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+The web app works immediately with public data sources. Configure API keys in [Settings](/configuration/api-keys) for additional data sources.
 </Note>
+
+## Desktop App
+
+For the full experience with local AI, offline maps, and OS integration, install the native desktop application.
+
+<Steps>
+  <Step title="Download the installer">
+    Choose your platform:
+
+    <Tabs>
+      <Tab title="macOS">
+        **Apple Silicon (M1/M2/M3)**:
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=macos-arm64" -o WorldMonitor.dmg
+        ```
+        
+        **Intel**:
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=macos-x64" -o WorldMonitor.dmg
+        ```
+        
+        Open the `.dmg` and drag World Monitor to Applications.
+      </Tab>
+
+      <Tab title="Windows">
+        **Installer (recommended)**:
+        ```powershell
+        curl -L "https://worldmonitor.app/api/download?platform=windows-exe" -o WorldMonitor-Setup.exe
+        ```
+        
+        **MSI Package**:
+        ```powershell
+        curl -L "https://worldmonitor.app/api/download?platform=windows-msi" -o WorldMonitor.msi
+        ```
+        
+        Run the installer and follow the setup wizard.
+      </Tab>
+
+      <Tab title="Linux">
+        **AppImage**:
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=linux-appimage" -o WorldMonitor.AppImage
+        chmod +x WorldMonitor.AppImage
+        ./WorldMonitor.AppImage
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="First launch">
+    On first launch, the desktop app will:
+    
+    1. Start a local Node.js sidecar server (port auto-selected)
+    2. Generate a session token for secure local communication
+    3. Load the dashboard with cloud fallback for missing API handlers
+    
+    <Info>The sidecar runs 60+ API endpoints locally for privacy and offline access.</Info>
+  </Step>
+
+  <Step title="Configure settings (optional)">
+    Open **Settings** (Cmd+, on macOS, Ctrl+, on Windows/Linux) to configure:
+    
+    **LLMs Tab**: 
+    - Ollama endpoint (default: `http://localhost:11434`)
+    - Model selection (auto-discovered from local instance)
+    - Cloud AI providers (Groq, OpenRouter)
+    
+    **API Keys Tab**:
+    - Add API keys for data sources
+    - Each key is validated on save
+    - Stored securely in OS keychain (macOS Keychain, Windows Credential Manager)
+    
+    **Debug & Logs Tab**:
+    - Enable verbose logging
+    - View traffic log (last 200 requests)
+    - Access log files
+    
+    See [API Keys Configuration](/configuration/api-keys) for the complete list of supported services.
+  </Step>
+
+  <Step title="Start exploring">
+    You're ready! Try these first actions:
+    
+    - **View the World Brief**: Click the AI Flow badge → "Generate World Brief"
+    - **Explore a country**: Click any country on the map for a full intelligence dossier
+    - **Monitor keywords**: Add custom keywords in News Feed panels
+    - **Toggle layers**: Enable military bases, undersea cables, or conflicts
+    - **Watch live streams**: Open the Live Streams panel for real-time video
+  </Step>
+</Steps>
+
+## First Actions
+
+Once you're up and running, here are some recommended first steps:
+
+<AccordionGroup>
+  <Accordion title="Generate your first World Brief">
+    1. Click the **Intelligence Findings** badge (top right)
+    2. Click **"Generate World Brief"**
+    3. If using Ollama locally, the brief will be generated on your machine
+    4. Otherwise, it uses cloud AI (Groq → OpenRouter → Browser T5 fallback)
+    
+    The brief provides a synthesized summary of top global developments from all active news feeds.
+  </Accordion>
+
+  <Accordion title="Explore a country in detail">
+    1. Click any country on the map
+    2. View the **Country Instability Index (CII)** score ring
+    3. Read the AI-generated intelligence analysis
+    4. Check active signals (protests, military, markets, etc.)
+    5. Review the 7-day event timeline
+    6. Export as JSON, CSV, or PNG
+  </Accordion>
+
+  <Accordion title="Watch live news streams">
+    1. Enable the **Live Streams** panel
+    2. Default channels load automatically (Bloomberg, Sky News, Al Jazeera, etc.)
+    3. Expand the channel library for 30+ additional sources
+    4. Adjust global quality setting (Settings → auto/360p/480p/720p)
+    5. Switch to the **Webcams** tab for 22 live feeds from geopolitical hotspots
+  </Accordion>
+
+  <Accordion title="Monitor custom keywords">
+    1. Open any **News Feed** panel
+    2. Click the **+ Add Monitor** button
+    3. Enter keywords (comma-separated for multiple terms)
+    4. Keywords are highlighted with automatic color coding
+    5. Match counts update in real-time
+  </Accordion>
+
+  <Accordion title="Share intelligence stories">
+    1. Open a country brief (click any country)
+    2. Click **Share**
+    3. Choose platform (Twitter, LinkedIn, WhatsApp, Telegram, Reddit, Facebook)
+    4. Platform-specific formatting is applied automatically
+    5. Or export as JSON/CSV/PNG for offline analysis
+  </Accordion>
+</AccordionGroup>
+
+## Switching Variants
+
+World Monitor has 4 variants, each with specialized features and data sources:
+
+- **World Monitor** (`worldmonitor.app`) - Geopolitical, military, conflicts
+- **Tech Monitor** (`tech.worldmonitor.app`) - Tech industry, AI, startups
+- **Finance Monitor** (`finance.worldmonitor.app`) - Markets, trading, central banks
+- **Happy Monitor** (`happy.worldmonitor.app`) - Positive news, progress tracking
+
+You can switch between variants:
+- **Web**: Navigate to different URLs or click the variant switcher in the header
+- **Desktop**: Download variant-specific installers (e.g., `?platform=macos-arm64&variant=tech`)
+
+See the [Variants Guide](/variants/overview) for detailed differences.
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Configure API Keys" icon="key" href="/configuration/api-keys">
+    Add API keys for additional data sources
+  </Card>
+  <Card title="Set Up Local LLM" icon="brain" href="/configuration/local-llm">
+    Install Ollama for private AI inference
+  </Card>
+  <Card title="Explore Features" icon="sparkles" href="/features/interactive-globe">
+    Learn about the 3D globe and data layers
+  </Card>
+  <Card title="User Guide" icon="book-open" href="/guide/overview">
+    Complete guide to using the dashboard
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Desktop app won't start">
+    **macOS**: If you see "World Monitor is damaged and can't be opened":
+    - Open Terminal
+    - Run: `xattr -cr /Applications/World\ Monitor.app`
+    - This removes the quarantine attribute
+    
+    **Windows**: If SmartScreen blocks the installer:
+    - Click "More info"
+    - Click "Run anyway"
+    - Or download the MSI installer instead
+    
+    **Linux**: If AppImage won't execute:
+    - Run: `chmod +x WorldMonitor.AppImage`
+    - Install FUSE: `sudo apt install fuse` (Ubuntu/Debian)
+  </Accordion>
+
+  <Accordion title="Map tiles not loading">
+    - Check your internet connection
+    - Clear browser cache (web app)
+    - Restart the desktop app
+    - Verify MapTiler API is accessible (no corporate firewall blocking)
+  </Accordion>
+
+  <Accordion title="Local LLM not detected">
+    - Verify Ollama is running: `ollama list`
+    - Check the endpoint URL matches: `http://localhost:11434` (default)
+    - Ensure at least one model is installed: `ollama pull llama3.1:8b`
+    - Restart the World Monitor desktop app
+    - Check Settings → LLMs → Model dropdown populates
+  </Accordion>
+
+  <Accordion title="News feeds showing errors">
+    - Some feeds may be temporarily unavailable (circuit breaker active)
+    - Check the Data Freshness panel for source status
+    - Verify internet connection
+    - If self-hosting, check CORS proxy is running
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+For detailed installation instructions, see the [Installation Guide](/installation).
+</Tip>

@@ -1,0 +1,481 @@
+---
+title: "Economic Service"
+description: "Access macroeconomic data from FRED, World Bank, EIA, and BIS"
+---
+
+## Overview
+
+The Economic Service provides comprehensive APIs for macroeconomic data from multiple authoritative sources including the Federal Reserve Economic Data (FRED), World Bank, U.S. Energy Information Administration (EIA), and Bank for International Settlements (BIS).
+
+**Base Path:** `/api/economic/v1`
+
+---
+
+## GetFredSeries
+
+Retrieves time series data from the Federal Reserve Economic Data.
+
+**Endpoint:** `GET /api/economic/v1/get-fred-series`
+
+### Request Parameters
+
+<ParamField query="series_id" type="string" required>
+  FRED series ID (e.g., "GDP", "UNRATE", "CPIAUCSL").
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Maximum number of observations to return. Defaults to 120.
+</ParamField>
+
+### Response
+
+<ResponseField name="series" type="object">
+  The FRED time series.
+  
+  <Expandable title="FredSeries">
+    <ResponseField name="series_id" type="string" required>
+      Series identifier.
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Series title.
+    </ResponseField>
+    
+    <ResponseField name="units" type="string">
+      Unit of measurement.
+    </ResponseField>
+    
+    <ResponseField name="frequency" type="string">
+      Data frequency (e.g., "Monthly", "Quarterly").
+    </ResponseField>
+    
+    <ResponseField name="observations" type="array">
+      Observations in the series.
+      
+      <Expandable title="FredObservation">
+        <ResponseField name="date" type="string">
+          Observation date as YYYY-MM-DD string.
+        </ResponseField>
+        
+        <ResponseField name="value" type="number">
+          Observation value.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/economic/v1/get-fred-series?series_id=GDP&limit=20"
+```
+
+### Example Response
+
+```json
+{
+  "series": {
+    "series_id": "GDP",
+    "title": "Gross Domestic Product",
+    "units": "Billions of Dollars",
+    "frequency": "Quarterly",
+    "observations": [
+      {"date": "2023-Q1", "value": 26470.3},
+      {"date": "2023-Q2", "value": 26812.5},
+      {"date": "2023-Q3", "value": 27063.0},
+      {"date": "2023-Q4", "value": 27395.6}
+    ]
+  }
+}
+```
+
+---
+
+## ListWorldBankIndicators
+
+Retrieves development indicator data from the World Bank.
+
+**Endpoint:** `GET /api/economic/v1/list-world-bank-indicators`
+
+### Request Parameters
+
+<ParamField query="indicator_code" type="string" required>
+  World Bank indicator code (e.g., "NY.GDP.MKTP.CD").
+</ParamField>
+
+<ParamField query="country_code" type="string">
+  Optional country filter (ISO 3166-1 alpha-2).
+</ParamField>
+
+<ParamField query="year" type="integer">
+  Optional year filter. Defaults to latest available.
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  Maximum items per page.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page.
+</ParamField>
+
+### Response
+
+<ResponseField name="data" type="array">
+  Country-level indicator data.
+  
+  <Expandable title="WorldBankCountryData">
+    <ResponseField name="country_code" type="string" required>
+      ISO 3166-1 alpha-2 country code.
+    </ResponseField>
+    
+    <ResponseField name="country_name" type="string">
+      Country name.
+    </ResponseField>
+    
+    <ResponseField name="indicator_code" type="string" required>
+      World Bank indicator code.
+    </ResponseField>
+    
+    <ResponseField name="indicator_name" type="string">
+      Indicator name.
+    </ResponseField>
+    
+    <ResponseField name="year" type="integer">
+      Data year.
+    </ResponseField>
+    
+    <ResponseField name="value" type="number">
+      Indicator value.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination metadata.
+</ResponseField>
+
+---
+
+## GetEnergyPrices
+
+Retrieves current energy commodity prices from EIA.
+
+**Endpoint:** `GET /api/economic/v1/get-energy-prices`
+
+### Request Parameters
+
+<ParamField query="commodities" type="array">
+  Optional commodity filter. Empty returns all tracked commodities.
+</ParamField>
+
+### Response
+
+<ResponseField name="prices" type="array">
+  The list of energy prices.
+  
+  <Expandable title="EnergyPrice">
+    <ResponseField name="commodity" type="string" required>
+      Energy commodity identifier.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Human-readable name (e.g., "WTI Crude Oil", "Henry Hub Natural Gas").
+    </ResponseField>
+    
+    <ResponseField name="price" type="number">
+      Current price in USD.
+    </ResponseField>
+    
+    <ResponseField name="unit" type="string">
+      Unit of measurement (e.g., "$/barrel", "$/MMBtu").
+    </ResponseField>
+    
+    <ResponseField name="change" type="number">
+      Percentage change from previous period.
+    </ResponseField>
+    
+    <ResponseField name="price_at" type="integer">
+      Price date, as Unix epoch milliseconds.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "prices": [
+    {
+      "commodity": "WTI",
+      "name": "WTI Crude Oil",
+      "price": 78.52,
+      "unit": "$/barrel",
+      "change": 2.3,
+      "price_at": 1705334400000
+    },
+    {
+      "commodity": "BRENT",
+      "name": "Brent Crude Oil",
+      "price": 83.18,
+      "unit": "$/barrel",
+      "change": 1.8,
+      "price_at": 1705334400000
+    },
+    {
+      "commodity": "NATGAS",
+      "name": "Henry Hub Natural Gas",
+      "price": 2.89,
+      "unit": "$/MMBtu",
+      "change": -3.2,
+      "price_at": 1705334400000
+    }
+  ]
+}
+```
+
+---
+
+## GetMacroSignals
+
+Computes 7 macro signals from 6 upstream sources with BUY/CASH verdict.
+
+**Endpoint:** `GET /api/economic/v1/get-macro-signals`
+
+### Request Parameters
+
+No request parameters required.
+
+### Response
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp of computation.
+</ResponseField>
+
+<ResponseField name="verdict" type="string">
+  Overall verdict: "BUY", "CASH", or "UNKNOWN".
+</ResponseField>
+
+<ResponseField name="bullish_count" type="integer">
+  Number of bullish signals.
+</ResponseField>
+
+<ResponseField name="total_count" type="integer">
+  Total number of evaluated signals (excluding UNKNOWN).
+</ResponseField>
+
+<ResponseField name="signals" type="object">
+  All 7 macro signals.
+  
+  <Expandable title="MacroSignals">
+    <ResponseField name="liquidity" type="object">
+      JPY-based liquidity squeeze detection.
+    </ResponseField>
+    
+    <ResponseField name="flow_structure" type="object">
+      BTC vs QQQ 5-day return comparison.
+    </ResponseField>
+    
+    <ResponseField name="macro_regime" type="object">
+      QQQ vs XLP 20-day rate of change regime.
+    </ResponseField>
+    
+    <ResponseField name="technical_trend" type="object">
+      BTC price vs moving averages and VWAP.
+    </ResponseField>
+    
+    <ResponseField name="hash_rate" type="object">
+      Bitcoin mining hash rate momentum.
+    </ResponseField>
+    
+    <ResponseField name="mining_cost" type="object">
+      Mining profitability estimate.
+    </ResponseField>
+    
+    <ResponseField name="fear_greed" type="object">
+      Crypto Fear & Greed index.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Additional metadata (e.g., QQQ sparkline).
+</ResponseField>
+
+<ResponseField name="unavailable" type="boolean">
+  True when upstream data is unavailable (fallback result).
+</ResponseField>
+
+---
+
+## GetEnergyCapacity
+
+Retrieves installed capacity data (solar, wind, coal) from EIA.
+
+**Endpoint:** `GET /api/economic/v1/get-energy-capacity`
+
+### Request Parameters
+
+<ParamField query="energy_sources" type="array">
+  Energy source codes to query (e.g., "SUN", "WND", "COL"). Empty returns all tracked sources.
+</ParamField>
+
+<ParamField query="years" type="integer">
+  Number of years of historical data. Default 20 if not set.
+</ParamField>
+
+### Response
+
+<ResponseField name="series" type="array">
+  Energy capacity time series.
+  
+  <Expandable title="EnergyCapacitySeries">
+    <ResponseField name="energy_source" type="string">
+      Energy source code.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Human-readable name.
+    </ResponseField>
+    
+    <ResponseField name="data" type="array">
+      Yearly capacity data points.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GetBisPolicyRates
+
+Retrieves central bank policy rates from BIS.
+
+**Endpoint:** `GET /api/economic/v1/get-bis-policy-rates`
+
+### Response
+
+<ResponseField name="rates" type="array">
+  The list of policy rates by country.
+  
+  <Expandable title="BisPolicyRate">
+    <ResponseField name="country_code" type="string">
+      ISO 2-letter country code (US, GB, JP, etc.)
+    </ResponseField>
+    
+    <ResponseField name="country_name" type="string">
+      Country or region name.
+    </ResponseField>
+    
+    <ResponseField name="rate" type="number">
+      Current policy rate percentage.
+    </ResponseField>
+    
+    <ResponseField name="previous_rate" type="number">
+      Previous period rate percentage.
+    </ResponseField>
+    
+    <ResponseField name="date" type="string">
+      Date as YYYY-MM.
+    </ResponseField>
+    
+    <ResponseField name="central_bank" type="string">
+      Central bank name (e.g. "Federal Reserve").
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GetBisExchangeRates
+
+Retrieves effective exchange rates from BIS.
+
+**Endpoint:** `GET /api/economic/v1/get-bis-exchange-rates`
+
+### Response
+
+<ResponseField name="rates" type="array">
+  The list of exchange rates by country.
+  
+  <Expandable title="BisExchangeRate">
+    <ResponseField name="country_code" type="string">
+      ISO 2-letter country code.
+    </ResponseField>
+    
+    <ResponseField name="country_name" type="string">
+      Country or region name.
+    </ResponseField>
+    
+    <ResponseField name="real_eer" type="number">
+      Real effective exchange rate index.
+    </ResponseField>
+    
+    <ResponseField name="nominal_eer" type="number">
+      Nominal effective exchange rate index.
+    </ResponseField>
+    
+    <ResponseField name="real_change" type="number">
+      Percentage change from previous period (real).
+    </ResponseField>
+    
+    <ResponseField name="date" type="string">
+      Date as YYYY-MM.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GetBisCredit
+
+Retrieves credit-to-GDP ratio data from BIS.
+
+**Endpoint:** `GET /api/economic/v1/get-bis-credit`
+
+### Response
+
+<ResponseField name="entries" type="array">
+  The list of credit-to-GDP entries by country.
+  
+  <Expandable title="BisCreditToGdp">
+    <ResponseField name="country_code" type="string">
+      ISO 2-letter country code.
+    </ResponseField>
+    
+    <ResponseField name="country_name" type="string">
+      Country or region name.
+    </ResponseField>
+    
+    <ResponseField name="credit_gdp_ratio" type="number">
+      Total credit as percentage of GDP.
+    </ResponseField>
+    
+    <ResponseField name="previous_ratio" type="number">
+      Previous quarter ratio.
+    </ResponseField>
+    
+    <ResponseField name="date" type="string">
+      Date as YYYY-QN.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Data Sources
+
+<CardGroup cols={2}>
+  <Card title="FRED" icon="chart-line">
+    Federal Reserve Economic Data - 800,000+ time series from authoritative sources
+  </Card>
+  <Card title="World Bank" icon="globe">
+    Development indicators for 200+ countries and regions
+  </Card>
+  <Card title="EIA" icon="bolt">
+    U.S. Energy Information Administration - energy commodity prices and capacity data
+  </Card>
+  <Card title="BIS" icon="building-columns">
+    Bank for International Settlements - central bank data and financial statistics
+  </Card>
+</CardGroup>

@@ -1,0 +1,239 @@
+---
+title: NewsService
+description: AI-powered article summarization with provider fallback
+---
+
+The NewsService provides AI-powered article summarization with support for multiple LLM providers (Ollama, Groq, OpenRouter) and automatic fallback chains.
+
+## Base Path
+
+```
+/api/news/v1
+```
+
+## SummarizeArticle
+
+Generates an LLM summary of news headlines with provider selection and fallback support.
+
+**Endpoint:** `POST /api/news/v1/summarize-article`
+
+### Request Body
+
+<ParamField body="provider" type="string" required>
+  LLM provider: `"ollama"`, `"groq"`, or `"openrouter"`
+</ParamField>
+
+<ParamField body="headlines" type="string[]" required>
+  Headlines to summarize (max 8 used)
+</ParamField>
+
+<ParamField body="mode" type="string">
+  Summarization mode: `"brief"`, `"analysis"`, `"translate"`, or empty string for default
+</ParamField>
+
+<ParamField body="geo_context" type="string">
+  Geographic signal context to include in the prompt
+</ParamField>
+
+<ParamField body="variant" type="string">
+  Variant: `"full"`, `"tech"`, or target language for translate mode
+</ParamField>
+
+<ParamField body="lang" type="string">
+  Output language code (default: `"en"`)
+</ParamField>
+
+### Response
+
+<ResponseField name="summary" type="string">
+  The generated summary text
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  Model identifier used for generation
+</ResponseField>
+
+<ResponseField name="provider" type="string">
+  Provider that produced the result (or "cache" if from Redis)
+</ResponseField>
+
+<ResponseField name="cached" type="bool">
+  Whether the result came from Redis cache
+</ResponseField>
+
+<ResponseField name="tokens" type="int32">
+  Token count from the LLM response
+</ResponseField>
+
+<ResponseField name="fallback" type="bool">
+  Whether the client should try the next provider in the fallback chain
+</ResponseField>
+
+<ResponseField name="skipped" type="bool">
+  Whether this provider was skipped (credentials missing)
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  Human-readable skip/error reason
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if the request failed
+</ResponseField>
+
+<ResponseField name="error_type" type="string">
+  Error type/name (e.g., "TypeError")
+</ResponseField>
+
+### Example Request: Brief Summary
+
+```bash
+curl -X POST "https://your-domain.com/api/news/v1/summarize-article" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "groq",
+    "headlines": [
+      "Ukraine reports major gains in Kharkiv offensive",
+      "Russian forces withdraw from strategic positions near Kupyansk",
+      "NATO announces additional military aid package for Ukraine",
+      "Diplomatic efforts continue as conflict enters third year"
+    ],
+    "mode": "brief",
+    "geo_context": "Eastern Europe"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "summary": "Ukrainian forces have achieved significant territorial gains in the Kharkiv region, forcing Russian troops to retreat from key positions near Kupyansk. This military success coincides with NATO's announcement of enhanced military support, while diplomatic channels remain active despite the ongoing conflict approaching its third year.",
+  "model": "llama-3.1-70b-versatile",
+  "provider": "groq",
+  "cached": false,
+  "tokens": 87,
+  "fallback": false,
+  "skipped": false,
+  "reason": "",
+  "error": "",
+  "error_type": ""
+}
+```
+
+### Example Request: Analysis Mode
+
+```bash
+curl -X POST "https://your-domain.com/api/news/v1/summarize-article" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openrouter",
+    "headlines": [
+      "China holds largest naval exercises in South China Sea since 2021",
+      "Taiwan raises alert level as PLA activity increases",
+      "US Navy conducts freedom of navigation operation"
+    ],
+    "mode": "analysis",
+    "geo_context": "South China Sea",
+    "variant": "full"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "summary": "# South China Sea Tensions Analysis\n\n## Situation Overview\nThe People's Liberation Army Navy has initiated its most extensive naval exercises in the South China Sea since 2021, marking a significant escalation in regional military activity.\n\n## Strategic Implications\n- Taiwan has elevated its defense readiness posture in response to increased PLA movements\n- The timing coincides with a U.S. Navy freedom of navigation operation, suggesting deliberate strategic signaling\n- This represents a continuation of Beijing's assertive approach to territorial claims in disputed waters\n\n## Assessment\nThe convergence of these events indicates heightened regional tensions and increased risk of miscalculation. Monitor for further U.S.-China interactions and Taiwan's defensive preparations.",
+  "model": "anthropic/claude-3.5-sonnet",
+  "provider": "openrouter",
+  "cached": false,
+  "tokens": 234,
+  "fallback": false,
+  "skipped": false,
+  "reason": "",
+  "error": "",
+  "error_type": ""
+}
+```
+
+### Example Request: Translation Mode
+
+```bash
+curl -X POST "https://your-domain.com/api/news/v1/summarize-article" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "groq",
+    "headlines": [
+      "Neue Spannungen im Nahen Osten",
+      "Diplomatische Bemühungen zeigen erste Erfolge"
+    ],
+    "mode": "translate",
+    "variant": "en",
+    "lang": "en"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "summary": "New tensions in the Middle East. Diplomatic efforts show initial success.",
+  "model": "llama-3.1-70b-versatile",
+  "provider": "groq",
+  "cached": false,
+  "tokens": 23,
+  "fallback": false,
+  "skipped": false,
+  "reason": "",
+  "error": "",
+  "error_type": ""
+}
+```
+
+## Summarization Modes
+
+### Brief Mode
+Generates concise 2-3 sentence summaries ideal for quick updates and notifications.
+
+### Analysis Mode
+Produces detailed analytical summaries with context, implications, and strategic assessments. Best for intelligence briefs and deeper understanding.
+
+### Translate Mode
+Translates headlines from source language to target language specified in the `variant` field.
+
+### Default Mode
+Balanced summarization suitable for general news aggregation.
+
+## Provider Fallback
+
+The service supports automatic fallback between providers:
+
+1. **Ollama**: Local LLM deployment (fastest, no API costs)
+2. **Groq**: High-performance cloud inference (fast, low cost)
+3. **OpenRouter**: Access to premium models like Claude (highest quality)
+
+When a provider is unavailable or returns an error, the `fallback` field will be `true`, signaling the client to retry with the next provider in the chain.
+
+## Caching
+
+Summaries are cached in Redis based on a hash of the request parameters. Cached responses return immediately with `cached: true` and `provider: "cache"`. Cache TTL is typically 1 hour for brief summaries and 4 hours for analysis mode.
+
+## Error Handling
+
+If a provider is not configured (missing API keys), the response will include:
+
+```json
+{
+  "summary": "",
+  "model": "",
+  "provider": "groq",
+  "cached": false,
+  "tokens": 0,
+  "fallback": true,
+  "skipped": true,
+  "reason": "GROQ_API_KEY not configured",
+  "error": "",
+  "error_type": ""
+}
+```
+
+The client should attempt the next provider in the fallback chain.

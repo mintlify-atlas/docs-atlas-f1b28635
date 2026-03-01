@@ -1,0 +1,162 @@
+---
+title: Dashboard Overview
+description: Introduction to World Monitor's real-time global intelligence dashboard
+---
+
+World Monitor is a real-time global intelligence dashboard that aggregates AI-powered news, geopolitical monitoring, and infrastructure tracking into a unified situational awareness interface.
+
+## Accessing World Monitor
+
+World Monitor is available in multiple variants, each focused on a different domain:
+
+<CardGroup cols={2}>
+  <Card title="World Monitor" icon="globe" href="https://worldmonitor.app">
+    Geopolitics, military, conflicts, and infrastructure
+  </Card>
+  <Card title="Tech Monitor" icon="microchip" href="https://tech.worldmonitor.app">
+    Startups, AI/ML, cloud, and cybersecurity
+  </Card>
+  <Card title="Finance Monitor" icon="chart-line" href="https://finance.worldmonitor.app">
+    Global markets, trading, central banks, and Gulf FDI
+  </Card>
+  <Card title="Happy Monitor" icon="face-smile" href="https://happy.worldmonitor.app">
+    Good news, positive trends, and uplifting stories
+  </Card>
+</CardGroup>
+
+All four variants run from a single codebase. You can switch between them using the header bar.
+
+## Platform Options
+
+### Web Application
+
+Access World Monitor directly in your browser at [worldmonitor.app](https://worldmonitor.app). The web version works on any modern browser and includes:
+
+- Full dashboard functionality
+- Installable as a Progressive Web App (PWA)
+- Offline map support with cached tiles
+- Works on desktop and tablet devices
+
+### Desktop Application
+
+Native desktop apps are available for macOS, Windows, and Linux. The desktop version provides:
+
+- **Local API handlers** - All 60+ API handlers run locally via a Node.js sidecar
+- **OS keychain integration** - API keys stored securely in macOS Keychain or Windows Credential Manager
+- **Local AI support** - Connect to Ollama or LM Studio for on-device intelligence
+- **Settings panel** - Dedicated configuration UI (Cmd+,) for LLMs, API keys, and debugging
+- **Auto-updates** - Automatic update notifications with direct download links
+
+<CardGroup cols={2}>
+  <Card title="Windows" icon="windows">
+    Download .exe or .msi installer
+  </Card>
+  <Card title="macOS" icon="apple">
+    Available for Apple Silicon (ARM64) and Intel (x64)
+  </Card>
+  <Card title="Linux" icon="linux">
+    AppImage format for all distributions
+  </Card>
+</CardGroup>
+
+## System Requirements
+
+### Minimum Requirements
+
+- **Browser**: Chrome 90+, Firefox 88+, Safari 14+, or Edge 90+
+- **Display**: 1280×720 resolution (1920×1080 recommended)
+- **Connection**: Broadband internet for real-time data feeds
+- **Memory**: 4GB RAM (8GB recommended for smoother performance)
+
+### Optimal Setup
+
+- **Display**: Ultra-wide monitor (2000px+ width) for L-shaped layout
+- **Connection**: Stable broadband for live video streams
+- **Desktop app**: For local AI and secure credential storage
+
+<Warning>
+  **Mobile devices**: World Monitor is designed for multi-panel desktop use. Screens below 768px will receive a warning modal as the interface is optimized for larger displays.
+</Warning>
+
+## Dashboard Layout
+
+World Monitor uses a sophisticated grid-based layout optimized for information density:
+
+### Standard Layout (< 2000px)
+
+- Interactive 3D globe at the top
+- Panels stacked vertically below the map
+- Configurable panel heights and order
+
+### Ultra-Wide Layout (≥ 2000px)
+
+- Map floats on the left (60% width)
+- Panels tile to the right and below
+- Maximizes screen real estate on 4K and ultra-wide monitors
+
+## Key Capabilities
+
+<AccordionGroup>
+  <Accordion title="150+ RSS Feeds">
+    Curated feeds across geopolitics, defense, energy, tech, and finance. Each variant loads its own feed set:
+    - **Geopolitical**: ~25 categories
+    - **Tech**: ~20 categories  
+    - **Finance**: ~18 categories
+    
+    Domain-allowlisted proxy prevents CORS issues.
+  </Accordion>
+  
+  <Accordion title="Interactive 3D Globe">
+    WebGL-accelerated rendering with 40+ toggleable data layers including conflicts, military bases, nuclear facilities, undersea cables, pipelines, protests, and more.
+    
+    Switchable between 3D globe and flat map mode.
+  </Accordion>
+  
+  <Accordion title="AI-Powered Intelligence">
+    - LLM-synthesized World Brief summaries
+    - Local LLM support (Ollama/LM Studio)
+    - Country Instability Index (0-100 scores)
+    - Trending keyword spike detection
+    - Strategic posture assessment
+  </Accordion>
+  
+  <Accordion title="Live Video Streams">
+    8+ default channels (Bloomberg, Sky News, Al Jazeera, Euronews) with 30+ optional channels available. HLS native streaming for select channels.
+  </Accordion>
+  
+  <Accordion title="Real-Time Data Layers">
+    - Active conflicts and protests
+    - Military flight and naval tracking
+    - Internet outages and cyber threats
+    - Natural disasters and satellite fires
+    - Airport delays and weather alerts
+  </Accordion>
+</AccordionGroup>
+
+## Multi-Language Support
+
+World Monitor supports **16 languages**:
+
+English, French, Spanish, German, Italian, Polish, Portuguese, Dutch, Swedish, Russian, Arabic, Chinese, Japanese, Turkish, Thai, and Vietnamese.
+
+- Language bundles are lazy-loaded (only active language is fetched)
+- Native RTL support for Arabic and Hebrew
+- Localized news feeds for 7 regions
+- AI translation for headlines and summaries
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Interface Guide" icon="browser" href="/guide/interface">
+    Learn the dashboard layout and panels
+  </Card>
+  <Card title="Map Navigation" icon="map" href="/guide/navigation">
+    Master regional presets and URL sharing
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Use Cmd+K for fuzzy search and quick actions
+  </Card>
+  <Card title="Panels Guide" icon="table-columns" href="/guide/panels">
+    Customize, resize, and reorder panels
+  </Card>
+</CardGroup>

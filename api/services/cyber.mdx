@@ -1,0 +1,264 @@
+---
+title: CyberService
+description: Cyber threat intelligence from Feodo, URLhaus, OTX, AbuseIPDB, and C2Intel
+---
+
+The CyberService provides APIs for cyber threat intelligence aggregated from multiple authoritative sources including Feodo Tracker, URLhaus, AlienVault OTX, AbuseIPDB, and C2Intel.
+
+## Base Path
+
+```
+/api/cyber/v1
+```
+
+## ListCyberThreats
+
+Retrieves threat indicators from multiple intelligence sources with filtering by time range, threat type, source, and severity.
+
+**Endpoint:** `GET /api/cyber/v1/list-cyber-threats`
+
+### Request Parameters
+
+<ParamField query="start" type="int64">
+  Start of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="end" type="int64">
+  End of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="type" type="CyberThreatType">
+  Optional threat type filter: `CYBER_THREAT_TYPE_C2_SERVER`, `CYBER_THREAT_TYPE_MALWARE_HOST`, `CYBER_THREAT_TYPE_PHISHING`, or `CYBER_THREAT_TYPE_MALICIOUS_URL`
+</ParamField>
+
+<ParamField query="source" type="CyberThreatSource">
+  Optional source filter: `CYBER_THREAT_SOURCE_FEODO`, `CYBER_THREAT_SOURCE_URLHAUS`, `CYBER_THREAT_SOURCE_C2INTEL`, `CYBER_THREAT_SOURCE_OTX`, or `CYBER_THREAT_SOURCE_ABUSEIPDB`
+</ParamField>
+
+<ParamField query="min_severity" type="CriticalityLevel">
+  Optional minimum criticality filter
+</ParamField>
+
+### Response
+
+<ResponseField name="threats" type="CyberThreat[]">
+  The list of cyber threats
+  
+  <Expandable title="CyberThreat">
+    <ResponseField name="id" type="string" required>
+      Unique threat identifier
+    </ResponseField>
+    
+    <ResponseField name="type" type="CyberThreatType">
+      Type of cyber threat
+    </ResponseField>
+    
+    <ResponseField name="source" type="CyberThreatSource">
+      Source of the threat intelligence
+    </ResponseField>
+    
+    <ResponseField name="indicator" type="string">
+      Threat indicator value (IP, domain, or URL)
+    </ResponseField>
+    
+    <ResponseField name="indicator_type" type="CyberThreatIndicatorType">
+      Type of the indicator: `CYBER_THREAT_INDICATOR_TYPE_IP`, `CYBER_THREAT_INDICATOR_TYPE_DOMAIN`, or `CYBER_THREAT_INDICATOR_TYPE_URL`
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Geolocation of the threat indicator
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country of origin (ISO 3166-1 alpha-2)
+    </ResponseField>
+    
+    <ResponseField name="severity" type="CriticalityLevel">
+      Threat criticality level
+    </ResponseField>
+    
+    <ResponseField name="malware_family" type="string">
+      Associated malware family, if known (e.g., "Emotet", "TrickBot")
+    </ResponseField>
+    
+    <ResponseField name="tags" type="string[]">
+      Descriptive tags
+    </ResponseField>
+    
+    <ResponseField name="first_seen_at" type="int64">
+      First seen time, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="last_seen_at" type="int64">
+      Last seen time, as Unix epoch milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/cyber/v1/list-cyber-threats?start=1704067200000&end=1709251200000&type=CYBER_THREAT_TYPE_C2_SERVER&source=CYBER_THREAT_SOURCE_FEODO&page_size=50"
+```
+
+### Example Response
+
+```json
+{
+  "threats": [
+    {
+      "id": "feodo-192-0-2-1",
+      "type": "CYBER_THREAT_TYPE_C2_SERVER",
+      "source": "CYBER_THREAT_SOURCE_FEODO",
+      "indicator": "192.0.2.1",
+      "indicator_type": "CYBER_THREAT_INDICATOR_TYPE_IP",
+      "location": {
+        "latitude": 52.3676,
+        "longitude": 4.9041
+      },
+      "country": "NL",
+      "severity": "CRITICALITY_LEVEL_HIGH",
+      "malware_family": "Emotet",
+      "tags": ["botnet", "c2", "banking-trojan"],
+      "first_seen_at": 1704153600000,
+      "last_seen_at": 1709208000000
+    },
+    {
+      "id": "urlhaus-malware-xyz",
+      "type": "CYBER_THREAT_TYPE_MALWARE_HOST",
+      "source": "CYBER_THREAT_SOURCE_URLHAUS",
+      "indicator": "http://malicious-example.com/payload.exe",
+      "indicator_type": "CYBER_THREAT_INDICATOR_TYPE_URL",
+      "location": {
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "country": "US",
+      "severity": "CRITICALITY_LEVEL_CRITICAL",
+      "malware_family": "AsyncRAT",
+      "tags": ["malware-distribution", "rat", "remote-access"],
+      "first_seen_at": 1708992000000,
+      "last_seen_at": 1709164800000
+    },
+    {
+      "id": "otx-phishing-001",
+      "type": "CYBER_THREAT_TYPE_PHISHING",
+      "source": "CYBER_THREAT_SOURCE_OTX",
+      "indicator": "phishing-site.example.com",
+      "indicator_type": "CYBER_THREAT_INDICATOR_TYPE_DOMAIN",
+      "location": {
+        "latitude": 51.5074,
+        "longitude": -0.1278
+      },
+      "country": "GB",
+      "severity": "CRITICALITY_LEVEL_MEDIUM",
+      "malware_family": "",
+      "tags": ["phishing", "credential-theft", "banking"],
+      "first_seen_at": 1709078400000,
+      "last_seen_at": 1709251200000
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjUwfQ==",
+    "has_more": true
+  }
+}
+```
+
+## Threat Types
+
+The `CyberThreatType` enum classifies threats into four categories:
+
+- **C2_SERVER**: Command and control servers used by threat actors to control compromised systems
+- **MALWARE_HOST**: Servers hosting malware payloads for distribution
+- **PHISHING**: Phishing sites designed to steal credentials or sensitive information
+- **MALICIOUS_URL**: Other malicious URLs that don't fit the above categories
+
+## Threat Sources
+
+The service aggregates data from five authoritative sources:
+
+### Feodo Tracker (abuse.ch)
+Tracks botnet C2 servers, particularly banking trojans like Emotet, TrickBot, and Dridex.
+
+### URLhaus (abuse.ch)
+Collects and shares malware distribution URLs, including payload hosting sites.
+
+### C2Intel
+Specialized feed of command and control server indicators.
+
+### AlienVault OTX (Open Threat Exchange)
+Community-driven threat intelligence platform with IOCs from security researchers worldwide.
+
+### AbuseIPDB
+Crowdsourced IP address reputation database tracking malicious activity.
+
+## Indicator Types
+
+Threats are categorized by indicator type:
+
+- **IP**: IP addresses (IPv4 or IPv6)
+- **DOMAIN**: Domain names
+- **URL**: Full URLs including path and parameters
+
+## Severity Levels
+
+Threat severity is assessed using the `CriticalityLevel` enum:
+
+- **CRITICALITY_LEVEL_LOW**: Low risk, monitoring recommended
+- **CRITICALITY_LEVEL_MEDIUM**: Moderate risk, investigate and consider blocking
+- **CRITICALITY_LEVEL_HIGH**: High risk, immediate action recommended
+- **CRITICALITY_LEVEL_CRITICAL**: Critical risk, block immediately
+
+## Use Cases
+
+### Threat Hunting
+Query for specific malware families or threat types to proactively search for indicators in your environment.
+
+```bash
+curl "https://your-domain.com/api/cyber/v1/list-cyber-threats?type=CYBER_THREAT_TYPE_C2_SERVER&page_size=100"
+```
+
+### Geographic Analysis
+Analyze threat distribution by country to identify regional patterns:
+
+```bash
+curl "https://your-domain.com/api/cyber/v1/list-cyber-threats?source=CYBER_THREAT_SOURCE_ABUSEIPDB&page_size=100"
+```
+
+### Firewall/IDS Integration
+Pull latest indicators to update firewall rules or IDS signatures:
+
+```bash
+# Get threats from last 24 hours
+START=$(date -d '24 hours ago' +%s)000
+END=$(date +%s)000
+curl "https://your-domain.com/api/cyber/v1/list-cyber-threats?start=$START&end=$END&min_severity=CRITICALITY_LEVEL_HIGH&page_size=100"
+```
+
+### Malware Campaign Tracking
+Monitor specific malware families over time:
+
+```bash
+curl "https://your-domain.com/api/cyber/v1/list-cyber-threats?source=CYBER_THREAT_SOURCE_FEODO&page_size=100"
+```
+
+## Best Practices
+
+1. **Regular Polling**: Query the API regularly (e.g., every 15-30 minutes) to stay current with emerging threats
+2. **Severity Filtering**: Use `min_severity` to focus on high-impact threats
+3. **Source Diversity**: Don't rely on a single source; aggregate data from multiple feeds
+4. **Geolocation Context**: Use the `location` and `country` fields to add geographic context to threat analysis
+5. **Tag-Based Analysis**: Leverage the `tags` field to identify threat patterns and campaigns

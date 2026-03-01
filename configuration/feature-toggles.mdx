@@ -1,0 +1,426 @@
+---
+title: Feature Toggles
+description: Runtime feature flags for enabling and disabling data sources
+icon: toggle-on
+---
+
+World Monitor uses **runtime feature toggles** to enable/disable data sources without rebuilding the application. Toggles are stored in `localStorage` and synchronized across tabs.
+
+## Overview
+
+Feature toggles provide:
+
+- **Granular control** over which APIs are called
+- **Cost optimization** by disabling unused paid APIs
+- **Privacy control** by disabling cloud services
+- **Debugging** by isolating data sources
+- **Graceful degradation** when API quotas are exhausted
+
+<Note>
+  Toggles are **client-side only**. Desktop users configure them in Settings. Web/cloud deployments must set environment variables.
+</Note>
+
+## Available Toggles
+
+### AI & Summarization
+
+<ParamField path="aiOllama" type="boolean" default={true}>
+  **Ollama local summarization**
+  
+  Local LLM provider via OpenAI-compatible endpoint (Ollama or LM Studio, desktop-first).
+  
+  **Requires**: `OLLAMA_API_URL`, `OLLAMA_MODEL`  
+  **Fallback**: Falls back to Groq, then OpenRouter, then local browser model.
+</ParamField>
+
+<ParamField path="aiGroq" type="boolean" default={true}>
+  **Groq summarization**
+  
+  Primary fast LLM provider used for AI summary generation.
+  
+  **Requires**: `GROQ_API_KEY`  
+  **Fallback**: Falls back to OpenRouter, then local browser model.
+</ParamField>
+
+<ParamField path="aiOpenRouter" type="boolean" default={true}>
+  **OpenRouter summarization**
+  
+  Secondary LLM provider for AI summary fallback.
+  
+  **Requires**: `OPENROUTER_API_KEY`  
+  **Fallback**: Falls back to local browser model only.
+</ParamField>
+
+### Economic & Energy
+
+<ParamField path="economicFred" type="boolean" default={true}>
+  **FRED economic indicators**
+  
+  Macro indicators from Federal Reserve Economic Data.
+  
+  **Requires**: `FRED_API_KEY`  
+  **Fallback**: Economic panel remains available with non-FRED metrics.
+</ParamField>
+
+<ParamField path="energyEia" type="boolean" default={true}>
+  **EIA oil analytics**
+  
+  U.S. Energy Information Administration oil metrics.
+  
+  **Requires**: `EIA_API_KEY`  
+  **Fallback**: Oil analytics cards show disabled state.
+</ParamField>
+
+<ParamField path="supplyChain" type="boolean" default={true}>
+  **Supply Chain Intelligence**
+  
+  Shipping rates via FRED Baltic Dry Index. Chokepoints and minerals use public data.
+  
+  **Requires**: `FRED_API_KEY`  
+  **Fallback**: Chokepoints and minerals always available; shipping requires FRED key.
+</ParamField>
+
+### Markets & Trade
+
+<ParamField path="finnhubMarkets" type="boolean" default={true}>
+  **Finnhub market data**
+  
+  Real-time stock quotes and market data from Finnhub.
+  
+  **Requires**: `FINNHUB_API_KEY`  
+  **Fallback**: Stock ticker uses limited free data (Yahoo Finance, CoinGecko).
+</ParamField>
+
+<ParamField path="wtoTrade" type="boolean" default={true}>
+  **WTO trade policy data**
+  
+  Trade restrictions, tariff trends, barriers, and flows from WTO.
+  
+  **Requires**: `WTO_API_KEY`  
+  **Fallback**: Trade policy panel shows disabled state.
+</ParamField>
+
+### Security & Threats
+
+<ParamField path="internetOutages" type="boolean" default={true}>
+  **Cloudflare outage radar**
+  
+  Internet outages from Cloudflare Radar annotations API.
+  
+  **Requires**: `CLOUDFLARE_API_TOKEN`  
+  **Fallback**: Outage layer is disabled and map continues with other feeds.
+</ParamField>
+
+<ParamField path="acledConflicts" type="boolean" default={true}>
+  **ACLED conflicts & protests**
+  
+  Conflict and protest event feeds from ACLED.
+  
+  **Requires**: `ACLED_ACCESS_TOKEN`  
+  **Fallback**: Conflict/protest overlays are hidden.
+</ParamField>
+
+<ParamField path="abuseChThreatIntel" type="boolean" default={true}>
+  **abuse.ch cyber IOC feeds**
+  
+  URLhaus and ThreatFox IOC ingestion for the cyber threat layer.
+  
+  **Requires**: `URLHAUS_AUTH_KEY`  
+  **Fallback**: URLhaus/ThreatFox IOC ingestion is disabled.
+</ParamField>
+
+<ParamField path="alienvaultOtxThreatIntel" type="boolean" default={true}>
+  **AlienVault OTX threat intel**
+  
+  Optional OTX IOC ingestion for cyber threat enrichment.
+  
+  **Requires**: `OTX_API_KEY`  
+  **Fallback**: OTX IOC enrichment is disabled.
+</ParamField>
+
+<ParamField path="abuseIpdbThreatIntel" type="boolean" default={true}>
+  **AbuseIPDB threat intel**
+  
+  Optional AbuseIPDB IOC/reputation enrichment for the cyber threat layer.
+  
+  **Requires**: `ABUSEIPDB_API_KEY`  
+  **Fallback**: AbuseIPDB enrichment is disabled.
+</ParamField>
+
+### Tracking & Sensing
+
+<ParamField path="aisRelay" type="boolean" default={true}>
+  **AIS vessel tracking**
+  
+  Live vessel ingestion via AISStream WebSocket.
+  
+  **Requires**: `WS_RELAY_URL`, `AISSTREAM_API_KEY` (web) or `AISSTREAM_API_KEY` only (desktop)  
+  **Fallback**: AIS layer is disabled.
+</ParamField>
+
+<ParamField path="openskyRelay" type="boolean" default={true}>
+  **OpenSky military flights**
+  
+  OpenSky OAuth credentials for military flight data.
+  
+  **Requires**: `VITE_OPENSKY_RELAY_URL`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET` (web) or `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET` only (desktop)  
+  **Fallback**: Military flights fall back to limited/no data.
+</ParamField>
+
+<ParamField path="wingbitsEnrichment" type="boolean" default={true}>
+  **Wingbits aircraft enrichment**
+  
+  Military flight operator/aircraft enrichment metadata.
+  
+  **Requires**: `WINGBITS_API_KEY`  
+  **Fallback**: Flight map still renders with heuristic-only classification.
+</ParamField>
+
+<ParamField path="nasaFirms" type="boolean" default={true}>
+  **NASA FIRMS fire data**
+  
+  Fire Information for Resource Management System satellite data.
+  
+  **Requires**: `NASA_FIRMS_API_KEY`  
+  **Fallback**: FIRMS fire layer uses public VIIRS feed.
+</ParamField>
+
+<ParamField path="aviationStack" type="boolean" default={true}>
+  **AviationStack flight delays**
+  
+  Real-time international airport delay data from AviationStack API.
+  
+  **Requires**: `AVIATIONSTACK_API`  
+  **Fallback**: Non-US airports use simulated delay data.
+</ParamField>
+
+<ParamField path="icaoNotams" type="boolean" default={true}>
+  **ICAO NOTAM closures (Middle East)**
+  
+  Airport closure detection for MENA airports from ICAO NOTAM data service.
+  
+  **Requires**: `ICAO_API_KEY`  
+  **Fallback**: Closures detected only via AviationStack flight cancellation data.
+</ParamField>
+
+## Desktop Configuration
+
+Desktop app users configure toggles via the **Settings** window:
+
+1. Open Settings (Cmd+, or Ctrl+,)
+2. Navigate to the appropriate category tab:
+   - **AI & Summarization**
+   - **Economic & Energy**
+   - **Markets & Trade**
+   - **Security & Threats**
+   - **Tracking & Sensing**
+3. Toggle features on/off with checkboxes
+4. Status indicators show:
+   - ✓ **Ready** — credentials configured and valid
+   - ⚠ **Partial** — some credentials missing
+   - ✗ **Not Ready** — no credentials
+
+**Visual feedback**:
+
+- Sidebar shows ready count per category (e.g., "3/5 ready")
+- Overview tab shows total progress ring
+- Dot indicators: green (all ready), blue (partial), yellow (none)
+
+## Web / Cloud Configuration
+
+Toggles are **disabled** in web/cloud deployments. Features are controlled by environment variables only.
+
+To disable a feature server-side, **omit the required API key**:
+
+```bash .env.local
+# Disable Finnhub (use Yahoo Finance fallback)
+# FINNHUB_API_KEY=  # Leave unset
+
+# Disable ACLED (hide conflict/protest layers)
+# ACLED_ACCESS_TOKEN=  # Leave unset
+```
+
+<Warning>
+  Setting a toggle to `false` in localStorage has **no effect** in web deployments. Server-side environment variables control feature availability.
+</Warning>
+
+## Toggle Storage
+
+Toggles are stored in `localStorage` under the key `worldmonitor-runtime-feature-toggles`:
+
+```json
+{
+  "aiOllama": true,
+  "aiGroq": true,
+  "aiOpenRouter": true,
+  "economicFred": true,
+  "energyEia": false,
+  "internetOutages": true,
+  "acledConflicts": true,
+  "finnhubMarkets": true,
+  "nasaFirms": true
+}
+```
+
+**Cross-tab sync**:
+
+Changes in one tab/window propagate to others via the `storage` event. The main dashboard and settings window stay synchronized.
+
+## Feature Availability Logic
+
+A feature is **available** when:
+
+1. Toggle is `true` (default: all enabled)
+2. **AND** (Desktop only) required secrets are present and valid
+
+Web/cloud deployments skip step 2 — credential validation happens server-side.
+
+**Desktop validation**:
+
+```typescript
+function isFeatureAvailable(featureId: RuntimeFeatureId): boolean {
+  if (!isFeatureEnabled(featureId)) return false;
+  if (!isDesktopRuntime()) return true;  // Web: always available if enabled
+  
+  const feature = RUNTIME_FEATURES.find(f => f.id === featureId);
+  const secrets = feature.desktopRequiredSecrets ?? feature.requiredSecrets;
+  return secrets.every(key => getSecretState(key).valid);
+}
+```
+
+## Analytics
+
+Toggle changes are tracked via PostHog:
+
+```typescript
+trackEvent('wm_feature_toggled', {
+  feature_id: 'aiOllama',
+  enabled: true
+});
+```
+
+Event properties:
+- `feature_id` — toggle name
+- `enabled` — new state (true/false)
+
+## Debugging
+
+To inspect current toggle state:
+
+```javascript
+// Browser console
+JSON.parse(localStorage.getItem('worldmonitor-runtime-feature-toggles'))
+```
+
+To reset to defaults:
+
+```javascript
+localStorage.removeItem('worldmonitor-runtime-feature-toggles')
+location.reload()
+```
+
+## Use Cases
+
+### Reduce API Costs
+
+Disable paid APIs you're not using:
+
+```bash
+# Keep only free-tier services
+aiGroq: true          # Free: 14,400 req/day
+economicFred: true    # Free: unlimited
+finnhubMarkets: false # Paid after 60 req/min
+wingbitsEnrichment: false  # Paid service
+```
+
+### Privacy Mode
+
+Disable all cloud services, use local-only:
+
+```bash
+aiOllama: true        # Local inference
+aiGroq: false         # No cloud AI
+aiOpenRouter: false   # No cloud AI
+aisRelay: false       # No vessel tracking
+openskyRelay: false   # No flight tracking
+```
+
+### Quota Exhausted
+
+Temporarily disable a rate-limited API:
+
+```bash
+finnhubMarkets: false  # Hit daily quota
+```
+
+The dashboard falls back to Yahoo Finance and CoinGecko.
+
+### Debugging Data Issues
+
+Isolate a problematic data source:
+
+```bash
+acledConflicts: false  # Disable ACLED to test GDELT-only unrest
+```
+
+## Default State
+
+All toggles default to `true` (enabled). The system loads stored state from `localStorage` on startup:
+
+```typescript
+const defaultToggles: Record<RuntimeFeatureId, boolean> = {
+  aiGroq: true,
+  aiOpenRouter: true,
+  economicFred: true,
+  energyEia: true,
+  internetOutages: true,
+  acledConflicts: true,
+  // ... all true by default
+};
+```
+
+First launch uses defaults. Subsequent launches restore user preferences.
+
+## Feature Dependencies
+
+Some features have **multi-secret requirements**:
+
+**AIS Relay** (web deployment):
+- `WS_RELAY_URL` — relay server URL
+- `AISSTREAM_API_KEY` — AISStream API key
+
+**AIS Relay** (desktop):
+- `AISSTREAM_API_KEY` only (relay runs in sidecar)
+
+**OpenSky Relay** (web deployment):
+- `VITE_OPENSKY_RELAY_URL` — relay server URL
+- `OPENSKY_CLIENT_ID` — OAuth client ID
+- `OPENSKY_CLIENT_SECRET` — OAuth secret
+
+**OpenSky Relay** (desktop):
+- `OPENSKY_CLIENT_ID` — OAuth client ID
+- `OPENSKY_CLIENT_SECRET` — OAuth secret
+
+Desktop deployments have **different requirements** than web — see `desktopRequiredSecrets` in the feature definition.
+
+## Settings Window UI
+
+The settings window groups toggles into 5 categories:
+
+| Category | Features | Progress Indicator |
+|----------|----------|--------------------|
+| AI & Summarization | 3 | 3/3 ready |
+| Economic & Energy | 3 | 2/3 ready |
+| Markets & Trade | 2 | 1/2 ready |
+| Security & Threats | 5 | 4/5 ready |
+| Tracking & Sensing | 6 | 3/6 ready |
+
+**Progress calculation**:
+
+- **Ready** = toggle enabled + secrets valid
+- **Total** = all features in category
+
+Sidebar shows ready count and dot indicator:
+- Green dot = all ready
+- Blue dot = partial
+- Yellow dot = none ready

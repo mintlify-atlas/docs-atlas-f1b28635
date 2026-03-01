@@ -1,0 +1,656 @@
+---
+title: 'Multi-Source Signal Fusion'
+description: 'Unified intelligence aggregation with anomaly detection and regional convergence'
+icon: 'tower-broadcast'
+---
+
+## Overview
+
+The **Signal Aggregator** collects all map signals and correlates them by country/region to create a unified intelligence picture. It feeds geographic context to AI summaries and identifies convergence zones where multiple signal types spike simultaneously.
+
+<Note>
+  Signals are retained for 24 hours, automatically pruned after expiration. All ingestion methods are idempotent and can be called multiple times per data refresh cycle.
+</Note>
+
+## Signal Types
+
+<CardGroup cols={2}>
+  <Card title="internet_outage" icon="wifi-slash">
+    Cloudflare Radar outages (total, major, partial)
+  </Card>
+  <Card title="military_flight" icon="plane-up">
+    ADS-B tracked military aircraft
+  </Card>
+  <Card title="military_vessel" icon="ship">
+    AIS + USNI tracked naval vessels
+  </Card>
+  <Card title="protest" icon="people-group">
+    ACLED social unrest events
+  </Card>
+  <Card title="ais_disruption" icon="anchor-circle-exclamation">
+    Shipping anomalies (high, elevated, low)
+  </Card>
+  <Card title="satellite_fire" icon="fire">
+    NASA FIRMS thermal anomalies
+  </Card>
+  <Card title="temporal_anomaly" icon="chart-line-up">
+    Welford baseline deviations (z-score ≥1.5)
+  </Card>
+  <Card title="active_strike" icon="burst">
+    GDELT + Iran attack conflict events
+  </Card>
+</CardGroup>
+
+**Source**: `src/services/signal-aggregator.ts:16-24`
+
+## Ingestion Methods
+
+### Internet Outages
+
+```typescript
+ingestOutages(outages: InternetOutage[]): void {
+  this.clearSignalType('internet_outage');
+  for (const o of outages) {
+    const code = normalizeCountryCode(o.country);
+    this.signals.push({
+      type: 'internet_outage',
+      country: code,
+      countryName: o.country,
+      lat: o.lat,
+      lon: o.lon,
+      severity: o.severity === 'total' ? 'high' : o.severity === 'major' ? 'medium' : 'low',
+      title: o.title,
+      timestamp: o.pubDate,
+    });
+  }
+  this.pruneOld();
+}
+```
+
+**Severity mapping**:
+- `total` outage → `high`
+- `major` outage → `medium`
+- `partial` outage → `low`
+
+**Source**: `src/services/signal-aggregator.ts:112-128`
+
+### Military Flights
+
+Aggregates by country and assigns severity based on volume:
+
+```typescript
+ingestFlights(flights: MilitaryFlight[]): void {
+  this.clearSignalType('military_flight');
+  const countryCounts = new Map<string, number>();
+
+  for (const f of flights) {
+    const code = this.coordsToCountry(f.lat, f.lon);
+    countryCounts.set(code, (countryCounts.get(code) || 0) + 1);
+  }
+
+  for (const [code, count] of countryCounts) {
+    this.signals.push({
+      type: 'military_flight',
+      country: code,
+      severity: count >= 10 ? 'high' : count >= 5 ? 'medium' : 'low',
+      title: `${count} military aircraft detected`,
+      timestamp: new Date(),
+    });
+  }
+}
+```
+
+**Severity thresholds**:
+- ≥10 aircraft → `high`
+- 5-9 aircraft → `medium`
+- 1-4 aircraft → `low`
+
+**Source**: `src/services/signal-aggregator.ts:130-152`
+
+### Military Vessels
+
+Similar aggregation logic with higher severity threshold:
+
+<ParamField path="highThreshold" type="number" default="5">
+  ≥5 vessels → `high` severity
+</ParamField>
+
+<ParamField path="mediumThreshold" type="number" default="2">
+  2-4 vessels → `medium` severity
+</ParamField>
+
+**Source**: `src/services/signal-aggregator.ts:154-181`
+
+### Protests
+
+Counts by country with volume-based severity:
+
+<ParamField path="highThreshold" type="number" default="10">
+  ≥10 protests → `high` severity
+</ParamField>
+
+<ParamField path="mediumThreshold" type="number" default="5">
+  5-9 protests → `medium` severity
+</ParamField>
+
+**Source**: `src/services/signal-aggregator.ts:183-210`
+
+### Satellite Fires
+
+NASA FIRMS thermal hotspot classification:
+
+```typescript
+ingestSatelliteFires(fires: Array<{
+  lat: number;
+  lon: number;
+  brightness: number;
+  frp: number; // Fire Radiative Power (MW)
+  region: string;
+  acq_date: string;
+}>): void {
+  this.clearSignalType('satellite_fire');
+
+  for (const fire of fires) {
+    const code = this.coordsToCountry(fire.lat, fire.lon) || normalizeCountryCode(fire.region);
+    const severity = fire.brightness > 360 ? 'high'
+      : fire.brightness > 320 ? 'medium'
+      : 'low';
+
+    this.signals.push({
+      type: 'satellite_fire',
+      country: code,
+      severity,
+      title: `Thermal anomaly detected (${Math.round(fire.brightness)}K, ${fire.frp.toFixed(1)}MW)`,
+      timestamp: new Date(fire.acq_date),
+    });
+  }
+}
+```
+
+**Severity thresholds**:
+- Above 360K brightness → `high`
+- 320-360K → `medium`
+- Below 320K → `low`
+
+**Source**: `src/services/signal-aggregator.ts:238-264`
+
+### Temporal Anomalies
+
+Welford's algorithm detects deviations from 90-day baseline:
+
+```typescript
+ingestTemporalAnomalies(anomalies: Array<{
+  type: string; // 'military_flight', 'protests', 'internet_outages', etc.
+  region: string;
+  currentCount: number;
+  expectedCount: number;
+  zScore: number;
+  message: string;
+  severity: 'medium' | 'high' | 'critical';
+}>): void {
+  // Deduplicate by message — safe to call from multiple async sources
+  const incomingSourceTypes = new Set(anomalies.map(a => a.type));
+  this.signals = this.signals.filter(s =>
+    s.type !== 'temporal_anomaly' ||
+    !incomingSourceTypes.has(this.temporalSourceMap.get(s) || '')
+  );
+
+  for (const a of anomalies) {
+    this.signals.push({
+      type: 'temporal_anomaly',
+      severity: a.severity === 'critical' ? 'high' : a.severity === 'high' ? 'high' : 'medium',
+      title: a.message,
+      timestamp: new Date(),
+    });
+  }
+}
+```
+
+**Z-score thresholds** (computed in `src/services/temporal-baseline.ts`):
+- z ≥ 3.0 → `critical`
+- 2.0 ≤ z < 3.0 → `high`
+- 1.5 ≤ z < 2.0 → `medium`
+
+**Deduplication**: Uses `WeakMap` to track source event type per signal, preventing double-counting when multiple async pipelines emit anomalies for the same source.
+
+**Source**: `src/services/signal-aggregator.ts:269-304`
+
+### Active Strikes
+
+Conflict events aggregated by country with strike count and high-severity filtering:
+
+```typescript
+ingestConflictEvents(events: Array<{
+  id: string;
+  category: string;
+  severity: string;
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+}>): void {
+  this.clearSignalType('active_strike');
+
+  // Deduplicate by ID
+  const seen = new Set<string>();
+  const deduped = events.filter(e => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
+
+  // Group by country
+  const byCountry = new Map<string, typeof deduped>();
+  for (const e of deduped) {
+    const code = this.coordsToCountryWithFallback(e.latitude, e.longitude);
+    if (code === 'XX') continue;
+    const arr = byCountry.get(code) || [];
+    arr.push(e);
+    byCountry.set(code, arr);
+  }
+
+  // Cap at 50 strikes per country to prevent outlier events from dominating
+  const MAX_PER_COUNTRY = 50;
+  for (const [code, countryEvents] of byCountry) {
+    const capped = countryEvents.slice(0, MAX_PER_COUNTRY);
+    const highCount = capped.filter(e => {
+      const sev = e.severity.toLowerCase();
+      return sev === 'high' || sev === 'critical';
+    }).length;
+
+    this.signals.push({
+      type: 'active_strike',
+      country: code,
+      severity: highCount >= 5 ? 'high' : highCount >= 2 ? 'medium' : 'low',
+      title: `${capped.length} strikes (${highCount} high severity)`,
+      timestamp: new Date(Math.max(...capped.map(e => e.timestamp))),
+      strikeCount: capped.length,
+      highSeverityStrikeCount: highCount,
+    });
+  }
+}
+```
+
+**Severity thresholds**:
+- ≥5 high/critical strikes → `high`
+- 2-4 high/critical strikes → `medium`
+- 0-1 high/critical strikes → `low`
+
+**Source**: `src/services/signal-aggregator.ts:306-357`
+
+## Country Signal Clusters
+
+Signals are aggregated by country with convergence scoring:
+
+```typescript
+getCountryClusters(): CountrySignalCluster[] {
+  const byCountry = new Map<string, GeoSignal[]>();
+
+  for (const s of this.signals) {
+    const existing = byCountry.get(s.country) || [];
+    existing.push(s);
+    byCountry.set(s.country, existing);
+  }
+
+  const clusters: CountrySignalCluster[] = [];
+
+  for (const [country, signals] of byCountry) {
+    const signalTypes = new Set(signals.map(s => s.type));
+    const highCount = signals.filter(s => s.severity === 'high').length;
+
+    // Convergence scoring
+    const typeBonus = signalTypes.size * 20;
+    const countBonus = Math.min(30, signals.length * 5);
+    const severityBonus = highCount * 10;
+    const convergenceScore = Math.min(100, typeBonus + countBonus + severityBonus);
+
+    clusters.push({
+      country,
+      countryName: getCountryName(country),
+      signals,
+      signalTypes,
+      totalCount: signals.length,
+      highSeverityCount: highCount,
+      convergenceScore,
+    });
+  }
+
+  return clusters.sort((a, b) => b.convergenceScore - a.convergenceScore);
+}
+```
+
+**Convergence scoring formula**:
+```typescript
+convergenceScore = Math.min(100,
+  signalTypes.size * 20 +          // Type diversity bonus
+  Math.min(30, signals.length * 5) + // Signal count bonus (capped)
+  highCount * 10                     // High-severity bonus
+);
+```
+
+**Source**: `src/services/signal-aggregator.ts:422-454`
+
+## Regional Convergence Detection
+
+Identifies regions where multiple countries show simultaneous signal spikes:
+
+```typescript
+getRegionalConvergence(): RegionalConvergence[] {
+  const clusters = this.getCountryClusters();
+  const convergences: RegionalConvergence[] = [];
+
+  for (const [regionId, def] of Object.entries(REGION_DEFINITIONS)) {
+    const regionClusters = clusters.filter(c => def.countries.includes(c.country));
+    if (regionClusters.length < 2) continue; // Need 2+ countries
+
+    const allTypes = new Set<SignalType>();
+    let totalSignals = 0;
+
+    for (const cluster of regionClusters) {
+      cluster.signalTypes.forEach(t => allTypes.add(t));
+      totalSignals += cluster.totalCount;
+    }
+
+    if (allTypes.size >= 2) { // Need 2+ signal types
+      const typeDescriptions = [...allTypes].map(t => TYPE_LABELS[t]).join(', ');
+      const countries = regionClusters.map(c => c.countryName).join(', ');
+
+      convergences.push({
+        region: def.name,
+        countries: regionClusters.map(c => c.country),
+        signalTypes: [...allTypes],
+        totalSignals,
+        description: `${def.name}: ${typeDescriptions} detected across ${countries}`,
+      });
+    }
+  }
+
+  return convergences.sort((a, b) => b.signalTypes.length - a.signalTypes.length);
+}
+```
+
+**Requirements for convergence alert**:
+1. ≥2 countries in region with signals
+2. ≥2 distinct signal types across region
+
+**Example output**:
+```json
+{
+  "region": "Middle East",
+  "countries": ["IR", "IL", "SA"],
+  "signalTypes": ["military_flight", "military_vessel", "protest", "internet_outage"],
+  "totalSignals": 47,
+  "description": "Middle East: military air activity, naval presence, civil unrest, internet disruptions detected across Iran, Israel, Saudi Arabia"
+}
+```
+
+**Source**: `src/services/signal-aggregator.ts:456-498`
+
+## Regional Definitions
+
+<CodeGroup>
+```typescript Middle East
+{
+  name: 'Middle East',
+  countries: ['IR', 'IL', 'SA', 'AE', 'IQ', 'SY', 'YE', 'JO', 'LB', 'KW', 'QA', 'OM', 'BH']
+}
+```
+
+```typescript Eastern Europe
+{
+  name: 'Eastern Europe',
+  countries: ['UA', 'RU', 'BY', 'PL', 'RO', 'MD', 'HU', 'CZ', 'SK', 'BG']
+}
+```
+
+```typescript East Asia
+{
+  name: 'East Asia',
+  countries: ['CN', 'TW', 'JP', 'KR', 'KP', 'HK', 'MN']
+}
+```
+
+```typescript South Asia
+{
+  name: 'South Asia',
+  countries: ['IN', 'PK', 'BD', 'AF', 'NP', 'LK', 'MM']
+}
+```
+
+```typescript Sahel Region
+{
+  name: 'Sahel Region',
+  countries: ['ML', 'NE', 'BF', 'TD', 'NG', 'CM', 'CF']
+}
+```
+
+```typescript North Africa
+{
+  name: 'North Africa',
+  countries: ['EG', 'LY', 'DZ', 'TN', 'MA', 'SD', 'SS']
+}
+```
+</CodeGroup>
+
+**Source**: `src/services/signal-aggregator.ts:66-91`
+
+## AI Context Generation
+
+Generates formatted text for LLM summarization prompts:
+
+```typescript
+generateAIContext(): string {
+  const clusters = this.getCountryClusters().slice(0, 5);
+  const convergences = this.getRegionalConvergence().slice(0, 3);
+
+  if (clusters.length === 0 && convergences.length === 0) {
+    return '';
+  }
+
+  const lines: string[] = ['[GEOGRAPHIC SIGNALS]'];
+
+  if (convergences.length > 0) {
+    lines.push('Regional convergence detected:');
+    for (const c of convergences) {
+      lines.push(`- ${c.description}`);
+    }
+  }
+
+  if (clusters.length > 0) {
+    lines.push('Top countries by signal activity:');
+    for (const c of clusters) {
+      const types = [...c.signalTypes].join(', ');
+      lines.push(`- ${c.countryName}: ${c.totalCount} signals (${types}), convergence score: ${c.convergenceScore}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+```
+
+**Example output**:
+```
+[GEOGRAPHIC SIGNALS]
+Regional convergence detected:
+- Middle East: military air activity, naval presence, civil unrest, internet disruptions detected across Iran, Israel, Saudi Arabia
+- Eastern Europe: military air activity, protests detected across Ukraine, Russia, Poland
+
+Top countries by signal activity:
+- Iran: 24 signals (military_flight, military_vessel, protest, internet_outage, active_strike), convergence score: 92
+- Ukraine: 18 signals (military_flight, military_vessel, protest, temporal_anomaly), convergence score: 85
+- Israel: 15 signals (military_flight, military_vessel, internet_outage, active_strike), convergence score: 78
+```
+
+This context is prepended to AI summarization prompts to give the LLM geographic awareness.
+
+**Source**: `src/services/signal-aggregator.ts:500-526`
+
+## Signal Summary API
+
+```typescript
+interface SignalSummary {
+  timestamp: Date;
+  totalSignals: number;
+  byType: Record<SignalType, number>;
+  convergenceZones: RegionalConvergence[];
+  topCountries: CountrySignalCluster[];
+  aiContext: string;
+}
+
+getSummary(): SignalSummary {
+  const byType: Record<SignalType, number> = {
+    internet_outage: 0,
+    military_flight: 0,
+    military_vessel: 0,
+    protest: 0,
+    ais_disruption: 0,
+    satellite_fire: 0,
+    temporal_anomaly: 0,
+    active_strike: 0,
+  };
+
+  for (const s of this.signals) {
+    byType[s.type]++;
+  }
+
+  return {
+    timestamp: new Date(),
+    totalSignals: this.signals.length,
+    byType,
+    convergenceZones: this.getRegionalConvergence(),
+    topCountries: this.getCountryClusters().slice(0, 10),
+    aiContext: this.generateAIContext(),
+  };
+}
+```
+
+**Source**: `src/services/signal-aggregator.ts:528-552`
+
+## Temporal Anomaly Detection
+
+Welford's online algorithm computes streaming mean/variance per event type, region, weekday, and month over a 90-day window:
+
+```typescript
+// Welford's online variance algorithm
+function updateStats(existing: Stats, newValue: number): Stats {
+  const count = existing.count + 1;
+  const delta = newValue - existing.mean;
+  const mean = existing.mean + delta / count;
+  const delta2 = newValue - mean;
+  const m2 = existing.m2 + delta * delta2;
+
+  return { count, mean, m2 };
+}
+
+function computeZScore(value: number, stats: Stats): number {
+  if (stats.count < 3) return 0; // Need 3+ samples
+  const variance = stats.m2 / (stats.count - 1);
+  const stdDev = Math.sqrt(variance);
+  if (stdDev === 0) return 0;
+  return (value - stats.mean) / stdDev;
+}
+```
+
+**Storage**: Stats are stored in Redis via Upstash with keys like:
+- `baseline:{eventType}:{region}:{weekday}:{month}`
+
+**Example**: `baseline:military_flight:IR:Thursday:January`
+
+**Z-score interpretation**:
+- z ≥ 3.0: "3.2x normal for Thursday (January)" → `critical`
+- z ≥ 2.0: "2.4x normal" → `high`
+- z ≥ 1.5: "1.8x normal" → `medium`
+
+**Source**: `src/services/temporal-baseline.ts`
+
+## Example Signal Summary
+
+<CodeGroup>
+```json Global Signal Summary
+{
+  "timestamp": "2026-03-01T12:00:00Z",
+  "totalSignals": 147,
+  "byType": {
+    "internet_outage": 8,
+    "military_flight": 52,
+    "military_vessel": 24,
+    "protest": 31,
+    "ais_disruption": 6,
+    "satellite_fire": 12,
+    "temporal_anomaly": 4,
+    "active_strike": 10
+  },
+  "convergenceZones": [
+    {
+      "region": "Middle East",
+      "countries": ["IR", "IL", "SA"],
+      "signalTypes": ["military_flight", "military_vessel", "protest", "internet_outage", "active_strike"],
+      "totalSignals": 58,
+      "description": "Middle East: military air activity, naval presence, civil unrest, internet disruptions, active strikes detected across Iran, Israel, Saudi Arabia"
+    }
+  ],
+  "topCountries": [
+    {
+      "country": "IR",
+      "countryName": "Iran",
+      "totalCount": 24,
+      "highSeverityCount": 8,
+      "signalTypes": ["military_flight", "military_vessel", "protest", "internet_outage", "active_strike"],
+      "convergenceScore": 92
+    },
+    {
+      "country": "UA",
+      "countryName": "Ukraine",
+      "totalCount": 18,
+      "highSeverityCount": 12,
+      "signalTypes": ["military_flight", "military_vessel", "protest", "temporal_anomaly"],
+      "convergenceScore": 85
+    }
+  ],
+  "aiContext": "[GEOGRAPHIC SIGNALS]\nRegional convergence detected:\n- Middle East: military air activity, naval presence, civil unrest, internet disruptions, active strikes detected across Iran, Israel, Saudi Arabia\n\nTop countries by signal activity:\n- Iran: 24 signals (military_flight, military_vessel, protest, internet_outage, active_strike), convergence score: 92\n- Ukraine: 18 signals (military_flight, military_vessel, protest, temporal_anomaly), convergence score: 85"
+}
+```
+</CodeGroup>
+
+## Integration Points
+
+### Focal Point Detection
+
+Signal aggregator data is correlated with news entities:
+
+```typescript
+const focalSummary = focalPointDetector.analyze(clusters, signalSummary);
+// Returns FocalPoint[] with news-signal correlation scores
+```
+
+### Country Instability Index
+
+Signals feed into supplemental CII boosts:
+
+```typescript
+const supplementalSignalBoost = getSupplementalSignalBoost(data);
+// Includes AIS disruption, satellite fires, cyber threats, temporal anomalies
+```
+
+### AI Summarization
+
+AI context is prepended to World Brief prompts:
+
+```typescript
+const prompt = `
+${signalAggregator.generateAIContext()}
+${focalPointDetector.generateAIContext()}
+
+Top headlines:
+${headlines.join('\n')}
+
+Provide a concise summary of global developments...
+`;
+```
+
+## Key Files
+
+- `src/services/signal-aggregator.ts` — Main aggregation engine
+- `src/services/temporal-baseline.ts` — Welford's algorithm anomaly detection
+- `src/services/focal-point-detector.ts` — News-signal correlation
+- `src/services/country-instability.ts` — CII integration
+- `src/services/summarization.ts` — AI context consumption

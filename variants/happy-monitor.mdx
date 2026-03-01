@@ -1,0 +1,353 @@
+---
+title: Happy Monitor
+description: Positive news variant focused on uplifting content, global progress, and human achievement
+---
+
+## Overview
+
+**Happy Monitor** is a specialized variant focused on **positive news, global progress, and uplifting stories**. Instead of tracking conflicts and crises, it curates good news, science breakthroughs, conservation wins, and human achievement.
+
+<Info>
+  **Live Demo:** [happy.worldmonitor.app](https://happy.worldmonitor.app)
+</Info>
+
+---
+
+## Key Features
+
+### Positive News Aggregation
+
+- **Curated positive news** from 40+ sources focused on uplifting content
+- **Science breakthrough feed** with arXiv papers, Nature, Science Daily, New Scientist
+- **Conservation tracker** with wildlife protection wins and habitat restoration
+- **Renewable energy dashboard** tracking solar/wind installations and clean energy milestones
+- **Global progress data** with long-term trend charts (poverty reduction, literacy rates, life expectancy)
+
+### Live Humanity Counters
+
+Real-time counters showing positive global statistics:
+
+- **Babies born today** (updating every second)
+- **Trees planted this year** (global reforestation efforts)
+- **Renewable energy generated** (GWh from solar/wind)
+- **People lifted out of poverty** (World Bank data extrapolation)
+- **Lives saved by vaccines** (WHO immunization impact)
+- **Species protected** (IUCN conservation status upgrades)
+
+**Code reference:** `src/services/progress-data.ts` (counter data sources)
+
+### Positive Event Mapping
+
+Map layers showing:
+
+- **Conservation areas** (national parks, marine reserves, UNESCO sites)
+- **Renewable energy installations** (solar farms, wind farms, hydroelectric dams)
+- **Scientific research stations** (Antarctica, rainforests, oceans)
+- **Community gardens & urban forests** (local greening initiatives)
+- **Humanitarian aid projects** (UN, Red Cross, NGO locations)
+
+---
+
+## Variant-Specific Configuration
+
+### Build Command
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    npm run dev:happy
+    ```
+  </Tab>
+  <Tab title="Production Build">
+    ```bash
+    npm run build:happy
+    ```
+  </Tab>
+  <Tab title="Desktop App">
+    ```bash
+    # Happy variant desktop build not yet configured
+    # Uses web app via happy.worldmonitor.app
+    ```
+  </Tab>
+</Tabs>
+
+### Metadata (vite.config.ts:101-119)
+
+```typescript
+happy: {
+  title: 'Happy Monitor - Good News & Global Progress',
+  description: 'Curated positive news, progress data, and uplifting stories from around the world.',
+  keywords: 'good news, positive news, global progress, happy news, uplifting stories, human achievement, science breakthroughs, conservation wins',
+  url: 'https://happy.worldmonitor.app/',
+  siteName: 'Happy Monitor',
+  shortName: 'HappyMonitor',
+  subject: 'Good News, Global Progress, and Human Achievement',
+  classification: 'Positive News Dashboard, Progress Tracker',
+  categories: ['news', 'lifestyle'],
+  features: [
+    'Curated positive news',
+    'Global progress tracking',
+    'Live humanity counters',
+    'Science breakthrough feed',
+    'Conservation tracker',
+    'Renewable energy dashboard',
+  ],
+}
+```
+
+---
+
+## UI Theme Customization
+
+Happy Monitor uses a **warm cream theme** instead of the default dark theme:
+
+```css title="src/styles/happy-theme.css:9-100"
+:root[data-variant="happy"],
+:root[data-variant="happy"][data-theme="light"] {
+  --bg: #FAFAF5;  /* Warm cream background */
+  --text: #2c2c2c;
+  --panel-bg: #ffffff;
+  --border-color: rgba(212, 175, 55, 0.15);
+  --semantic-info: #3b82f6;
+  --green: #16a34a;
+  --red: #dc2626;
+  --yellow: #fbbf24;
+  /* ... 90+ more color variable overrides */
+}
+```
+
+Theme metadata is injected at build time:
+
+```typescript title="vite.config.ts:176-181"
+// Theme-color meta — warm cream for happy variant
+if (activeVariant === 'happy') {
+  result = result.replace(
+    /<meta name="theme-color" content=".*?" \/>/,
+    '<meta name="theme-color" content="#FAFAF5" />'
+  );
+}
+```
+
+---
+
+## Data Sources
+
+### Positive News Feeds (40+ sources)
+
+<AccordionGroup>
+  <Accordion title="Good News Sites">
+    - Good News Network, Positive News, Reasons to Be Cheerful
+    - The Optimist Daily, Sunny Skyz, Huffington Post Good News
+  </Accordion>
+
+  <Accordion title="Science & Breakthroughs">
+    - Science Daily, Nature News, Live Science, New Scientist
+    - arXiv (q-bio, physics breakthroughs), MIT News
+  </Accordion>
+
+  <Accordion title="Conservation & Environment">
+    - World Wildlife Fund, IUCN, The Nature Conservancy
+    - Rainforest Alliance, Oceana, Conservation International
+  </Accordion>
+
+  <Accordion title="Human Achievement">
+    - UN News (SDG progress), World Bank (poverty reduction)
+    - WHO (health milestones), Gates Foundation (global development)
+  </Accordion>
+</AccordionGroup>
+
+### Progress Data APIs
+
+| Source | Data Type | Update Frequency |
+|--------|-----------|------------------|
+| **World Bank** | Poverty rates, literacy, GDP per capita | Annual |
+| **WHO** | Life expectancy, vaccination coverage | Annual |
+| **IRENA** | Renewable energy installations | Quarterly |
+| **UN SDG Database** | Sustainable Development Goal progress | Annual |
+| **IUCN Red List** | Species conservation status | Semi-annual |
+| **Our World in Data** | Long-term global trends | Monthly |
+
+---
+
+## Happy-Specific Features
+
+### Positive Classifier
+
+Every news item is passed through a sentiment filter that **only shows stories with positive sentiment**:
+
+```typescript title="src/services/positive-classifier.ts"
+function classifyPositive(headline: string, description: string): boolean {
+  const positiveKeywords = [
+    'breakthrough', 'success', 'achievement', 'milestone', 'rescue',
+    'conservation', 'protected', 'restored', 'renewable', 'clean energy',
+    'eradicated', 'cured', 'solved', 'saved', 'thriving', 'recovering',
+    'record low poverty', 'record high literacy', 'peace agreement'
+  ];
+
+  const negativeKeywords = [
+    'conflict', 'war', 'attack', 'killed', 'disaster', 'crisis',
+    'collapse', 'fraud', 'scandal', 'threat', 'fear'
+  ];
+
+  const text = `${headline} ${description}`.toLowerCase();
+  const hasPositive = positiveKeywords.some(kw => text.includes(kw));
+  const hasNegative = negativeKeywords.some(kw => text.includes(kw));
+
+  return hasPositive && !hasNegative;
+}
+```
+
+### Progress Chart Panel
+
+D3.js-rendered line charts showing long-term global improvements:
+
+- **Extreme poverty rate** (1990 vs. today: 36% → 8.5%)
+- **Global literacy rate** (1980 vs. today: 56% → 87%)
+- **Child mortality rate** (1990 vs. today: 93 per 1,000 → 38 per 1,000)
+- **Renewable energy share** (2000 vs. today: 17% → 29%)
+- **Life expectancy** (1960 vs. today: 52 years → 73 years)
+
+**Code reference:** `src/components/ProgressPanel.ts` (chart rendering)
+
+### Hero Card Layout
+
+The top positive story is displayed in a **hero card** with:
+
+- Large image (if available)
+- Headline in 24px bold font
+- Source and timestamp
+- Location button (if geo-tagged)
+- Share button for social media
+
+```css title="src/styles/happy-theme.css:728-810"
+[data-variant="happy"] .hero-card {
+  background: var(--panel-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+```
+
+### Breakthroughs Ticker
+
+A horizontal scrolling ticker showing recent science breakthroughs:
+
+```css title="src/styles/happy-theme.css:674-726"
+[data-variant="happy"] .breakthroughs-ticker-wrapper {
+  overflow: hidden;
+  position: relative;
+  background: var(--panel-bg);
+}
+
+[data-variant="happy"] .breakthroughs-ticker-track {
+  display: flex;
+  gap: 1.5rem;
+  animation: ticker-scroll 60s linear infinite;
+}
+
+[data-variant="happy"] .breakthroughs-ticker-wrapper:hover .breakthroughs-ticker-track {
+  animation-play-state: paused;
+}
+```
+
+### TV Mode
+
+Happy Monitor includes a **TV Mode** toggle (Shift+T) that:
+
+- Hides all controls and headers
+- Auto-advances through positive news stories every 15 seconds
+- Fullscreen layout optimized for wall-mounted displays
+- Ambient background music (optional)
+
+**Code reference:** `src/services/tv-mode.ts`
+
+---
+
+## Use Cases
+
+### Waiting Rooms & Lobbies
+
+Display uplifting content on public screens:
+
+- Hospitals and medical clinics
+- Corporate office lobbies
+- Schools and universities
+- Community centers
+
+### Mental Health Support
+
+Provide positive news for individuals seeking:
+
+- Relief from news fatigue and doomscrolling
+- Evidence of global progress and hope
+- Uplifting stories to improve mood
+
+### Educators & Nonprofits
+
+Showcase positive trends to:
+
+- Demonstrate impact of humanitarian work
+- Motivate students with success stories
+- Highlight conservation wins
+
+### Researchers
+
+Track long-term global improvements:
+
+- SDG progress monitoring
+- Poverty reduction trends
+- Health outcome improvements
+- Environmental restoration wins
+
+---
+
+## Desktop vs. Web
+
+<Tabs>
+  <Tab title="Web App (PWA)">
+    **Access:**
+    - [happy.worldmonitor.app](https://happy.worldmonitor.app)
+
+    **Features:**
+    - Installable to home screen
+    - Warm cream theme by default
+    - TV Mode (Shift+T) for fullscreen display
+    - Offline support for positive news cache
+  </Tab>
+
+  <Tab title="Desktop App">
+    **Status:** Desktop app for Happy Monitor is not yet released.
+
+    Users can access the web app at [happy.worldmonitor.app](https://happy.worldmonitor.app) or run the full World Monitor desktop app and switch to the Happy variant in the header bar.
+  </Tab>
+</Tabs>
+
+---
+
+## Filtering Negative Content
+
+Happy Monitor uses a **multi-layer filtering system** to ensure only positive content appears:
+
+1. **Source selection:** Only RSS feeds from positive news sites are included (Good News Network, Positive News, etc.)
+2. **Keyword filtering:** Headlines are scanned for positive keywords (breakthrough, success, achievement) and negative keywords (conflict, war, disaster) are blocked
+3. **Sentiment analysis:** Browser-side ML (Transformers.js) classifies sentiment as positive/neutral/negative — only positive stories pass through
+4. **Manual curation:** A small editorial team reviews flagged items to ensure quality
+
+**Code reference:** `src/services/positive-classifier.ts` (sentiment filter)
+
+---
+
+## Related Variants
+
+<CardGroup cols={3}>
+  <Card title="World Monitor" icon="globe" href="/variants/world-monitor">
+    Geopolitical intelligence
+  </Card>
+  <Card title="Tech Monitor" icon="laptop-code" href="/variants/tech-monitor">
+    AI & tech industry
+  </Card>
+  <Card title="Finance Monitor" icon="chart-line" href="/variants/finance-monitor">
+    Markets & trading
+  </Card>
+</CardGroup>

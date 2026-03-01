@@ -1,0 +1,240 @@
+---
+title: Dashboard Interface
+description: Understanding World Monitor's layout, panels, and navigation structure
+---
+
+World Monitor's interface is designed for maximum information density while maintaining clarity. The dashboard adapts to your screen size and preferences.
+
+## Interface Components
+
+The dashboard consists of four main areas:
+
+### 1. Header Bar
+
+The top navigation bar provides global controls:
+
+- **Variant switcher** - Switch between World, Tech, Finance, and Happy variants
+- **Intelligence badge** - Shows accumulated signals and alerts (opt-in popup notifications)
+- **Data freshness monitor** - Displays status of 28+ data sources with gap reporting
+- **Theme toggle** - Switch between dark (default) and light themes
+- **Settings** (Desktop only) - Open configuration panel (Cmd+,)
+
+### 2. Interactive Globe/Map
+
+The primary visualization occupies the top portion of the interface:
+
+- **3D WebGL globe** - deck.gl + MapLibre GL JS rendering
+- **Flat map mode** - Toggle via environment configuration
+- **Smart clustering** - Supercluster groups markers at low zoom
+- **40+ data layers** - Toggle individual layers on/off
+- **Regional presets** - 8 predefined views (Global, Americas, Europe, etc.)
+- **Time filtering** - 1h, 6h, 24h, 48h, 7d, or all events
+
+<Tip>
+  Use the **pin button** (📌) to keep the map visible while scrolling through panels below.
+</Tip>
+
+### 3. Panels Grid
+
+Below the map, information panels display real-time intelligence:
+
+- **Configurable order** - Drag-and-drop reordering
+- **Adjustable heights** - Resize handles on panel edges (span-1 through span-4)
+- **Enable/disable** - Show only the panels you need
+- **Activity tracking** - New item badges with pulse animation
+
+### 4. Map Controls Sidebar
+
+Right side of the map provides quick access to:
+
+- **Layer toggles** - Enable/disable data layers
+- **View presets** - Jump to regional views
+- **Time range selector** - Filter events by recency
+- **3D/Flat toggle** - Switch perspective modes
+- **Zoom controls** - +/- buttons for precise zoom
+
+## Panel Types
+
+World Monitor includes multiple panel types, each serving a specific purpose:
+
+### Intelligence Panels
+
+<CardGroup cols={2}>
+  <Card title="Live News" icon="newspaper">
+    Categorized RSS feeds with keyword highlighting and clustering
+  </Card>
+  <Card title="Intelligence Insights" icon="lightbulb">
+    AI-synthesized World Brief and trending keywords
+  </Card>
+  <Card title="Strategic Posture" icon="shield">
+    Military theater assessments and force projection
+  </Card>
+  <Card title="Country Instability" icon="chart-mixed">
+    Real-time CII scores for 250+ countries
+  </Card>
+</CardGroup>
+
+### Data Feed Panels
+
+<CardGroup cols={2}>
+  <Card title="Live Video Streams" icon="video">
+    8+ default channels plus 30+ optional streams
+  </Card>
+  <Card title="Telegram Intelligence" icon="paper-plane">
+    27 OSINT and breaking news Telegram channels
+  </Card>
+  <Card title="OREF Sirens" icon="siren">
+    Israeli Home Front Command rocket alerts
+  </Card>
+  <Card title="Satellite Fires" icon="fire">
+    NASA FIRMS thermal hotspot detection
+  </Card>
+</CardGroup>
+
+### Market Panels (Finance Variant)
+
+<CardGroup cols={2}>
+  <Card title="Macro Signals" icon="signal">
+    7-signal radar with BUY/CASH verdict
+  </Card>
+  <Card title="Crypto Prices" icon="bitcoin">
+    Real-time BTC, ETH, SOL, XRP prices
+  </Card>
+  <Card title="ETF Flows" icon="arrow-trend-up">
+    BTC spot ETF flow tracker
+  </Card>
+  <Card title="Stablecoin Health" icon="coins">
+    USDT, USDC, DAI peg monitoring
+  </Card>
+</CardGroup>
+
+### Tech Panels (Tech Variant)
+
+<CardGroup cols={2}>
+  <Card title="Tech Hubs" icon="building">
+    Startup ecosystem activity and funding
+  </Card>
+  <Card title="AI Regulations" icon="scale-balanced">
+    Global AI policy deadlines and actions
+  </Card>
+  <Card title="Service Status" icon="server">
+    Cloud provider and AI service monitoring
+  </Card>
+  <Card title="Tech Events" icon="calendar">
+    Upcoming conferences and deadlines
+  </Card>
+</CardGroup>
+
+## Responsive Behavior
+
+### Standard Layout (< 2000px width)
+
+Panels stack vertically in a single column:
+
+```
+┌─────────────────────┐
+│     Header Bar      │
+├─────────────────────┤
+│   Interactive Map   │
+├─────────────────────┤
+│   Panel 1 (span-2)  │
+├─────────────────────┤
+│   Panel 2 (span-1)  │
+├─────────────────────┤
+│   Panel 3 (span-3)  │
+└─────────────────────┘
+```
+
+### Ultra-Wide Layout (≥ 2000px width)
+
+L-shaped arrangement maximizes screen space:
+
+```
+┌─────────────────────────────────────┐
+│          Header Bar                 │
+├───────────────────┬─────────────────┤
+│                   │   Panel 1       │
+│   Interactive     ├─────────────────┤
+│   Map (60%)       │   Panel 2       │
+│                   ├─────────────────┤
+│                   │   Panel 3       │
+├───────────────────┴─────────────────┤
+│   Panel 4         │   Panel 5       │
+└───────────────────┴─────────────────┘
+```
+
+<Info>
+  The ultra-wide layout uses CSS `display: contents` and float-based wrapping - no JavaScript layout engine required.
+</Info>
+
+## Theme Customization
+
+World Monitor supports dark and light themes:
+
+- **Dark theme** (default) - Optimized for extended viewing
+- **Light theme** - High-contrast alternative
+- **Persistent preference** - Stored in localStorage
+- **No flash** - Theme applied before first paint
+- **System chrome sync** - Updates `<meta name="theme-color">`
+
+Toggle themes using the button in the header bar. A `theme-changed` custom event allows panels to react to switches.
+
+## Activity Tracking
+
+Panels automatically track new content:
+
+- **Badge counter** - Shows number of new items
+- **Pulse animation** - Draws attention to updates
+- **Auto-clear** - Mark as seen on scroll or click
+- **Persistent state** - Survives page reloads
+
+## Desktop-Only Features
+
+When running the Tauri desktop app:
+
+### Settings Panel (Cmd+,)
+
+Three-tab configuration interface:
+
+1. **LLMs** - Ollama/LM Studio endpoint, model selection, cloud providers
+2. **API Keys** - 12+ data source credentials with validation
+3. **Debug & Logs** - Traffic log, verbose mode, log file access
+
+### Credential Management
+
+- **OS keychain storage** - Never stored in plaintext
+- **Consolidated vault** - Single keychain entry for all secrets
+- **Cross-window sync** - Settings changes propagate to main window
+- **Token authentication** - Prevents other local processes from accessing sidecar
+
+### DevTools Access
+
+Press **Cmd+Alt+I** (Mac) or **Ctrl+Alt+I** (Windows/Linux) to open the embedded web inspector.
+
+## Navigation Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl + K` | Open command palette |
+| `Cmd + ,` | Settings (desktop only) |
+| `Cmd/Ctrl + Alt + I` | DevTools (desktop only) |
+| `Esc` | Close modals and overlays |
+| `↑/↓` | Navigate search results |
+| `Enter` | Select search result |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Map Navigation" icon="map" href="/guide/navigation">
+    Learn regional presets and URL sharing
+  </Card>
+  <Card title="Map Controls" icon="sliders" href="/guide/map-controls">
+    Master zoom, layers, and time filtering
+  </Card>
+  <Card title="Panel Management" icon="table-columns" href="/guide/panels">
+    Customize panel layout and behavior
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick search and layer commands
+  </Card>
+</CardGroup>

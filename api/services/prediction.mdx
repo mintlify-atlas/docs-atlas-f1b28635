@@ -1,0 +1,241 @@
+---
+title: "Prediction Service"
+description: "Access prediction markets and forecasts from Polymarket"
+---
+
+## Overview
+
+The Prediction Service provides APIs for prediction market data from Polymarket. Access real-time probability estimates for geopolitical events, economic indicators, and other world events based on decentralized prediction markets.
+
+**Base Path:** `/api/prediction/v1`
+
+---
+
+## ListPredictionMarkets
+
+Retrieves active prediction markets from Polymarket.
+
+**Endpoint:** `GET /api/prediction/v1/list-prediction-markets`
+
+### Request Parameters
+
+<ParamField query="page_size" type="integer">
+  Maximum items per page (1-100).
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page.
+</ParamField>
+
+<ParamField query="category" type="string">
+  Optional category filter (e.g., "Politics", "Crypto", "Sports").
+</ParamField>
+
+<ParamField query="query" type="string">
+  Optional search query for market titles.
+</ParamField>
+
+### Response
+
+<ResponseField name="markets" type="array">
+  The list of prediction markets.
+  
+  <Expandable title="PredictionMarket">
+    <ResponseField name="id" type="string" required>
+      Unique market identifier or slug.
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Market question or title.
+    </ResponseField>
+    
+    <ResponseField name="yes_price" type="number">
+      Current "Yes" price (0.0 to 1.0, representing probability).
+    </ResponseField>
+    
+    <ResponseField name="volume" type="number">
+      Trading volume in USD.
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      URL to the Polymarket market page.
+    </ResponseField>
+    
+    <ResponseField name="closes_at" type="integer">
+      Market close time, as Unix epoch milliseconds. Zero if no expiry.
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Market category (e.g., "Politics", "Crypto", "Sports").
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination metadata with cursor for next page.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/prediction/v1/list-prediction-markets?category=Politics&page_size=10"
+```
+
+### Example Response
+
+```json
+{
+  "markets": [
+    {
+      "id": "2024-us-election",
+      "title": "Will Donald Trump win the 2024 US Presidential Election?",
+      "yes_price": 0.52,
+      "volume": 18500000,
+      "url": "https://polymarket.com/event/2024-us-election",
+      "closes_at": 1730851200000,
+      "category": "Politics"
+    },
+    {
+      "id": "ukraine-ceasefire-2024",
+      "title": "Will there be a ceasefire in Ukraine by end of 2024?",
+      "yes_price": 0.38,
+      "volume": 4200000,
+      "url": "https://polymarket.com/event/ukraine-ceasefire-2024",
+      "closes_at": 1735689599000,
+      "category": "Politics"
+    },
+    {
+      "id": "fed-rate-march-2024",
+      "title": "Will the Fed cut rates in March 2024?",
+      "yes_price": 0.15,
+      "volume": 2800000,
+      "url": "https://polymarket.com/event/fed-rate-march-2024",
+      "closes_at": 1711929599000,
+      "category": "Politics"
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjEwfQ==",
+    "has_more": true
+  }
+}
+```
+
+---
+
+## Understanding Prediction Markets
+
+<Info>
+Prediction markets aggregate opinions from traders who put money on the line, providing probability estimates for future events. The "yes_price" represents the current market-implied probability of the event occurring.
+</Info>
+
+### How to Read Probabilities
+
+<CardGroup cols={3}>
+  <Card title="High Confidence" icon="arrow-trend-up">
+    **0.70 - 1.00**
+    
+    Market strongly expects the event to occur.
+  </Card>
+  <Card title="Uncertain" icon="arrow-trend-down">
+    **0.30 - 0.70**
+    
+    Market is uncertain, probability could swing either way.
+  </Card>
+  <Card title="Low Confidence" icon="chart-line-down">
+    **0.00 - 0.30**
+    
+    Market strongly expects the event will not occur.
+  </Card>
+</CardGroup>
+
+---
+
+## Market Categories
+
+Polymarket offers prediction markets across various categories:
+
+<AccordionGroup>
+  <Accordion title="Politics">
+    Elections, policy decisions, geopolitical events, and political appointments.
+    
+    Examples:
+    - Presidential elections
+    - Congressional outcomes
+    - International treaties
+    - Political scandals
+  </Accordion>
+  
+  <Accordion title="Crypto">
+    Cryptocurrency prices, blockchain events, and regulatory decisions.
+    
+    Examples:
+    - Bitcoin price targets
+    - Ethereum upgrades
+    - Crypto regulation
+    - Exchange events
+  </Accordion>
+  
+  <Accordion title="Sports">
+    Major sporting events, championships, and individual achievements.
+    
+    Examples:
+    - Super Bowl winners
+    - World Cup outcomes
+    - MVP awards
+    - Record-breaking performances
+  </Accordion>
+  
+  <Accordion title="Pop Culture">
+    Entertainment industry events, awards, and celebrity predictions.
+    
+    Examples:
+    - Oscar winners
+    - Box office records
+    - Celebrity relationships
+    - TV show renewals
+  </Accordion>
+  
+  <Accordion title="Science & Tech">
+    Technological breakthroughs, scientific discoveries, and innovation milestones.
+    
+    Examples:
+    - AI capabilities
+    - Space exploration
+    - Medical breakthroughs
+    - Product launches
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Risk Assessment" icon="scale-balanced">
+    Use market-implied probabilities to assess geopolitical and economic risks for investment decisions.
+  </Card>
+  <Card title="Sentiment Analysis" icon="chart-mixed">
+    Track how market sentiment changes over time as new information emerges.
+  </Card>
+  <Card title="Event Forecasting" icon="crystal-ball">
+    Aggregate wisdom of crowds for more accurate event forecasting than traditional polls.
+  </Card>
+  <Card title="Research & Analysis" icon="magnifying-glass-chart">
+    Compare prediction market probabilities with expert forecasts and historical outcomes.
+  </Card>
+</CardGroup>
+
+---
+
+## Data Source
+
+Prediction market data is sourced from:
+- **Polymarket**: The world's largest prediction market platform
+- **Real-time updates**: Prices reflect current trading activity
+- **Volume data**: Track market liquidity and participant confidence
+- **Decentralized**: Markets operate on blockchain infrastructure
+
+<Warning>
+Prediction markets reflect collective trader opinions and should be used as one of many inputs for decision-making. They are not guarantees of future outcomes.
+</Warning>

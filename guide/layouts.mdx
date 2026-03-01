@@ -1,0 +1,283 @@
+---
+title: Layouts
+description: Customizable panel layouts, ultra-wide mode, and map pinning
+---
+
+World Monitor's layout system adapts to your screen size and workflow, with **resizable panels**, **drag-and-drop reordering**, and automatic **ultra-wide mode** for large monitors.
+
+## Panel Grid System
+
+The dashboard uses a **CSS Grid** layout with panels arranged vertically (by default) or in an L-shape (on ultra-wide screens).
+
+### Default Layout (< 2000px wide)
+
+<Steps>
+  <Step title="Map at top (full-width)">
+    The 3D globe occupies the full width of the screen, typically 60–70% of viewport height.
+  </Step>
+  
+  <Step title="Panels stack vertically below">
+    News feeds, intelligence modules, video streams, and other panels stack in a single column.
+  </Step>
+  
+  <Step title="Scroll to see all panels">
+    The layout is vertically scrollable — you scroll down through panels as you monitor different data sources.
+  </Step>
+</Steps>
+
+### Ultra-Wide Layout (≥ 2000px wide)
+
+On screens **2000px or wider** (ultra-wide monitors, 4K displays), the layout automatically switches to an **L-shaped arrangement**:
+
+<Steps>
+  <Step title="Map floats left at 60% width">
+    The globe is pinned to the left side of the screen, occupying ~60% of the horizontal space.
+  </Step>
+  
+  <Step title="Panels tile to the right">
+    Panels flow into the remaining 40% of horizontal space to the right of the map.
+  </Step>
+  
+  <Step title="Panels wrap below the map">
+    Once panels overflow past the map's height, they spread to **full width** below the map.
+  </Step>
+</Steps>
+
+**Technical implementation**:
+- Uses `display: contents` to dissolve the `.panels-grid` container
+- Individual panel elements become direct flow children of `.main-content`
+- `float: left` on the map creates natural L-shaped wrapping
+- **No JavaScript layout engine** — pure CSS flow
+
+<Tip>
+Ultra-wide mode maximizes screen real estate on 34" ultrawide and 4K monitors. All panels remain visible without excessive scrolling.
+</Tip>
+
+## Panel Resizing
+
+Every panel has a **drag handle** on its bottom edge that lets you adjust its height:
+
+<Steps>
+  <Step title="Hover over the bottom edge of any panel">
+    A horizontal resize handle appears (cursor changes to `ns-resize`).
+  </Step>
+  
+  <Step title="Click and drag up or down">
+    The panel height adjusts in real-time.
+  </Step>
+  
+  <Step title="Release to lock the new height">
+    The height is saved to `localStorage` and persists across sessions.
+  </Step>
+  
+  <Step title="Double-click to reset">
+    Double-clicking the drag handle resets the panel to its default height.
+  </Step>
+</Steps>
+
+### Height Spans
+
+Panels snap to **grid row heights** (span-1 through span-4):
+
+| Span | Height | Use Case |
+|------|--------|----------|
+| **span-1** | ~200px | Compact widgets (market tickers, signal counts) |
+| **span-2** | ~400px | Standard panels (news feeds, video streams) |
+| **span-3** | ~600px | Large panels (command palette, multi-feed news) |
+| **span-4** | ~800px | Extra-large (map brief, full country timeline) |
+
+<Info>
+The grid system ensures panels align cleanly and don't create awkward gaps. Resizing snaps to the nearest span.
+</Info>
+
+## Drag-and-Drop Reordering
+
+You can **reorder panels** by dragging them within the grid:
+
+<Steps>
+  <Step title="Click and hold the panel header">
+    The panel becomes draggable (cursor changes to `move`).
+  </Step>
+  
+  <Step title="Drag the panel up or down">
+    Other panels shift to make room as you drag.
+  </Step>
+  
+  <Step title="Release to drop in the new position">
+    The custom order is saved to `localStorage` and persists across sessions.
+  </Step>
+  
+  <Step title="Reset to default order">
+    Click **Reset Layout** in the settings menu (gear icon → Layout).
+  </Step>
+</Steps>
+
+**Touch support**: Panel reordering works on tablets via touch events (long-press to grab).
+
+<Warning>
+Panel order is **per-variant**. If you customize the layout in World Monitor (geopolitical), switching to Tech Monitor will load Tech's default layout. Customize each variant separately.
+</Warning>
+
+## Map Pin Mode
+
+The **Map Pin** button (📌) locks the map in a fixed position so it remains visible while scrolling through panels.
+
+### How It Works
+
+<Tabs>
+  <Tab title="Pin Disabled (Default)">
+    - Map scrolls out of view as you scroll down
+    - Panels occupy full viewport height
+    - Standard vertical flow
+  </Tab>
+  
+  <Tab title="Pin Enabled">
+    - Map is `position: sticky` at the top
+    - Map stays visible as you scroll through panels below
+    - Map height is reduced to ~40% of viewport to avoid blocking panels
+  </Tab>
+</Tabs>
+
+### Activating Pin Mode
+
+<Steps>
+  <Step title="Click the 📌 button">
+    Located in the map controls (top-right corner of the globe).
+  </Step>
+  
+  <Step title="Map becomes pinned">
+    The map stays at the top of the screen as you scroll.
+  </Step>
+  
+  <Step title="Pin state persists">
+    Your preference is saved to `localStorage` and restored on reload.
+  </Step>
+  
+  <Step title="Click again to unpin">
+    Map returns to normal scroll behavior.
+  </Step>
+</Steps>
+
+**Use case**: Pin mode is useful when you need to **simultaneously monitor the map and scroll through news panels** — the map remains visible as a reference while you read headlines below.
+
+<Tip>
+Pin mode combines well with **ultra-wide layout** — the map stays fixed on the left while panels scroll on the right.
+</Tip>
+
+## Responsive Breakpoints
+
+World Monitor adapts to different screen sizes:
+
+| Screen Width | Layout Behavior |
+|--------------|----------------|
+| **< 768px** | Mobile warning (dashboard designed for desktop) |
+| **768px – 1999px** | Default vertical stacking |
+| **≥ 2000px** | Ultra-wide L-shaped layout |
+| **≥ 3440px** | Extra spacing for 5K/8K displays |
+
+### Mobile Detection
+
+Screens below **768px wide** receive a **warning modal** on load:
+
+> ⚠️ **World Monitor is optimized for desktop use**
+>
+> For the best experience, view on a screen at least 768px wide. Many panels and map controls are not accessible on small screens.
+
+You can dismiss the warning and continue, but functionality will be limited.
+
+<Info>
+World Monitor is **not a mobile app**. It's designed for multi-panel desktop monitoring. For mobile-friendly monitoring, consider the [Happy Monitor variant](https://happy.worldmonitor.app), which has a simpler layout.
+</Info>
+
+## Panel Visibility Toggles
+
+Some panels have **collapse/expand** buttons (▼/▲) in their headers:
+
+- **Collapsed**: Panel header remains visible, content is hidden (saves vertical space)
+- **Expanded**: Full panel content is visible
+
+Collapse state is saved per-panel in `localStorage`.
+
+**Use case**: Hide panels you're not actively monitoring to reduce clutter and scrolling distance.
+
+## Layout Persistence
+
+All layout customizations are stored in `localStorage`:
+
+<CardGroup cols={2}>
+  <Card title="✅ Persists Across">
+    - Page reloads
+    - Browser restarts
+    - Variant switches (within same device)
+  </Card>
+  
+  <Card title="❌ Does NOT Persist">
+    - Across devices (no cloud sync)
+    - After clearing browser cache
+    - In private/incognito mode
+  </Card>
+</CardGroup>
+
+**localStorage keys**:
+- `worldmonitor-panel-order` — Custom panel order
+- `worldmonitor-panel-heights` — Per-panel height overrides
+- `worldmonitor-map-pinned` — Map pin state
+- `worldmonitor-panel-collapsed` — Collapsed panel IDs
+
+<Warning>
+Clearing browser cache will reset your layout to defaults. Export your layout settings before clearing cache (feature planned for future release).
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Ultra-wide mode not activating">
+    Ensure your screen width is **≥ 2000px**:
+    
+    1. Check browser window width (not just monitor resolution)
+    2. Zoom level affects layout — 100% zoom is required
+    3. Some browsers report incorrect viewport width in dev tools
+    
+    **Test**: Press **F11** for fullscreen on a 4K/ultrawide monitor.
+  </Accordion>
+  
+  <Accordion title="Panel order resets after reload">
+    This means `localStorage` is being cleared:
+    
+    - Check if you're in private browsing mode
+    - Disable cache-clearing browser extensions
+    - Some corporate networks block localStorage
+    
+    **Workaround**: Use the desktop app (Tauri) which stores layout in OS-level storage.
+  </Accordion>
+  
+  <Accordion title="Map pin button missing">
+    The pin button only appears on screens **≥ 768px wide**. On mobile, the map is always unpinned (standard scroll behavior).
+  </Accordion>
+  
+  <Accordion title="Panel resize handle not draggable">
+    Check if:
+    
+    - Your browser supports CSS `resize: vertical` (IE11 doesn't)
+    - You're hovering over the exact bottom edge (3px hit area)
+    - The panel is locked (some panels disable resizing)
+    
+    **Workaround**: Use the settings menu to manually adjust panel heights.
+  </Accordion>
+  
+  <Accordion title="Panels overlap in ultra-wide mode">
+    This indicates a CSS Grid conflict:
+    
+    - Try force-reloading (Cmd+Shift+R / Ctrl+Shift+R)
+    - Check browser zoom is 100%
+    - Disable browser extensions that inject CSS
+    
+    **Workaround**: Disable ultra-wide mode via settings (forces vertical stacking).
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Themes](/guide/themes) — Dark/light theme customization
+- [Country Analysis](/guide/country-analysis) — Full-screen country briefs
+- [Localization](/guide/localization) — RTL layout support for Arabic/Hebrew

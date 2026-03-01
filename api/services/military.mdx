@@ -1,0 +1,566 @@
+---
+title: MilitaryService
+description: Military flight tracking, bases, and theater posture intelligence
+---
+
+The MilitaryService provides APIs for tracking military aircraft from OpenSky and Wingbits, retrieving military base data, accessing USNI Fleet intelligence reports, and assessing theater-level military posture.
+
+## Base Path
+
+```
+/api/military/v1
+```
+
+## ListMilitaryFlights
+
+Retrieves tracked military aircraft from OpenSky and Wingbits within a geographic bounding box, with optional filtering by operator and aircraft type.
+
+**Endpoint:** `GET /api/military/v1/list-military-flights`
+
+### Request Parameters
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="ne_lat" type="double">
+  North-east corner latitude of bounding box
+</ParamField>
+
+<ParamField query="ne_lon" type="double">
+  North-east corner longitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lat" type="double">
+  South-west corner latitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lon" type="double">
+  South-west corner longitude of bounding box
+</ParamField>
+
+<ParamField query="operator" type="MilitaryOperator">
+  Optional operator filter (e.g., `MILITARY_OPERATOR_USAF`, `MILITARY_OPERATOR_RAF`)
+</ParamField>
+
+<ParamField query="aircraft_type" type="MilitaryAircraftType">
+  Optional aircraft type filter (e.g., `MILITARY_AIRCRAFT_TYPE_FIGHTER`, `MILITARY_AIRCRAFT_TYPE_TANKER`)
+</ParamField>
+
+### Response
+
+<ResponseField name="flights" type="MilitaryFlight[]">
+  Individual military flights
+  
+  <Expandable title="MilitaryFlight">
+    <ResponseField name="id" type="string" required>
+      Unique flight identifier
+    </ResponseField>
+    
+    <ResponseField name="callsign" type="string">
+      Aircraft callsign
+    </ResponseField>
+    
+    <ResponseField name="hex_code" type="string">
+      ICAO 24-bit hex address
+    </ResponseField>
+    
+    <ResponseField name="registration" type="string">
+      Aircraft registration number
+    </ResponseField>
+    
+    <ResponseField name="aircraft_type" type="MilitaryAircraftType">
+      Type of military aircraft (FIGHTER, BOMBER, TRANSPORT, TANKER, AWACS, etc.)
+    </ResponseField>
+    
+    <ResponseField name="aircraft_model" type="string">
+      Specific aircraft model (e.g., "F-35A", "C-17A")
+    </ResponseField>
+    
+    <ResponseField name="operator" type="MilitaryOperator">
+      Operating military branch or force
+    </ResponseField>
+    
+    <ResponseField name="operator_country" type="string">
+      Country operating the aircraft (ISO 3166-1 alpha-2)
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Current position
+    </ResponseField>
+    
+    <ResponseField name="altitude" type="double">
+      Altitude in feet
+    </ResponseField>
+    
+    <ResponseField name="heading" type="double">
+      Heading in degrees
+    </ResponseField>
+    
+    <ResponseField name="speed" type="double">
+      Speed in knots
+    </ResponseField>
+    
+    <ResponseField name="vertical_rate" type="double">
+      Vertical rate in feet per minute
+    </ResponseField>
+    
+    <ResponseField name="on_ground" type="bool">
+      Whether the aircraft is on the ground
+    </ResponseField>
+    
+    <ResponseField name="squawk" type="string">
+      Transponder squawk code
+    </ResponseField>
+    
+    <ResponseField name="origin" type="string">
+      ICAO code of the origin airport
+    </ResponseField>
+    
+    <ResponseField name="destination" type="string">
+      ICAO code of the destination airport
+    </ResponseField>
+    
+    <ResponseField name="last_seen_at" type="int64">
+      Last seen time, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="first_seen_at" type="int64">
+      First seen time, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="confidence" type="MilitaryConfidence">
+      Confidence in aircraft identification (LOW, MEDIUM, HIGH)
+    </ResponseField>
+    
+    <ResponseField name="is_interesting" type="bool">
+      Whether flagged for unusual activity
+    </ResponseField>
+    
+    <ResponseField name="note" type="string">
+      Analyst note
+    </ResponseField>
+    
+    <ResponseField name="enrichment" type="FlightEnrichment">
+      Wingbits enrichment data (manufacturer, owner, operator details)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="clusters" type="MilitaryFlightCluster[]">
+  Geographic clusters of flights
+  
+  <Expandable title="MilitaryFlightCluster">
+    <ResponseField name="id" type="string">
+      Unique cluster identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Descriptive name of the cluster
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Cluster centroid location
+    </ResponseField>
+    
+    <ResponseField name="flight_count" type="int32">
+      Number of flights in the cluster
+    </ResponseField>
+    
+    <ResponseField name="flights" type="MilitaryFlight[]">
+      The flights in this cluster
+    </ResponseField>
+    
+    <ResponseField name="dominant_operator" type="MilitaryOperator">
+      Dominant operator in the cluster
+    </ResponseField>
+    
+    <ResponseField name="activity_type" type="MilitaryActivityType">
+      Assessed activity type (EXERCISE, PATROL, TRANSPORT, DEPLOYMENT, etc.)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/list-military-flights?ne_lat=55.0&ne_lon=15.0&sw_lat=45.0&sw_lon=5.0&operator=MILITARY_OPERATOR_USAF&page_size=50"
+```
+
+---
+
+## GetTheaterPosture
+
+Retrieves military posture assessments for geographic theaters, providing strategic-level situational awareness.
+
+**Endpoint:** `GET /api/military/v1/get-theater-posture`
+
+### Request Parameters
+
+<ParamField query="theater" type="string">
+  Theater name (e.g., "indo-pacific", "european", "middle-east"). Empty returns all theaters.
+</ParamField>
+
+### Response
+
+<ResponseField name="theaters" type="TheaterPosture[]">
+  Theater posture assessments (one per theater, or all if no filter)
+  
+  <Expandable title="TheaterPosture">
+    Theater-level military posture and activity assessment
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/get-theater-posture?theater=indo-pacific"
+```
+
+---
+
+## GetAircraftDetails
+
+Retrieves Wingbits aircraft enrichment data for a single ICAO24 hex, providing detailed aircraft information.
+
+**Endpoint:** `GET /api/military/v1/get-aircraft-details`
+
+### Request Parameters
+
+<ParamField query="icao24" type="string" required>
+  ICAO 24-bit hex address (lowercase)
+</ParamField>
+
+### Response
+
+<ResponseField name="details" type="AircraftDetails">
+  Aircraft details, absent if not found
+  
+  <Expandable title="AircraftDetails">
+    <ResponseField name="icao24" type="string">
+      ICAO 24-bit hex address
+    </ResponseField>
+    
+    <ResponseField name="registration" type="string">
+      Aircraft registration number
+    </ResponseField>
+    
+    <ResponseField name="manufacturer_icao" type="string">
+      ICAO manufacturer code
+    </ResponseField>
+    
+    <ResponseField name="manufacturer_name" type="string">
+      Full manufacturer name
+    </ResponseField>
+    
+    <ResponseField name="model" type="string">
+      Aircraft model
+    </ResponseField>
+    
+    <ResponseField name="typecode" type="string">
+      ICAO type designator code
+    </ResponseField>
+    
+    <ResponseField name="serial_number" type="string">
+      Manufacturer serial number
+    </ResponseField>
+    
+    <ResponseField name="icao_aircraft_type" type="string">
+      ICAO aircraft type designator
+    </ResponseField>
+    
+    <ResponseField name="operator" type="string">
+      Operator name
+    </ResponseField>
+    
+    <ResponseField name="operator_callsign" type="string">
+      Operator callsign
+    </ResponseField>
+    
+    <ResponseField name="operator_icao" type="string">
+      Operator ICAO code
+    </ResponseField>
+    
+    <ResponseField name="owner" type="string">
+      Registered owner
+    </ResponseField>
+    
+    <ResponseField name="built" type="string">
+      Build date
+    </ResponseField>
+    
+    <ResponseField name="engines" type="string">
+      Engine description
+    </ResponseField>
+    
+    <ResponseField name="category_description" type="string">
+      ICAO category description
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="configured" type="bool">
+  Whether the Wingbits API is configured
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/get-aircraft-details?icao24=ae01ce"
+```
+
+---
+
+## GetAircraftDetailsBatch
+
+Retrieves Wingbits aircraft enrichment data for multiple ICAO24 hexes in a single request.
+
+**Endpoint:** `POST /api/military/v1/get-aircraft-details-batch`
+
+### Request Body
+
+<ParamField body="icao24s" type="string[]" required>
+  Array of ICAO 24-bit hex addresses (lowercase)
+</ParamField>
+
+### Response
+
+<ResponseField name="details" type="map<string, AircraftDetails>">
+  Map of ICAO24 hex to aircraft details
+</ResponseField>
+
+<ResponseField name="configured" type="bool">
+  Whether the Wingbits API is configured
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST "https://your-domain.com/api/military/v1/get-aircraft-details-batch" \
+  -H "Content-Type: application/json" \
+  -d '{"icao24s": ["ae01ce", "ae04e2", "ae0443"]}'
+```
+
+---
+
+## GetWingbitsStatus
+
+Checks whether the Wingbits enrichment API is configured and available.
+
+**Endpoint:** `GET /api/military/v1/get-wingbits-status`
+
+### Request Parameters
+
+No parameters required.
+
+### Response
+
+<ResponseField name="configured" type="bool">
+  Whether the Wingbits API is configured with valid credentials
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status message
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/get-wingbits-status"
+```
+
+---
+
+## GetUSNIFleetReport
+
+Retrieves the latest parsed USNI Fleet Tracker report with information about U.S. Navy carrier strike groups and deployments.
+
+**Endpoint:** `GET /api/military/v1/get-usni-fleet-report`
+
+### Request Parameters
+
+<ParamField query="force_refresh" type="bool">
+  When true, bypass cache and fetch fresh data from USNI
+</ParamField>
+
+### Response
+
+<ResponseField name="report" type="USNIFleetReport">
+  The parsed fleet report, if available
+</ResponseField>
+
+<ResponseField name="cached" type="bool">
+  Whether the response was served from cache
+</ResponseField>
+
+<ResponseField name="stale" type="bool">
+  Whether the cached data is stale (served after a fetch failure)
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message, if any
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/get-usni-fleet-report?force_refresh=true"
+```
+
+---
+
+## ListMilitaryBases
+
+Retrieves military bases within a bounding box with server-side clustering for map visualization.
+
+**Endpoint:** `GET /api/military/v1/list-military-bases`
+
+### Request Parameters
+
+<ParamField query="ne_lat" type="double">
+  North-east corner latitude of bounding box
+</ParamField>
+
+<ParamField query="ne_lon" type="double">
+  North-east corner longitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lat" type="double">
+  South-west corner latitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lon" type="double">
+  South-west corner longitude of bounding box
+</ParamField>
+
+<ParamField query="zoom" type="int32">
+  Map zoom level for clustering threshold
+</ParamField>
+
+<ParamField query="type" type="string">
+  Optional base type filter
+</ParamField>
+
+<ParamField query="kind" type="string">
+  Optional base kind filter
+</ParamField>
+
+<ParamField query="country" type="string">
+  Optional country filter (ISO 3166-1 alpha-2)
+</ParamField>
+
+### Response
+
+<ResponseField name="bases" type="MilitaryBaseEntry[]">
+  Individual military bases in the view
+  
+  <Expandable title="MilitaryBaseEntry">
+    <ResponseField name="id" type="string">
+      Unique base identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Base name
+    </ResponseField>
+    
+    <ResponseField name="latitude" type="double">
+      Base latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="double">
+      Base longitude
+    </ResponseField>
+    
+    <ResponseField name="kind" type="string">
+      Base kind (e.g., "air_base", "naval_base")
+    </ResponseField>
+    
+    <ResponseField name="country_iso2" type="string">
+      Country code (ISO 3166-1 alpha-2)
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Base type
+    </ResponseField>
+    
+    <ResponseField name="tier" type="int32">
+      Base tier or classification level
+    </ResponseField>
+    
+    <ResponseField name="cat_airforce" type="bool">
+      Whether base has air force capabilities
+    </ResponseField>
+    
+    <ResponseField name="cat_naval" type="bool">
+      Whether base has naval capabilities
+    </ResponseField>
+    
+    <ResponseField name="cat_nuclear" type="bool">
+      Whether base has nuclear capabilities
+    </ResponseField>
+    
+    <ResponseField name="cat_space" type="bool">
+      Whether base has space capabilities
+    </ResponseField>
+    
+    <ResponseField name="cat_training" type="bool">
+      Whether base is primarily for training
+    </ResponseField>
+    
+    <ResponseField name="branch" type="string">
+      Military branch
+    </ResponseField>
+    
+    <ResponseField name="status" type="string">
+      Operational status
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="clusters" type="MilitaryBaseCluster[]">
+  Geographic clusters of bases
+  
+  <Expandable title="MilitaryBaseCluster">
+    <ResponseField name="latitude" type="double">
+      Cluster centroid latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="double">
+      Cluster centroid longitude
+    </ResponseField>
+    
+    <ResponseField name="count" type="int32">
+      Number of bases in cluster
+    </ResponseField>
+    
+    <ResponseField name="dominant_type" type="string">
+      Most common base type in cluster
+    </ResponseField>
+    
+    <ResponseField name="expansion_zoom" type="int32">
+      Zoom level at which cluster expands
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_in_view" type="int32">
+  Total bases in the bounding box
+</ResponseField>
+
+<ResponseField name="truncated" type="bool">
+  Whether results were truncated
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/military/v1/list-military-bases?ne_lat=50.0&ne_lon=10.0&sw_lat=40.0&sw_lon=0.0&zoom=6"
+```

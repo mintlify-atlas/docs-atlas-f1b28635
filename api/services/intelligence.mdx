@@ -1,0 +1,309 @@
+---
+title: IntelligenceService
+description: Cross-domain intelligence synthesis and AI-powered analysis
+---
+
+The IntelligenceService provides APIs for cross-domain intelligence synthesis including risk scores, PizzINT monitoring, GDELT analysis, and AI-powered event classification and country intelligence briefs.
+
+## Base Path
+
+```
+/api/intelligence/v1
+```
+
+## GetRiskScores
+
+Retrieves composite instability and strategic risk assessments for regions.
+
+**Endpoint:** `GET /api/intelligence/v1/get-risk-scores`
+
+### Request Parameters
+
+<ParamField query="region" type="string">
+  Optional region filter. Empty returns all tracked regions.
+</ParamField>
+
+### Response
+
+<ResponseField name="cii_scores" type="CiiScore[]">
+  Composite Instability Index scores
+  
+  <Expandable title="CiiScore">
+    Composite risk score combining multiple data sources
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="strategic_risks" type="StrategicRisk[]">
+  Strategic risk assessments
+  
+  <Expandable title="StrategicRisk">
+    Strategic-level risk assessment for a region
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/intelligence/v1/get-risk-scores?region=middle-east"
+```
+
+---
+
+## GetPizzintStatus
+
+Retrieves Pentagon Pizza Index and GDELT tension pair data for early warning indicators.
+
+**Endpoint:** `GET /api/intelligence/v1/get-pizzint-status`
+
+### Request Parameters
+
+<ParamField query="include_gdelt" type="bool">
+  Whether to include GDELT tension pairs in the response
+</ParamField>
+
+### Response
+
+<ResponseField name="pizzint" type="PizzintStatus">
+  Pentagon Pizza Index status
+  
+  <Expandable title="PizzintStatus">
+    Tracks late-night pizza deliveries to the Pentagon as an indicator of heightened activity
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="tension_pairs" type="GdeltTensionPair[]">
+  GDELT bilateral tension pairs
+  
+  <Expandable title="GdeltTensionPair">
+    Bilateral tension indicators from GDELT analysis
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/intelligence/v1/get-pizzint-status?include_gdelt=true"
+```
+
+---
+
+## ClassifyEvent
+
+Classifies a real-world event using AI (Groq) to determine event type, severity, and context.
+
+**Endpoint:** `POST /api/intelligence/v1/classify-event`
+
+### Request Body
+
+<ParamField body="event_description" type="string" required>
+  Description of the event to classify
+</ParamField>
+
+<ParamField body="context" type="string">
+  Additional contextual information
+</ParamField>
+
+### Response
+
+<ResponseField name="classification" type="string">
+  AI-generated event classification
+</ResponseField>
+
+<ResponseField name="severity" type="string">
+  Assessed severity level
+</ResponseField>
+
+<ResponseField name="confidence" type="double">
+  Classification confidence score (0-1)
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  AI model used for classification
+</ResponseField>
+
+<ResponseField name="reasoning" type="string">
+  Explanation of the classification
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST "https://your-domain.com/api/intelligence/v1/classify-event" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_description": "Large explosion reported near military facility in Damascus",
+    "context": "Ongoing regional tensions between Israel and Syria"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "classification": "Military Strike",
+  "severity": "High",
+  "confidence": 0.87,
+  "model": "llama-3.1-70b-versatile",
+  "reasoning": "The event description indicates a targeted military action near a strategic facility, with high regional implications given the stated context of Israel-Syria tensions. The severity is assessed as high due to the potential for escalation."
+}
+```
+
+---
+
+## GetCountryIntelBrief
+
+Generates an AI intelligence brief for a country using OpenRouter, synthesizing multiple data sources.
+
+**Endpoint:** `GET /api/intelligence/v1/get-country-intel-brief`
+
+### Request Parameters
+
+<ParamField query="country_code" type="string" required>
+  ISO 3166-1 alpha-2 country code (e.g., "YE", "SD", "UA")
+</ParamField>
+
+### Response
+
+<ResponseField name="country_code" type="string">
+  ISO 3166-1 alpha-2 country code
+</ResponseField>
+
+<ResponseField name="country_name" type="string">
+  Country name
+</ResponseField>
+
+<ResponseField name="brief" type="string">
+  AI-generated intelligence brief text
+</ResponseField>
+
+<ResponseField name="model" type="string">
+  AI model used for generation
+</ResponseField>
+
+<ResponseField name="generated_at" type="int64">
+  Brief generation time, as Unix epoch milliseconds
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/intelligence/v1/get-country-intel-brief?country_code=UA"
+```
+
+### Example Response
+
+```json
+{
+  "country_code": "UA",
+  "country_name": "Ukraine",
+  "brief": "# Ukraine Intelligence Brief\n\n## Security Situation\nThe security environment remains highly dynamic with ongoing military operations in eastern regions. ACLED data shows 347 conflict events in the past 30 days, with concentration in Donetsk and Luhansk oblasts...\n\n## Humanitarian Impact\nUCDP reports indicate 892 fatalities over the reference period. Displacement continues to affect approximately 5.1 million internally displaced persons...\n\n## Strategic Assessment\nMilitary posture analysis indicates sustained defensive operations with periodic counteroffensive activities. Air defense systems remain active with 23 intercepts recorded in the past week...",
+  "model": "anthropic/claude-3.5-sonnet",
+  "generated_at": 1709251200000
+}
+```
+
+---
+
+## SearchGdeltDocuments
+
+Searches the GDELT 2.0 Doc API for news articles matching specific criteria.
+
+**Endpoint:** `GET /api/intelligence/v1/search-gdelt-documents`
+
+### Request Parameters
+
+<ParamField query="query" type="string" required>
+  Search query string
+</ParamField>
+
+<ParamField query="country" type="string">
+  Optional country filter (ISO 3166-1 alpha-2)
+</ParamField>
+
+<ParamField query="start_date" type="string">
+  Start date in YYYYMMDDHHMMSS format
+</ParamField>
+
+<ParamField query="end_date" type="string">
+  End date in YYYYMMDDHHMMSS format
+</ParamField>
+
+<ParamField query="max_records" type="int32">
+  Maximum number of records to return (default: 250)
+</ParamField>
+
+### Response
+
+<ResponseField name="documents" type="GdeltDocument[]">
+  Matching news articles from GDELT
+  
+  <Expandable title="GdeltDocument">
+    <ResponseField name="url" type="string">
+      Article URL
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Article title
+    </ResponseField>
+    
+    <ResponseField name="seendate" type="string">
+      When GDELT first saw this article (YYYYMMDDHHMMSS)
+    </ResponseField>
+    
+    <ResponseField name="socialimage" type="string">
+      Social media image URL
+    </ResponseField>
+    
+    <ResponseField name="domain" type="string">
+      Source domain
+    </ResponseField>
+    
+    <ResponseField name="language" type="string">
+      Article language code
+    </ResponseField>
+    
+    <ResponseField name="sourcecountry" type="string">
+      Source country code
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_results" type="int32">
+  Total number of matching documents
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/intelligence/v1/search-gdelt-documents?query=military+exercises&country=CN&max_records=50"
+```
+
+### Example Response
+
+```json
+{
+  "documents": [
+    {
+      "url": "https://example.com/article-123",
+      "title": "China conducts large-scale military drills near Taiwan",
+      "seendate": "20240301120000",
+      "socialimage": "https://example.com/images/drill.jpg",
+      "domain": "example.com",
+      "language": "eng",
+      "sourcecountry": "US"
+    }
+  ],
+  "total_results": 847
+}
+```
+
+## Use Cases
+
+### Risk Assessment
+Combine `GetRiskScores` with `GetCountryIntelBrief` to get comprehensive risk analysis for a region.
+
+### Event Monitoring
+Use `SearchGdeltDocuments` to find relevant news articles, then `ClassifyEvent` to automatically categorize breaking developments.
+
+### Early Warning
+Monitor `GetPizzintStatus` for anomalous activity indicators that may signal heightened security situations.

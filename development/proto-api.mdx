@@ -1,0 +1,470 @@
+---
+title: Proto-First API Design
+description: Using sebuf for type-safe RPC services with auto-generated clients and servers
+---
+
+## Overview
+
+World Monitor uses **sebuf**, a TypeScript-native RPC framework built on Protocol Buffers. This proto-first approach provides:
+
+- **Type safety** — Compile-time checking across client and server
+- **Auto-generated code** — Clients, servers, and OpenAPI specs from `.proto` files
+- **HTTP/JSON transport** — Web-standard REST-like endpoints
+- **Breaking change detection** — `buf breaking` catches API incompatibilities
+
+## Workflow
+
+### 1. Define Service
+
+Create a `.proto` file in `proto/worldmonitor/<domain>/v1/`:
+
+```protobuf
+// proto/worldmonitor/seismology/v1/service.proto
+syntax = "proto3";
+
+package worldmonitor.seismology.v1;
+
+import "sebuf/http/annotations.proto";
+import "worldmonitor/seismology/v1/list_earthquakes.proto";
+
+service SeismologyService {
+  option (sebuf.http.service_config) = {base_path: "/api/seismology/v1"};
+
+  rpc ListEarthquakes(ListEarthquakesRequest) returns (ListEarthquakesResponse) {
+    option (sebuf.http.config) = {
+      path: "/list-earthquakes"
+      method: HTTP_METHOD_GET
+    };
+  }
+}
+```
+
+### 2. Define Messages
+
+Create request and response messages:
+
+```protobuf
+// proto/worldmonitor/seismology/v1/list_earthquakes.proto
+syntax = "proto3";
+
+package worldmonitor.seismology.v1;
+
+import "worldmonitor/seismology/v1/earthquake.proto";
+
+message ListEarthquakesRequest {
+  double min_magnitude = 1;
+  int32 days = 2;
+}
+
+message ListEarthquakesResponse {
+  repeated Earthquake earthquakes = 1;
+}
+```
+
+```protobuf
+// proto/worldmonitor/seismology/v1/earthquake.proto
+syntax = "proto3";
+
+package worldmonitor.seismology.v1;
+
+message Earthquake {
+  string id = 1;
+  double magnitude = 2;
+  string location = 3;
+  int64 timestamp = 4;
+  double latitude = 5;
+  double longitude = 6;
+  double depth_km = 7;
+}
+```
+
+### 3. Generate Code
+
+Run the code generator:
+
+```bash
+make generate
+```
+
+This creates:
+
+```
+src/generated/
+├── client/worldmonitor/seismology/v1/
+│   ├── service_client.ts          # TypeScript client
+│   ├── earthquake.ts              # Message types
+│   └── list_earthquakes.ts        # Request/response types
+└── server/worldmonitor/seismology/v1/
+    └── service_server.ts          # Server interface
+
+docs/api/
+├── worldmonitor.seismology.v1.yaml   # OpenAPI 3.0 spec
+└── worldmonitor.seismology.v1.json   # OpenAPI 3.0 (JSON)
+```
+
+### 4. Implement Handler
+
+Create a server-side handler in `server/worldmonitor/<domain>/v1/handler.ts`:
+
+```typescript
+// server/worldmonitor/seismology/v1/handler.ts
+import type { SeismologyService } from '@/generated/server/worldmonitor/seismology/v1/service_server';
+import type { ListEarthquakesRequest, ListEarthquakesResponse } from '@/generated/client/worldmonitor/seismology/v1/list_earthquakes';
+
+export const seismologyHandler: SeismologyService = {
+  async listEarthquakes(
+    req: ListEarthquakesRequest,
+    context: RequestContext
+  ): Promise<ListEarthquakesResponse> {
+    // Fetch from USGS API
+    const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Transform to proto response
+    const earthquakes = data.features
+      .filter(f => f.properties.mag >= req.minMagnitude)
+      .map(f => ({
+        id: f.id,
+        magnitude: f.properties.mag,
+        location: f.properties.place,
+        timestamp: f.properties.time,
+        latitude: f.geometry.coordinates[1],
+        longitude: f.geometry.coordinates[0],
+        depthKm: f.geometry.coordinates[2],
+      }));
+
+    return { earthquakes };
+  },
+};
+```
+
+### 5. Register Routes
+
+Wire the handler into the router (`vite.config.ts` for dev, Vercel for prod):
+
+```typescript
+// vite.config.ts (dev server plugin)
+import { createSeismologyServiceRoutes } from './src/generated/server/worldmonitor/seismology/v1/service_server';
+import { seismologyHandler } from './server/worldmonitor/seismology/v1/handler';
+
+const allRoutes = [
+  ...createSeismologyServiceRoutes(seismologyHandler, serverOptions),
+  // ... other services
+];
+
+const router = createRouter(allRoutes);
+```
+
+### 6. Call from Client
+
+Use the generated client in your frontend:
+
+```typescript
+// src/services/seismology.ts
+import { createSeismologyServiceClient } from '@/generated/client/worldmonitor/seismology/v1/service_client';
+
+const client = createSeismologyServiceClient({ baseUrl: '/api/seismology/v1' });
+
+export async function fetchEarthquakes(minMagnitude = 4.5, days = 1) {
+  const response = await client.listEarthquakes({
+    minMagnitude,
+    days,
+  });
+
+  return response.earthquakes;
+}
+```
+
+```typescript
+// src/components/EarthquakePanel.ts
+import { fetchEarthquakes } from '@/services/seismology';
+
+const earthquakes = await fetchEarthquakes(5.0, 7);
+console.log(`Found ${earthquakes.length} earthquakes M5.0+ in the last 7 days`);
+```
+
+## Generated Client API
+
+The generated client provides a type-safe interface:
+
+```typescript
+interface SeismologyServiceClient {
+  listEarthquakes(
+    request: ListEarthquakesRequest
+  ): Promise<ListEarthquakesResponse>;
+}
+
+function createSeismologyServiceClient(options: {
+  baseUrl: string;
+  fetch?: typeof fetch;
+}): SeismologyServiceClient;
+```
+
+Features:
+- **Automatic serialization** — Messages are JSON-encoded
+- **Custom fetch** — Inject your own fetch (useful for testing)
+- **Error handling** — HTTP errors throw with status codes
+
+## Generated Server API
+
+The generated server creates HTTP routes:
+
+```typescript
+interface SeismologyService {
+  listEarthquakes(
+    request: ListEarthquakesRequest,
+    context: RequestContext
+  ): Promise<ListEarthquakesResponse>;
+}
+
+function createSeismologyServiceRoutes(
+  service: SeismologyService,
+  options?: ServerOptions
+): Route[];
+```
+
+Each route includes:
+- **HTTP method** — GET, POST, PUT, DELETE
+- **Path pattern** — `/api/seismology/v1/list-earthquakes`
+- **Handler** — Executes your service implementation
+
+## HTTP Mapping
+
+### Request Mapping
+
+| Proto Field | HTTP Method | Location |
+| --- | --- | --- |
+| Scalar (string, int) | GET | Query parameter |
+| Message | POST/PUT | JSON body |
+| Repeated scalar | GET | Comma-separated query param |
+| Repeated message | POST | JSON array in body |
+
+### Example Mappings
+
+<CodeGroup>
+```protobuf Proto Definition
+rpc ListEarthquakes(ListEarthquakesRequest) returns (ListEarthquakesResponse) {
+  option (sebuf.http.config) = {
+    path: "/list-earthquakes"
+    method: HTTP_METHOD_GET
+  };
+}
+
+message ListEarthquakesRequest {
+  double min_magnitude = 1;
+  int32 days = 2;
+}
+```
+
+```bash HTTP Request
+GET /api/seismology/v1/list-earthquakes?min_magnitude=5.0&days=7
+```
+
+```typescript TypeScript Client
+const response = await client.listEarthquakes({
+  minMagnitude: 5.0,
+  days: 7,
+});
+```
+</CodeGroup>
+
+## Service Domains
+
+World Monitor defines **20 service domains**:
+
+| Domain | Purpose | Example RPCs |
+| --- | --- | --- |
+| **aviation** | Airport delays, flight tracking | `ListAirportDelays` |
+| **climate** | Climate anomalies, weather alerts | `ListClimateAnomalies` |
+| **conflict** | Active conflicts, war zones | `ListConflicts` |
+| **cyber** | Threat intel, IOCs, CVEs | `ListThreatIndicators` |
+| **displacement** | Refugee flows, UNHCR data | `ListDisplacementFlows` |
+| **economic** | FRED data, economic indicators | `GetEconomicIndicator` |
+| **giving** | Charitable donations, aid flows | `ListDonations` |
+| **infrastructure** | Cables, pipelines, ports | `ListUnderseaCables` |
+| **intelligence** | Hotspots, focal points | `ListIntelligenceHotspots` |
+| **maritime** | AIS vessels, naval activity | `ListVessels` |
+| **market** | Stock quotes, crypto prices | `ListMarketData` |
+| **military** | Military bases, flights | `ListMilitaryBases` |
+| **news** | RSS feeds, headlines | `ListNews` |
+| **positive_events** | Good news, uplifting stories | `ListPositiveEvents` |
+| **prediction** | Polymarket, prediction markets | `ListPredictions` |
+| **research** | arXiv papers, research feeds | `ListResearchPapers` |
+| **seismology** | Earthquakes, USGS data | `ListEarthquakes` |
+| **supply_chain** | Supply chain disruptions | `ListSupplyChainEvents` |
+| **trade** | Trade routes, WTO data | `ListTradeRoutes` |
+| **unrest** | Protests, social unrest | `ListUnrestEvents` |
+
+## Buf CLI Commands
+
+### Generate Code
+
+```bash
+make generate
+```
+
+Runs `buf generate` with plugins configured in `proto/buf.gen.yaml`:
+
+```yaml
+plugins:
+  - local: protoc-gen-ts-client
+    out: ../src/generated/client
+  - local: protoc-gen-ts-server
+    out: ../src/generated/server
+  - local: protoc-gen-openapiv3
+    out: ../docs/api
+```
+
+### Lint Protos
+
+```bash
+make lint
+```
+
+Checks proto files against style rules:
+- Service names must end with `Service`
+- RPC names must use `PascalCase`
+- Field names must use `snake_case`
+
+### Detect Breaking Changes
+
+```bash
+make breaking
+```
+
+Compares current proto definitions against `main` branch:
+- Field removals
+- Field type changes
+- Field number changes
+
+### Format Protos
+
+```bash
+make format
+```
+
+Auto-formats proto files using `buf format`.
+
+### Update Dependencies
+
+```bash
+make deps
+```
+
+Updates proto dependencies defined in `proto/buf.yaml`.
+
+## OpenAPI Generation
+
+Every service generates OpenAPI 3.0 specs in `docs/api/`:
+
+```yaml
+# docs/api/worldmonitor.seismology.v1.yaml
+openapi: 3.0.0
+info:
+  title: SeismologyService
+  version: v1
+paths:
+  /api/seismology/v1/list-earthquakes:
+    get:
+      operationId: ListEarthquakes
+      parameters:
+        - name: min_magnitude
+          in: query
+          schema:
+            type: number
+        - name: days
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListEarthquakesResponse'
+```
+
+These specs can be imported into:
+- **Postman** — API testing
+- **Swagger UI** — Interactive documentation
+- **OpenAPI Generator** — Client generation for other languages
+
+## Desktop Sidecar Bundling
+
+The Tauri desktop app runs a local Node.js sidecar that serves all API handlers. The sidecar bundle is built separately:
+
+```bash
+npm run build:sidecar-sebuf
+```
+
+This script (`scripts/build-sidecar-sebuf.mjs`):
+1. Bundles `api/[domain]/v1/[rpc].ts` with esbuild
+2. Outputs a single ESM file: `api/[domain]/v1/[rpc].js`
+3. The sidecar discovers and loads this file at runtime
+
+## Best Practices
+
+### Service Design
+
+<Tip>
+**Keep services small and focused.** Each service should handle one domain (e.g., seismology, aviation).
+</Tip>
+
+<Warning>
+**Never break wire compatibility.** Changing field numbers or types breaks existing clients.
+</Warning>
+
+### Versioning
+
+<Note>
+All services use `v1` for now. When breaking changes are needed, create a new `v2` package alongside `v1`.
+</Note>
+
+### Error Handling
+
+Handlers should throw errors with HTTP status codes:
+
+```typescript
+export const seismologyHandler: SeismologyService = {
+  async listEarthquakes(req, context) {
+    if (req.minMagnitude < 0) {
+      throw new Error('min_magnitude must be >= 0');
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`USGS API error: ${response.status}`);
+    }
+
+    // ...
+  },
+};
+```
+
+The server automatically maps these to HTTP error responses.
+
+### Testing
+
+Test handlers using the generated client:
+
+```typescript
+import { createSeismologyServiceClient } from '@/generated/client/worldmonitor/seismology/v1/service_client';
+
+const client = createSeismologyServiceClient({ baseUrl: 'http://localhost:3000/api/seismology/v1' });
+
+const response = await client.listEarthquakes({ minMagnitude: 5.0, days: 7 });
+assert(response.earthquakes.length > 0);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Building" icon="hammer" href="/development/building">
+    Build production and desktop apps
+  </Card>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Run E2E and API tests
+  </Card>
+</CardGroup>

@@ -1,0 +1,489 @@
+---
+title: "Infrastructure Service"
+description: "Monitor internet outages, service statuses, submarine cables, and temporal baseline anomalies"
+---
+
+## Overview
+
+The Infrastructure Service provides APIs for monitoring critical infrastructure including:
+- Internet outages from Cloudflare Radar
+- External service status tracking
+- Submarine cable health monitoring
+- Temporal baseline anomaly detection
+
+**Base Path:** `/api/infrastructure/v1`
+
+---
+
+## ListInternetOutages
+
+Retrieves detected internet outages from Cloudflare Radar.
+
+**Endpoint:** `GET /api/infrastructure/v1/list-internet-outages`
+
+### Request Parameters
+
+<ParamField query="start" type="integer" required>
+  Start of time range (inclusive), Unix epoch milliseconds.
+</ParamField>
+
+<ParamField query="end" type="integer" required>
+  End of time range (inclusive), Unix epoch milliseconds.
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  Maximum items per page.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page.
+</ParamField>
+
+<ParamField query="country" type="string">
+  Optional country filter (ISO 3166-1 alpha-2).
+</ParamField>
+
+### Response
+
+<ResponseField name="outages" type="array">
+  The list of internet outages.
+  
+  <Expandable title="InternetOutage">
+    <ResponseField name="id" type="string" required>
+      Unique outage identifier.
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Outage title.
+    </ResponseField>
+    
+    <ResponseField name="link" type="string">
+      URL to the outage report.
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Outage description.
+    </ResponseField>
+    
+    <ResponseField name="detected_at" type="integer">
+      Detection time, as Unix epoch milliseconds.
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Affected country (ISO 3166-1 alpha-2).
+    </ResponseField>
+    
+    <ResponseField name="region" type="string">
+      Affected region within the country.
+    </ResponseField>
+    
+    <ResponseField name="location" type="object">
+      Outage location coordinates.
+    </ResponseField>
+    
+    <ResponseField name="severity" type="enum">
+      Outage severity: `PARTIAL`, `MAJOR`, or `TOTAL`.
+    </ResponseField>
+    
+    <ResponseField name="categories" type="array">
+      Affected infrastructure categories.
+    </ResponseField>
+    
+    <ResponseField name="cause" type="string">
+      Root cause, if determined.
+    </ResponseField>
+    
+    <ResponseField name="outage_type" type="string">
+      Outage type classification.
+    </ResponseField>
+    
+    <ResponseField name="ended_at" type="integer">
+      End time of the outage, as Unix epoch milliseconds. Zero if ongoing.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination metadata with cursor for next page.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/infrastructure/v1/list-internet-outages?start=1704067200000&end=1706745599999&country=US&page_size=10"
+```
+
+### Example Response
+
+```json
+{
+  "outages": [
+    {
+      "id": "cf-2024-01-15-us-001",
+      "title": "Internet disruption in California",
+      "link": "https://radar.cloudflare.com/outage/...",
+      "description": "Widespread connectivity issues affecting Bay Area",
+      "detected_at": 1705334400000,
+      "country": "US",
+      "region": "California",
+      "location": {
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "severity": "MAJOR",
+      "categories": ["ISP", "DNS"],
+      "cause": "Fiber cut",
+      "outage_type": "PHYSICAL",
+      "ended_at": 1705348800000
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjEwfQ==",
+    "has_more": true
+  }
+}
+```
+
+---
+
+## ListServiceStatuses
+
+Retrieves operational status of monitored external services.
+
+**Endpoint:** `GET /api/infrastructure/v1/list-service-statuses`
+
+### Request Parameters
+
+<ParamField query="status" type="enum">
+  Optional status filter. Returns only services in this state.
+  
+  Values: `OPERATIONAL`, `DEGRADED`, `PARTIAL_OUTAGE`, `MAJOR_OUTAGE`, `MAINTENANCE`
+</ParamField>
+
+### Response
+
+<ResponseField name="statuses" type="array">
+  The list of service statuses.
+  
+  <Expandable title="ServiceStatus">
+    <ResponseField name="id" type="string">
+      Service identifier.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Service display name.
+    </ResponseField>
+    
+    <ResponseField name="status" type="enum">
+      Current operational status.
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Status description.
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      Service URL or homepage.
+    </ResponseField>
+    
+    <ResponseField name="checked_at" type="integer">
+      Last status check time, as Unix epoch milliseconds.
+    </ResponseField>
+    
+    <ResponseField name="latency_ms" type="integer">
+      Response latency in milliseconds.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/infrastructure/v1/list-service-statuses?status=DEGRADED"
+```
+
+### Example Response
+
+```json
+{
+  "statuses": [
+    {
+      "id": "github",
+      "name": "GitHub",
+      "status": "DEGRADED",
+      "description": "Experiencing elevated error rates",
+      "url": "https://github.com",
+      "checked_at": 1705334400000,
+      "latency_ms": 450
+    }
+  ]
+}
+```
+
+---
+
+## GetTemporalBaseline
+
+Checks current activity count against stored baseline for anomaly detection.
+
+**Endpoint:** `GET /api/infrastructure/v1/get-temporal-baseline`
+
+### Request Parameters
+
+<ParamField query="type" type="string" required>
+  Activity type: `military_flights`, `vessels`, `protests`, `news`, `ais_gaps`, or `satellite_fires`.
+</ParamField>
+
+<ParamField query="region" type="string">
+  Geographic region key, defaults to "global".
+</ParamField>
+
+<ParamField query="count" type="number">
+  Current observed count to compare against baseline.
+</ParamField>
+
+### Response
+
+<ResponseField name="anomaly" type="object">
+  Anomaly details; absent when count is within normal range.
+  
+  <Expandable title="BaselineAnomaly">
+    <ResponseField name="z_score" type="number">
+      Number of standard deviations from the mean.
+    </ResponseField>
+    
+    <ResponseField name="severity" type="string">
+      Severity label: "critical", "high", "medium", or "normal".
+    </ResponseField>
+    
+    <ResponseField name="multiplier" type="number">
+      Ratio of current count to baseline mean.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="baseline" type="object">
+  Baseline statistics; absent when still in learning phase.
+  
+  <Expandable title="BaselineStats">
+    <ResponseField name="mean" type="number">
+      Running mean of observed counts.
+    </ResponseField>
+    
+    <ResponseField name="std_dev" type="number">
+      Standard deviation derived from Welford's M2.
+    </ResponseField>
+    
+    <ResponseField name="sample_count" type="integer">
+      Number of samples incorporated so far.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="learning" type="boolean">
+  True if insufficient samples have been collected.
+</ResponseField>
+
+<ResponseField name="sample_count" type="integer">
+  Current number of samples stored.
+</ResponseField>
+
+<ResponseField name="samples_needed" type="integer">
+  Minimum samples required before anomaly detection activates.
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if request was invalid.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/infrastructure/v1/get-temporal-baseline?type=military_flights&region=europe&count=245"
+```
+
+### Example Response
+
+```json
+{
+  "anomaly": {
+    "z_score": 2.8,
+    "severity": "high",
+    "multiplier": 1.85
+  },
+  "baseline": {
+    "mean": 132.5,
+    "std_dev": 40.2,
+    "sample_count": 90
+  },
+  "learning": false,
+  "sample_count": 90,
+  "samples_needed": 30
+}
+```
+
+---
+
+## RecordBaselineSnapshot
+
+Batch-updates baseline statistics using Welford's online algorithm.
+
+**Endpoint:** `POST /api/infrastructure/v1/record-baseline-snapshot`
+
+### Request Body
+
+<ParamField body="updates" type="array" required>
+  Up to 20 metric updates to apply.
+  
+  <Expandable title="BaselineUpdate">
+    <ParamField body="type" type="string" required>
+      Activity type key.
+    </ParamField>
+    
+    <ParamField body="region" type="string">
+      Geographic region key, defaults to "global".
+    </ParamField>
+    
+    <ParamField body="count" type="number">
+      Observed count value.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Response
+
+<ResponseField name="updated" type="integer">
+  Number of baselines that were written.
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if the request was invalid.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST "https://api.worldmonitor.com/api/infrastructure/v1/record-baseline-snapshot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "updates": [
+      {
+        "type": "military_flights",
+        "region": "global",
+        "count": 156
+      },
+      {
+        "type": "vessels",
+        "region": "asia",
+        "count": 4523
+      }
+    ]
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "updated": 2
+}
+```
+
+---
+
+## GetCableHealth
+
+Computes health status for submarine cables from NGA maritime warning signals.
+
+**Endpoint:** `GET /api/infrastructure/v1/get-cable-health`
+
+### Request Parameters
+
+No request parameters required.
+
+### Response
+
+<ResponseField name="generated_at" type="integer">
+  Generation timestamp, as Unix epoch milliseconds.
+</ResponseField>
+
+<ResponseField name="cables" type="object">
+  Health records keyed by cable identifier.
+  
+  <Expandable title="CableHealthRecord">
+    <ResponseField name="status" type="enum">
+      Computed health status: `OK`, `DEGRADED`, or `FAULT`.
+    </ResponseField>
+    
+    <ResponseField name="score" type="number">
+      Composite health score (0.0 = healthy, 1.0 = confirmed fault).
+    </ResponseField>
+    
+    <ResponseField name="confidence" type="number">
+      Confidence in the health assessment (0.0–1.0).
+    </ResponseField>
+    
+    <ResponseField name="last_updated" type="integer">
+      Last signal update time, as Unix epoch milliseconds.
+    </ResponseField>
+    
+    <ResponseField name="evidence" type="array">
+      Supporting evidence items (up to 3).
+      
+      <Expandable title="CableHealthEvidence">
+        <ResponseField name="source" type="string">
+          Evidence source (e.g. "NGA").
+        </ResponseField>
+        
+        <ResponseField name="summary" type="string">
+          Human-readable summary of the evidence.
+        </ResponseField>
+        
+        <ResponseField name="ts" type="integer">
+          Evidence timestamp, as Unix epoch milliseconds.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/infrastructure/v1/get-cable-health"
+```
+
+### Example Response
+
+```json
+{
+  "generated_at": 1705334400000,
+  "cables": {
+    "SEA-ME-WE-3": {
+      "status": "DEGRADED",
+      "score": 0.65,
+      "confidence": 0.82,
+      "last_updated": 1705330800000,
+      "evidence": [
+        {
+          "source": "NGA",
+          "summary": "Maritime warning near cable route in Indian Ocean",
+          "ts": 1705330800000
+        },
+        {
+          "source": "NGA",
+          "summary": "Elevated repair vessel activity detected",
+          "ts": 1705327200000
+        }
+      ]
+    },
+    "FASTER": {
+      "status": "OK",
+      "score": 0.05,
+      "confidence": 0.95,
+      "last_updated": 1705334400000,
+      "evidence": []
+    }
+  }
+}
+```

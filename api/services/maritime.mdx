@@ -1,0 +1,278 @@
+---
+title: MaritimeService
+description: AIS vessel tracking and NGA navigational warnings
+---
+
+The MaritimeService provides APIs for civilian AIS (Automatic Identification System) vessel data and NGA (National Geospatial-Intelligence Agency) navigational warnings for maritime domain awareness.
+
+## Base Path
+
+```
+/api/maritime/v1
+```
+
+## GetVesselSnapshot
+
+Retrieves a point-in-time view of AIS vessel traffic and disruptions within a geographic bounding box.
+
+**Endpoint:** `GET /api/maritime/v1/get-vessel-snapshot`
+
+### Request Parameters
+
+<ParamField query="ne_lat" type="double">
+  North-east corner latitude of bounding box
+</ParamField>
+
+<ParamField query="ne_lon" type="double">
+  North-east corner longitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lat" type="double">
+  South-west corner latitude of bounding box
+</ParamField>
+
+<ParamField query="sw_lon" type="double">
+  South-west corner longitude of bounding box
+</ParamField>
+
+### Response
+
+<ResponseField name="snapshot" type="VesselSnapshot">
+  The vessel traffic snapshot
+  
+  <Expandable title="VesselSnapshot">
+    <ResponseField name="snapshot_at" type="int64">
+      Snapshot timestamp, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="density_zones" type="AisDensityZone[]">
+      Density zones showing vessel concentrations
+      
+      <Expandable title="AisDensityZone">
+        <ResponseField name="id" type="string" required>
+          Zone identifier
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Zone name (e.g., "Strait of Malacca")
+        </ResponseField>
+        
+        <ResponseField name="location" type="GeoCoordinates">
+          Zone centroid location
+        </ResponseField>
+        
+        <ResponseField name="intensity" type="double">
+          Traffic intensity score (0-100)
+        </ResponseField>
+        
+        <ResponseField name="delta_pct" type="double">
+          Change from baseline as a percentage
+        </ResponseField>
+        
+        <ResponseField name="ships_per_day" type="int32">
+          Estimated ships per day
+        </ResponseField>
+        
+        <ResponseField name="note" type="string">
+          Analyst note
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="disruptions" type="AisDisruption[]">
+      Detected AIS disruptions
+      
+      <Expandable title="AisDisruption">
+        <ResponseField name="id" type="string" required>
+          Disruption identifier
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Descriptive name
+        </ResponseField>
+        
+        <ResponseField name="type" type="AisDisruptionType">
+          Type of AIS disruption: `AIS_DISRUPTION_TYPE_GAP_SPIKE` or `AIS_DISRUPTION_TYPE_CHOKEPOINT_CONGESTION`
+        </ResponseField>
+        
+        <ResponseField name="location" type="GeoCoordinates">
+          Location of the disruption
+        </ResponseField>
+        
+        <ResponseField name="severity" type="AisDisruptionSeverity">
+          Disruption severity: `AIS_DISRUPTION_SEVERITY_LOW`, `AIS_DISRUPTION_SEVERITY_ELEVATED`, or `AIS_DISRUPTION_SEVERITY_HIGH`
+        </ResponseField>
+        
+        <ResponseField name="change_pct" type="double">
+          Percentage change from normal
+        </ResponseField>
+        
+        <ResponseField name="window_hours" type="int32">
+          Analysis window in hours
+        </ResponseField>
+        
+        <ResponseField name="dark_ships" type="int32">
+          Number of dark ships (AIS off) detected
+        </ResponseField>
+        
+        <ResponseField name="vessel_count" type="int32">
+          Number of vessels in the affected area
+        </ResponseField>
+        
+        <ResponseField name="region" type="string">
+          Region name
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Human-readable description
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/maritime/v1/get-vessel-snapshot?ne_lat=1.5&ne_lon=104.5&sw_lat=1.0&sw_lon=103.5"
+```
+
+### Example Response
+
+```json
+{
+  "snapshot": {
+    "snapshot_at": 1709251200000,
+    "density_zones": [
+      {
+        "id": "malacca-strait",
+        "name": "Strait of Malacca",
+        "location": {
+          "latitude": 1.25,
+          "longitude": 104.0
+        },
+        "intensity": 87.5,
+        "delta_pct": 12.3,
+        "ships_per_day": 450,
+        "note": "Elevated traffic due to port congestion in Singapore"
+      }
+    ],
+    "disruptions": [
+      {
+        "id": "disr-001",
+        "name": "Malacca AIS Gap Spike",
+        "type": "AIS_DISRUPTION_TYPE_GAP_SPIKE",
+        "location": {
+          "latitude": 1.3,
+          "longitude": 103.9
+        },
+        "severity": "AIS_DISRUPTION_SEVERITY_ELEVATED",
+        "change_pct": 45.2,
+        "window_hours": 24,
+        "dark_ships": 23,
+        "vessel_count": 156,
+        "region": "Southeast Asia",
+        "description": "Unusual increase in AIS signal gaps detected in the Strait of Malacca"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## ListNavigationalWarnings
+
+Retrieves active maritime safety warnings from NGA (National Geospatial-Intelligence Agency).
+
+**Endpoint:** `GET /api/maritime/v1/list-navigational-warnings`
+
+### Request Parameters
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="area" type="string">
+  Optional area filter (e.g., "NAVAREA IV", "Persian Gulf")
+</ParamField>
+
+### Response
+
+<ResponseField name="warnings" type="NavigationalWarning[]">
+  The list of navigational warnings
+  
+  <Expandable title="NavigationalWarning">
+    <ResponseField name="id" type="string">
+      Warning identifier
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Warning title
+    </ResponseField>
+    
+    <ResponseField name="text" type="string">
+      Full warning text
+    </ResponseField>
+    
+    <ResponseField name="area" type="string">
+      Geographic area affected
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Location of the warning
+    </ResponseField>
+    
+    <ResponseField name="issued_at" type="int64">
+      Warning issue date, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="expires_at" type="int64">
+      Warning expiry date, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="authority" type="string">
+      Warning source authority
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/maritime/v1/list-navigational-warnings?area=NAVAREA+IV&page_size=25"
+```
+
+### Example Response
+
+```json
+{
+  "warnings": [
+    {
+      "id": "NGA-2024-001",
+      "title": "Missile Test Area - Red Sea",
+      "text": "Mariners are advised to exercise caution in the vicinity of 15-30N 042-45E due to ongoing missile testing operations.",
+      "area": "Red Sea",
+      "location": {
+        "latitude": 22.5,
+        "longitude": 43.5
+      },
+      "issued_at": 1709164800000,
+      "expires_at": 1709424000000,
+      "authority": "U.S. National Geospatial-Intelligence Agency"
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjI1fQ==",
+    "has_more": false
+  }
+}
+```

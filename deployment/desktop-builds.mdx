@@ -1,0 +1,523 @@
+---
+title: Desktop Builds
+description: Build, package, sign, and distribute World Monitor desktop apps with Tauri
+---
+
+World Monitor desktop apps are built with Tauri v2, providing native performance with a bundled Node.js sidecar for offline API support.
+
+## Architecture
+
+The desktop app consists of:
+
+- **Tauri Core** - Rust-based native window and system integration
+- **Web Frontend** - Vite-built React/TypeScript app
+- **Node.js Sidecar** - Bundled Node.js runtime for local API server
+- **Static Resources** - Data files, API handlers, and configuration
+
+## Prerequisites
+
+<Steps>
+
+### Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Verify installation:
+
+```bash
+rustc --version
+cargo --version
+```
+
+### Install System Dependencies
+
+<Tabs>
+<Tab title="macOS">
+```bash
+# Xcode Command Line Tools
+xcode-select --install
+
+# Optional: Code signing tools
+brew install gnu-tar
+```
+</Tab>
+<Tab title="Windows">
+```powershell
+# Install Visual Studio Build Tools 2022
+# https://visualstudio.microsoft.com/downloads/
+
+# WebView2 is bundled automatically
+```
+</Tab>
+<Tab title="Linux">
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install -y libwebkit2gtk-4.1-dev \
+  build-essential \
+  curl \
+  wget \
+  file \
+  libxdo-dev \
+  libssl-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev
+
+# Fedora
+sudo dnf install -y webkit2gtk4.1-devel \
+  openssl-devel \
+  curl \
+  wget \
+  file \
+  libappindicator-gtk3-devel \
+  librsvg2-devel
+```
+</Tab>
+</Tabs>
+
+### Install Node.js Dependencies
+
+```bash
+npm ci
+```
+
+</Steps>
+
+## Development
+
+### Run Desktop App in Dev Mode
+
+```bash
+npm run desktop:dev
+```
+
+This command:
+1. Syncs version numbers across `package.json` and `tauri.conf.json`
+2. Builds the sidecar sebuf gateway
+3. Starts Vite dev server
+4. Launches Tauri with hot reload
+
+### Dev Mode with Devtools
+
+The dev script includes devtools by default:
+
+```json package.json
+{
+  "desktop:dev": "npm run version:sync && cross-env VITE_DESKTOP_RUNTIME=1 tauri dev -f devtools"
+}
+```
+
+This enables:
+- Web Inspector (right-click → Inspect)
+- Console logging
+- Network monitoring
+
+## Build Configuration
+
+### Main Configuration
+
+```json src-tauri/tauri.conf.json
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "World Monitor",
+  "mainBinaryName": "world-monitor",
+  "version": "2.5.21",
+  "identifier": "app.worldmonitor.desktop",
+  "build": {
+    "beforeDevCommand": "npm run build:sidecar-sebuf && npm run dev",
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000"
+  }
+}
+```
+
+### Variant Configurations
+
+Tech Monitor uses a merged configuration:
+
+```json src-tauri/tauri.tech.conf.json
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tech Monitor",
+  "mainBinaryName": "tech-monitor",
+  "identifier": "app.worldmonitor.tech.desktop",
+  "app": {
+    "windows": [
+      {
+        "title": "Tech Monitor"
+      }
+    ]
+  }
+}
+```
+
+### Bundle Configuration
+
+```json src-tauri/tauri.conf.json
+{
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "nsis", "msi", "appimage"],
+    "category": "Productivity",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "../api",
+      "sidecar/local-api-server.mjs",
+      "sidecar/package.json",
+      "sidecar/node",
+      "../data",
+      "../src/config"
+    ]
+  }
+}
+```
+
+### Bundled Resources
+
+- `../api/` - Serverless API handlers
+- `sidecar/local-api-server.mjs` - Local API server
+- `sidecar/node/` - Bundled Node.js runtime
+- `../data/` - Static datasets (GeoJSON, CSV, etc.)
+- `../src/config/` - Configuration files
+
+## Building
+
+### Build for Current Platform
+
+<Tabs>
+<Tab title="World Monitor">
+```bash
+npm run desktop:build:full
+```
+</Tab>
+<Tab title="Tech Monitor">
+```bash
+npm run desktop:build:tech
+```
+</Tab>
+<Tab title="Finance Monitor">
+```bash
+npm run desktop:build:finance
+```
+</Tab>
+</Tabs>
+
+### Build Commands Explained
+
+The build command chain:
+
+```json package.json
+{
+  "desktop:build:full": "npm run version:sync && cross-env VITE_VARIANT=full VITE_DESKTOP_RUNTIME=1 tauri build",
+  "desktop:build:tech": "npm run version:sync && cross-env VITE_VARIANT=tech VITE_DESKTOP_RUNTIME=1 tauri build --config src-tauri/tauri.tech.conf.json"
+}
+```
+
+<Steps>
+
+### Version Sync
+
+```bash
+node scripts/sync-desktop-version.mjs
+```
+
+Ensures `package.json` version matches Tauri config.
+
+### Frontend Build
+
+```bash
+cross-env VITE_VARIANT=full VITE_DESKTOP_RUNTIME=1 npm run build:desktop
+```
+
+Builds optimized frontend with desktop CSP and variant metadata.
+
+### Sidecar Build
+
+```bash
+node scripts/build-sidecar-sebuf.mjs
+```
+
+Bundles the Sebuf RPC gateway into a single ESM file:
+
+```javascript scripts/build-sidecar-sebuf.mjs
+await build({
+  entryPoints: ['api/[domain]/v1/[rpc].ts'],
+  outfile: 'api/[domain]/v1/[rpc].js',
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+  target: 'node18',
+  treeShaking: true,
+});
+```
+
+### Tauri Build
+
+```bash
+tauri build
+```
+
+Compiles Rust binary and packages app with bundled resources.
+
+</Steps>
+
+## Packaging
+
+### Package Script
+
+The `desktop-package.mjs` script handles multi-platform packaging:
+
+```bash
+node scripts/desktop-package.mjs --os <macos|windows|linux> --variant <full|tech> [--sign]
+```
+
+### Package Commands
+
+<CodeGroup>
+
+```bash macOS Full
+npm run desktop:package:macos:full
+```
+
+```bash macOS Tech
+npm run desktop:package:macos:tech
+```
+
+```bash Windows Full
+npm run desktop:package:windows:full
+```
+
+```bash Windows Tech
+npm run desktop:package:windows:tech
+```
+
+</CodeGroup>
+
+### Node.js Runtime Bundling
+
+The package script automatically downloads and bundles the Node.js runtime:
+
+```bash scripts/download-node.sh
+#!/usr/bin/env bash
+NODE_VERSION="${NODE_VERSION:-22.14.0}"
+DEST_DIR="src-tauri/sidecar/node"
+
+# Auto-detect or use explicit target
+TARGET="x86_64-apple-darwin"  # or aarch64-apple-darwin, x86_64-pc-windows-msvc, etc.
+
+# Download from nodejs.org
+curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${ARCHIVE_NAME}" -o "${ARCHIVE_NAME}"
+
+# Verify SHA256 checksum
+shasum -a 256 "${ARCHIVE_NAME}"
+
+# Extract node binary
+tar -xzf "${ARCHIVE_NAME}"
+cp "node-v${NODE_VERSION}-darwin-x64/bin/node" "${DEST_DIR}/node"
+```
+
+### Bundle Targets
+
+<Tabs>
+<Tab title="macOS">
+- **app** - `.app` bundle
+- **dmg** - Disk image installer
+
+Located in `src-tauri/target/release/bundle/`
+</Tab>
+<Tab title="Windows">
+- **nsis** - `.exe` installer (recommended)
+- **msi** - Windows Installer package
+
+Located in `src-tauri/target/release/bundle/`
+</Tab>
+<Tab title="Linux">
+- **appimage** - Portable `.AppImage`
+- **deb** - Debian package
+- **rpm** - RPM package
+
+Located in `src-tauri/target/release/bundle/`
+</Tab>
+</Tabs>
+
+## Code Signing
+
+### macOS Signing
+
+<Steps>
+
+### Export Signing Certificate
+
+Export your Developer ID Application certificate from Keychain Access as a `.p12` file.
+
+### Set Environment Variables
+
+```bash
+export TAURI_BUNDLE_MACOS_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAM_ID)"
+export TAURI_BUNDLE_MACOS_PROVIDER_SHORT_NAME="TEAM_ID"
+```
+
+### Run Signed Build
+
+```bash
+npm run desktop:package:macos:full:sign
+```
+
+### Notarize (Optional)
+
+For distribution outside the Mac App Store:
+
+```bash
+xcrun notarytool submit \
+  src-tauri/target/release/bundle/dmg/World\ Monitor_*.dmg \
+  --apple-id "your@email.com" \
+  --password "app-specific-password" \
+  --team-id "TEAM_ID" \
+  --wait
+
+# Staple notarization ticket
+xcrun stapler staple src-tauri/target/release/bundle/dmg/World\ Monitor_*.dmg
+```
+
+</Steps>
+
+### Windows Signing
+
+<Steps>
+
+### Option 1: Certificate Thumbprint (Recommended)
+
+```bash
+export TAURI_BUNDLE_WINDOWS_CERTIFICATE_THUMBPRINT="ABC123..."
+npm run desktop:package:windows:full:sign
+```
+
+### Option 2: PFX File
+
+```bash
+export TAURI_BUNDLE_WINDOWS_CERTIFICATE="path/to/cert.pfx"
+export TAURI_BUNDLE_WINDOWS_CERTIFICATE_PASSWORD="your-password"
+npm run desktop:package:windows:full:sign
+```
+
+</Steps>
+
+### Linux Signing
+
+Linux builds don't require code signing, but you can sign AppImages:
+
+```bash
+gpg --detach-sign --armor World_Monitor_*.AppImage
+```
+
+## Distribution
+
+### Manual Distribution
+
+1. Build signed packages for each platform
+2. Upload to your website or file host
+3. Provide download links with SHA256 checksums
+
+### GitHub Releases
+
+Automate releases with GitHub Actions:
+
+```yaml .github/workflows/release.yml
+name: Release Desktop
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run desktop:build:full
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/bundle/**/*
+```
+
+### Update Mechanism
+
+Tauri supports auto-updates with the updater plugin. Configure in `tauri.conf.json`:
+
+```json
+{
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.worldmonitor.app/{{target}}/{{current_version}}"
+      ],
+      "dialog": true,
+      "pubkey": "YOUR_PUBLIC_KEY"
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Build Fails on macOS
+
+**Error**: `xcrun: error: unable to find utility "metal"`
+
+**Solution**: Install Xcode Command Line Tools:
+
+```bash
+xcode-select --install
+```
+
+### Windows Build Fails
+
+**Error**: `error: linking with 'link.exe' failed`
+
+**Solution**: Install Visual Studio Build Tools 2022 with C++ workload.
+
+### Linux Missing Dependencies
+
+**Error**: `webkit2gtk-4.1 not found`
+
+**Solution**: Install WebKit dependencies:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev
+```
+
+### Sidecar Fails to Start
+
+**Error**: `Failed to spawn sidecar`
+
+**Solution**: 
+1. Verify Node.js binary exists: `src-tauri/sidecar/node/node`
+2. Check execute permissions: `chmod +x src-tauri/sidecar/node/node`
+3. Rebuild sidecar: `npm run build:sidecar-sebuf`
+
+### App Won't Open on macOS
+
+**Error**: `"World Monitor" is damaged and can't be opened`
+
+**Solution**: Remove quarantine attribute:
+
+```bash
+xattr -cr /Applications/World\ Monitor.app
+```
+
+Or notarize the app (see [Code Signing](#code-signing)).

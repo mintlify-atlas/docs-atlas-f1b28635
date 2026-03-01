@@ -1,0 +1,426 @@
+---
+title: 'Hotspot Escalation Scoring'
+description: 'Dynamic escalation detection for 27 intelligence hotspots with trend analysis'
+icon: 'location-crosshairs'
+---
+
+## Overview
+
+Intelligence hotspots receive **dynamic escalation scores** that blend four normalized signals (0-100) with 48-hour trend detection. The system correlates news activity, country instability, geographic convergence, and military presence to identify escalating situations.
+
+<Note>
+  27 predefined intelligence hotspots span conflict zones, strategic waterways, and critical cities. Scores update every 5-15 minutes as new data arrives.
+</Note>
+
+## Hotspot List
+
+<AccordionGroup>
+  <Accordion title="Conflict Zones (8)">
+    - **Tehran, Iran** — IRGC HQ, nuclear facilities, strike targets
+    - **Kyiv, Ukraine** — Active war zone, Russian invasion
+    - **Gaza Strip** — Israel-Hamas conflict, humanitarian crisis
+    - **Damascus, Syria** — Civil war, foreign interventions
+    - **Sanaa, Yemen** — Houthi controlled, Red Sea shipping threats
+    - **Caracas, Venezuela** — Political instability, economic collapse
+    - **Sahel Region** — Mali, Niger, Burkina Faso coups and insurgency
+    - **Horn of Africa** — Ethiopia, Somalia, Sudan conflicts
+  </Accordion>
+
+  <Accordion title="Strategic Waterways (7)">
+    - **Strait of Hormuz** — 21% of global oil transit
+    - **Taiwan Strait** — US-China flashpoint
+    - **Bab el-Mandeb** — Red Sea chokepoint, Houthi attacks
+    - **Suez Canal** — Europe-Asia trade artery
+    - **South China Sea** — Territorial disputes, naval buildup
+    - **Turkish Straits** — Bosphorus & Dardanelles, Black Sea access
+    - **Malacca Strait** — 25% of traded goods, piracy risks
+  </Accordion>
+
+  <Accordion title="Major Cities (12)">
+    - **Moscow, Russia** — Kremlin, Wagner mutiny risks
+    - **Beijing, China** — CCP leadership, Taiwan policy
+    - **Taipei, Taiwan** — PLA encirclement threat
+    - **Tel Aviv, Israel** — Military HQ, population center
+    - **Pyongyang, North Korea** — Nuclear program, missile tests
+    - **Riyadh, Saudi Arabia** — Oil markets, Gulf stability
+    - **Ankara, Turkey** — NATO member, Syria border
+    - **Washington DC, USA** — Pentagon, policy epicenter
+    - **London, UK** — NATO, intelligence hub
+    - **Brussels, Belgium** — NATO HQ, EU capital
+    - **Baghdad, Iraq** — Iranian influence, US presence
+    - **Beirut, Lebanon** — Hezbollah, political collapse
+  </Accordion>
+</AccordionGroup>
+
+See full list in `src/config/geo.ts` (`INTEL_HOTSPOTS`)
+
+## Scoring Formula
+
+Escalation scores blend **static baseline** (30%) with **dynamic signals** (70%):
+
+```typescript
+const dynamicRaw = (
+  components.newsActivity * 0.35 +
+  components.ciiContribution * 0.25 +
+  components.geoConvergence * 0.25 +
+  components.militaryActivity * 0.15
+);
+
+const dynamicScore = 1 + (dynamicRaw / 100) * 4; // Scale 0-100 → 1-5
+const combinedScore = staticBaseline * 0.3 + dynamicScore * 0.7;
+```
+
+**Output range**: 1.0 (minimal) to 5.0 (critical)
+
+**Source**: `src/services/hotspot-escalation.ts:92-107`
+
+## Component Weights
+
+<ParamField path="newsActivity" type="number" default="0.35">
+  35% weight — highest priority because news coverage indicates attention and information velocity.
+</ParamField>
+
+<ParamField path="ciiContribution" type="number" default="0.25">
+  25% weight — country-level instability scores provide structural context.
+</ParamField>
+
+<ParamField path="geoConvergence" type="number" default="0.25">
+  25% weight — multiple event types in same area indicate complex situation.
+</ParamField>
+
+<ParamField path="militaryActivity" type="number" default="0.15">
+  15% weight — lowest priority because military presence is often routine (patrols, exercises).
+</ParamField>
+
+## Component Normalization
+
+### News Activity (0-100)
+
+Measures news coverage intensity and breaking status:
+
+```typescript
+function normalizeNewsActivity(matches: number, hasBreaking: boolean, velocity: number): number {
+  return Math.min(100,
+    matches * 15 +
+    (hasBreaking ? 30 : 0) +
+    velocity * 5
+  );
+}
+```
+
+<ParamField path="matches" type="number">
+  Count of news clusters mentioning hotspot (×15 multiplier).
+</ParamField>
+
+<ParamField path="hasBreaking" type="boolean">
+  +30 if any cluster has `isAlert` flag.
+</ParamField>
+
+<ParamField path="velocity" type="number">
+  Average sources-per-hour across clusters (×5 multiplier).
+</ParamField>
+
+**Source**: `src/services/hotspot-escalation.ts:75-77`
+
+### CII Contribution (0-100)
+
+Uses the **maximum CII score** among hotspot-linked countries:
+
+```typescript
+function getCIIForHotspot(hotspotId: string): number | null {
+  const countryCodes = getHotspotCountries(hotspotId);
+  if (countryCodes.length === 0) return null;
+
+  const scores = countryCodes.map(code => ciiGetter!(code)).filter((s): s is number => s !== null);
+  return scores.length > 0 ? Math.max(...scores) : null;
+}
+
+function normalizeCII(score: number | null): number {
+  return score ?? 30; // Default if no CII data
+}
+```
+
+**Example**: Tehran hotspot is linked to Iran (IR), so it uses Iran's CII score.
+
+**Source**: `src/services/hotspot-escalation.ts:60-68`, `79-81`
+
+### Geo Convergence (0-100)
+
+Detects multiple event types co-occurring in 1°×1° cells within 150km radius:
+
+```typescript
+function normalizeGeo(alertScore: number, alertTypes: number): number {
+  if (alertScore === 0) return 0;
+  return Math.min(100, alertScore + alertTypes * 10);
+}
+```
+
+<ParamField path="alertScore" type="number">
+  Raw convergence score from geographic binning: `typeCount * 25 + eventCount * 2`
+</ParamField>
+
+<ParamField path="alertTypes" type="number">
+  Number of distinct event types (protests, military flights, vessels, earthquakes). +10 per type.
+</ParamField>
+
+**Example**: If Tehran area has protests + military flights + naval vessels within 150km, `alertTypes = 3`, contributing +30 to geo score.
+
+**Source**: `src/services/hotspot-escalation.ts:83-86`, `geo-convergence.ts:100-123`
+
+### Military Activity (0-100)
+
+Counts military assets within 200km radius:
+
+```typescript
+function normalizeMilitary(flights: number, vessels: number): number {
+  return Math.min(100, flights * 10 + vessels * 15);
+}
+
+function countMilitaryNearHotspot(
+  hotspot: Hotspot,
+  flights: MilitaryFlight[],
+  vessels: MilitaryVessel[],
+  radiusKm: number = 200
+): { flights: number; vessels: number } {
+  let flightCount = 0;
+  let vesselCount = 0;
+
+  for (const f of flights) {
+    if (haversineKm(hotspot.lat, hotspot.lon, f.lat, f.lon) <= radiusKm) {
+      flightCount++;
+    }
+  }
+
+  for (const v of vessels) {
+    if (haversineKm(hotspot.lat, hotspot.lon, v.lat, v.lon) <= radiusKm) {
+      vesselCount++;
+    }
+  }
+
+  return { flights: flightCount, vessels: vesselCount };
+}
+```
+
+<ParamField path="flights" type="number">
+  Military aircraft within 200km (×10 multiplier).
+</ParamField>
+
+<ParamField path="vessels" type="number">
+  Naval vessels within 200km (×15 multiplier, higher weight for capital ships).
+</ParamField>
+
+**Source**: `src/services/hotspot-escalation.ts:88-90`, `241-263`
+
+## Trend Detection
+
+Linear regression on 48-hour score history detects escalation patterns:
+
+```typescript
+function detectTrend(history: Array<{ timestamp: number; score: number }>): EscalationTrend {
+  if (history.length < 3) return 'stable';
+
+  // Least squares regression
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  for (let i = 0; i < history.length; i++) {
+    sumX += i;
+    sumY += history[i].score;
+    sumXY += i * history[i].score;
+    sumX2 += i * i;
+  }
+
+  const slope = (history.length * sumXY - sumX * sumY) / (history.length * sumX2 - sumX * sumX);
+
+  if (slope > 0.1) return 'escalating';
+  if (slope < -0.1) return 'de-escalating';
+  return 'stable';
+}
+```
+
+<ParamField path="escalating" type="string">
+  Slope > 0.1 → situation worsening over 48h.
+</ParamField>
+
+<ParamField path="stable" type="string">
+  Slope between -0.1 and 0.1 → no significant change.
+</ParamField>
+
+<ParamField path="de-escalating" type="string">
+  Slope < -0.1 → situation improving.
+</ParamField>
+
+**History pruning**: Scores older than 24h are removed. Max 48 data points stored.
+
+**Source**: `src/services/hotspot-escalation.ts:117-144`
+
+## Signal Emission
+
+Signals fire when escalation crosses thresholds or changes rapidly:
+
+<AccordionGroup>
+  <Accordion title="Threshold Crossed">
+    Integer score increases (2.3 → 3.1) trigger signals:
+
+    ```typescript
+    const oldInt = Math.floor(oldScore); // 2
+    const newInt = Math.floor(newScore); // 3
+    if (newInt > oldInt && newScore >= 2) {
+      return { type: 'threshold_crossed', oldScore, newScore, threshold: newInt };
+    }
+    ```
+
+    **Minimum score**: Must be ≥2 to emit (prevents noise from low-activity hotspots).
+  </Accordion>
+
+  <Accordion title="Rapid Increase">
+    +0.5 or more in one update cycle:
+
+    ```typescript
+    if (newScore - oldScore >= 0.5) {
+      return { type: 'rapid_increase', oldScore, newScore };
+    }
+    ```
+
+    **Example**: Tehran jumps from 3.2 → 3.8 in 5 minutes due to breaking news + military surge.
+  </Accordion>
+
+  <Accordion title="Critical Reached">
+    Score crosses 4.5 threshold:
+
+    ```typescript
+    if (newScore >= 4.5 && oldScore < 4.5) {
+      return { type: 'critical_reached', oldScore, newScore };
+    }
+    ```
+
+    **Critical threshold**: 4.5/5.0 indicates imminent crisis.
+  </Accordion>
+</AccordionGroup>
+
+**Cooldown**: 2-hour cooldown after signal emission prevents alert fatigue.
+
+```typescript
+const SIGNAL_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+
+function shouldEmitSignal(hotspotId: string, oldScore: number | null, newScore: number): EscalationSignalReason | null {
+  const lastSignal = lastSignalTime.get(hotspotId) ?? 0;
+  if (Date.now() - lastSignal < SIGNAL_COOLDOWN_MS) return null;
+  // ... threshold checks
+}
+```
+
+**Source**: `src/services/hotspot-escalation.ts:206-227`
+
+## Example Scores
+
+<CodeGroup>
+```json Tehran (Escalating Crisis)
+{
+  "hotspotId": "tehran",
+  "staticBaseline": 4.0,
+  "dynamicScore": 4.8,
+  "combinedScore": 4.6,
+  "trend": "escalating",
+  "components": {
+    "newsActivity": 92,
+    "ciiContribution": 72,
+    "geoConvergence": 85,
+    "militaryActivity": 68
+  },
+  "history": [
+    { "timestamp": 1709294400000, "score": 4.2 },
+    { "timestamp": 1709298000000, "score": 4.4 },
+    { "timestamp": 1709301600000, "score": 4.6 }
+  ],
+  "lastUpdated": "2026-03-01T12:00:00Z"
+}
+```
+
+```json Taiwan Strait (Elevated Watch)
+{
+  "hotspotId": "taiwan_strait",
+  "staticBaseline": 3.5,
+  "dynamicScore": 3.2,
+  "combinedScore": 3.3,
+  "trend": "stable",
+  "components": {
+    "newsActivity": 45,
+    "ciiContribution": 58,
+    "geoConvergence": 32,
+    "militaryActivity": 75
+  }
+}
+```
+
+```json Washington DC (Low Activity)
+{
+  "hotspotId": "dc",
+  "staticBaseline": 2.0,
+  "dynamicScore": 1.8,
+  "combinedScore": 1.9,
+  "trend": "stable",
+  "components": {
+    "newsActivity": 28,
+    "ciiContribution": 18,
+    "geoConvergence": 8,
+    "militaryActivity": 42
+  }
+}
+```
+</CodeGroup>
+
+## Integration with Other Systems
+
+### CII Scoring
+
+Hotspot proximity boosts country instability scores:
+
+```typescript
+function trackHotspotActivity(lat: number, lon: number, weight: number = 1): void {
+  for (const hotspot of INTEL_HOTSPOTS) {
+    const dist = haversineKm(lat, lon, hotspot.lat, hotspot.lon);
+    if (dist < 150) {
+      const countryCodes = getHotspotCountries(hotspot.id);
+      for (const countryCode of countryCodes) {
+        hotspotActivityMap.set(countryCode, (hotspotActivityMap.get(countryCode) || 0) + weight);
+      }
+    }
+  }
+}
+
+function getHotspotBoost(countryCode: string): number {
+  const activity = hotspotActivityMap.get(countryCode) || 0;
+  return Math.min(10, activity * 1.5);
+}
+```
+
+**Source**: `src/services/country-instability.ts:304-348`
+
+### Focal Point Detection
+
+Hotspot escalation feeds into focal point urgency calculations:
+
+```typescript
+const focalUrgency = focalUrgencies.get(code);
+const focalBoost = focalUrgency === 'critical' ? 8
+  : focalUrgency === 'elevated' ? 4
+  : 0;
+```
+
+### Signal Aggregation
+
+Hotspot data is included in geographic signal context for AI summarization:
+
+```typescript
+const aiContext = `
+[INTELLIGENCE HOTSPOTS]
+Tehran: Score 4.6/5.0 (escalating) — 92 news mentions, CII 72, convergence detected
+Taiwan Strait: Score 3.3/5.0 (stable) — 45 news mentions, 12 military flights, 8 naval vessels
+`;
+```
+
+## Key Files
+
+- `src/services/hotspot-escalation.ts` — Main escalation scoring engine
+- `src/services/geo-convergence.ts` — Geographic event binning
+- `src/config/geo.ts` — Hotspot definitions and coordinates
+- `src/components/HotspotMarker.tsx` — Map visualization

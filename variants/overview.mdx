@@ -1,0 +1,349 @@
+---
+title: Variant System Overview
+description: Understanding World Monitor's multi-variant architecture and how to switch between them
+---
+
+## What Are Variants?
+
+World Monitor uses a **variant system** that packages the same codebase with different configurations, data sources, and UI themes to create specialized dashboards for different use cases:
+
+| Variant | Domain | Focus Area |
+|---------|--------|------------|
+| **World Monitor** (full) | [worldmonitor.app](https://worldmonitor.app) | Geopolitics, military, conflicts, infrastructure |
+| **Tech Monitor** | [tech.worldmonitor.app](https://tech.worldmonitor.app) | Startups, AI/ML, cloud, cybersecurity |
+| **Finance Monitor** | [finance.worldmonitor.app](https://finance.worldmonitor.app) | Global markets, trading, central banks, Gulf FDI |
+| **Happy Monitor** | [happy.worldmonitor.app](https://happy.worldmonitor.app) | Good news, positive trends, uplifting stories |
+
+All four variants run from a **single codebase** — the build system configures features, data sources, and styling based on the `VITE_VARIANT` environment variable.
+
+---
+
+## How Variants Work
+
+### Build-Time Configuration
+
+Variants are configured at build time via the `VITE_VARIANT` environment variable in `vite.config.ts`:
+
+```typescript title="vite.config.ts"
+const activeVariant = process.env.VITE_VARIANT || 'full';
+const activeMeta = VARIANT_META[activeVariant] || VARIANT_META.full;
+```
+
+Each variant has metadata defining:
+
+- **SEO metadata**: title, description, keywords, Open Graph tags
+- **URLs**: canonical URL and live demo link
+- **Categories**: PWA manifest categories (e.g., `['news', 'productivity']`)
+- **Features**: list of available features for the variant
+
+### Variant Metadata (vite.config.ts:40-144)
+
+<Tabs>
+  <Tab title="World Monitor (full)">
+    ```typescript
+    {
+      title: 'World Monitor - Real-Time Global Intelligence Dashboard',
+      description: 'Real-time global intelligence dashboard with live news, markets, military tracking, infrastructure monitoring, and geopolitical data.',
+      url: 'https://worldmonitor.app/',
+      siteName: 'World Monitor',
+      shortName: 'WorldMonitor',
+      categories: ['news', 'productivity'],
+      features: [
+        'Real-time news aggregation',
+        'Stock market tracking',
+        'Military flight monitoring',
+        'Ship AIS tracking',
+        'Earthquake alerts',
+        'Protest tracking',
+        'Power outage monitoring',
+        'Oil price analytics',
+        'Government spending data',
+        'Prediction markets',
+        'Infrastructure monitoring',
+        'Geopolitical intelligence',
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Tech Monitor">
+    ```typescript
+    {
+      title: 'Tech Monitor - Real-Time AI & Tech Industry Dashboard',
+      description: 'Real-time AI and tech industry dashboard tracking tech giants, AI labs, startup ecosystems, funding rounds, and tech events worldwide.',
+      url: 'https://tech.worldmonitor.app/',
+      siteName: 'Tech Monitor',
+      shortName: 'TechMonitor',
+      categories: ['news', 'business'],
+      features: [
+        'Tech news aggregation',
+        'AI lab tracking',
+        'Startup ecosystem mapping',
+        'Tech HQ locations',
+        'Conference & event calendar',
+        'Cloud infrastructure monitoring',
+        'Datacenter mapping',
+        'Tech layoff tracking',
+        'Funding round analytics',
+        'Tech stock tracking',
+        'Service status monitoring',
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Finance Monitor">
+    ```typescript
+    {
+      title: 'Finance Monitor - Real-Time Markets & Trading Dashboard',
+      description: 'Real-time finance and trading dashboard tracking global markets, stock exchanges, central banks, commodities, forex, crypto, and economic indicators worldwide.',
+      url: 'https://finance.worldmonitor.app/',
+      siteName: 'Finance Monitor',
+      shortName: 'FinanceMonitor',
+      categories: ['finance', 'news'],
+      features: [
+        'Real-time market data',
+        'Stock exchange mapping',
+        'Central bank monitoring',
+        'Commodity price tracking',
+        'Forex & currency news',
+        'Crypto & digital assets',
+        'Economic indicator alerts',
+        'IPO & earnings tracking',
+        'Financial center mapping',
+        'Sector heatmap',
+        'Market radar signals',
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Happy Monitor">
+    ```typescript
+    {
+      title: 'Happy Monitor - Good News & Global Progress',
+      description: 'Curated positive news, progress data, and uplifting stories from around the world.',
+      url: 'https://happy.worldmonitor.app/',
+      siteName: 'Happy Monitor',
+      shortName: 'HappyMonitor',
+      categories: ['news', 'lifestyle'],
+      features: [
+        'Curated positive news',
+        'Global progress tracking',
+        'Live humanity counters',
+        'Science breakthrough feed',
+        'Conservation tracker',
+        'Renewable energy dashboard',
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Switching Between Variants
+
+### In Production (Web)
+
+Each variant is deployed to its own subdomain. The header bar displays clickable links to other variants:
+
+```
+🌍 World  |  💻 Tech  |  📈 Finance  |  ☀️ Good News
+```
+
+Clicking a variant link navigates to that variant's live deployment:
+
+- `worldmonitor.app` → `tech.worldmonitor.app`
+- `finance.worldmonitor.app` → `happy.worldmonitor.app`
+
+### In Desktop App
+
+The desktop app (Tauri) allows **in-app variant switching** without navigating to a different URL:
+
+1. Click any variant in the header bar (🌍 World, 💻 Tech, 📈 Finance)
+2. The app stores the selection in `localStorage` as `worldmonitor-variant`
+3. On next reload, the app loads the selected variant
+
+**Code reference:** `src/config/variant.ts:1-12`
+
+```typescript
+export const SITE_VARIANT: string = (() => {
+  const env = import.meta.env.VITE_VARIANT || 'full';
+  // Build-time variant (non-full) takes priority — each deployment is variant-specific.
+  // Only fall back to localStorage when env is 'full' (allows desktop app variant switching).
+  if (env !== 'full') return env;
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('worldmonitor-variant');
+    if (stored === 'tech' || stored === 'full' || stored === 'finance' || stored === 'happy') return stored;
+  }
+  return env;
+})();
+```
+
+### In Development
+
+Use npm scripts to launch specific variants:
+
+<Tabs>
+  <Tab title="World Monitor">
+    ```bash
+    npm run dev
+    # or explicitly:
+    npm run dev:full
+    ```
+  </Tab>
+  <Tab title="Tech Monitor">
+    ```bash
+    npm run dev:tech
+    ```
+  </Tab>
+  <Tab title="Finance Monitor">
+    ```bash
+    npm run dev:finance
+    ```
+  </Tab>
+  <Tab title="Happy Monitor">
+    ```bash
+    npm run dev:happy
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Building Variants
+
+### Production Builds
+
+Each variant has its own build script in `package.json`:
+
+<Tabs>
+  <Tab title="World Monitor">
+    ```bash
+    npm run build:full
+    # Sets VITE_VARIANT=full
+    ```
+  </Tab>
+  <Tab title="Tech Monitor">
+    ```bash
+    npm run build:tech
+    # Sets VITE_VARIANT=tech
+    ```
+  </Tab>
+  <Tab title="Finance Monitor">
+    ```bash
+    npm run build:finance
+    # Sets VITE_VARIANT=finance
+    ```
+  </Tab>
+  <Tab title="Happy Monitor">
+    ```bash
+    npm run build:happy
+    # Sets VITE_VARIANT=happy
+    ```
+  </Tab>
+</Tabs>
+
+### Desktop Builds
+
+Desktop apps are built with variant-specific Tauri configurations:
+
+<Tabs>
+  <Tab title="World Monitor">
+    ```bash
+    npm run desktop:build:full
+    # Uses src-tauri/tauri.conf.json
+    ```
+  </Tab>
+  <Tab title="Tech Monitor">
+    ```bash
+    npm run desktop:build:tech
+    # Uses src-tauri/tauri.tech.conf.json
+    ```
+  </Tab>
+  <Tab title="Finance Monitor">
+    ```bash
+    npm run desktop:build:finance
+    # Uses src-tauri/tauri.finance.conf.json
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Variant-Specific Features
+
+### UI Theme Customization
+
+The **Happy Monitor** variant uses a warm cream theme instead of the default dark theme:
+
+```css title="src/styles/happy-theme.css:9-100"
+:root[data-variant="happy"],
+:root[data-variant="happy"][data-theme="light"] {
+  --bg: #FAFAF5;  /* Warm cream background */
+  --text: #2c2c2c;
+  --panel-bg: #ffffff;
+  /* ... 90+ more color variable overrides */
+}
+```
+
+The variant is detected via the `data-variant` attribute on the root element.
+
+### RSS Feed Selection
+
+Each variant loads a curated set of RSS feeds:
+
+- **World Monitor**: 150+ geopolitical, defense, and energy feeds
+- **Tech Monitor**: 100+ tech news, AI labs, startup, and cybersecurity feeds
+- **Finance Monitor**: 120+ market news, trading, central bank, and economic feeds
+- **Happy Monitor**: 40+ positive news, science breakthrough, and conservation feeds
+
+**Code reference:** RSS feed configuration is defined in variant-specific feed lists
+
+### Map Layers
+
+Variants enable/disable map layers based on relevance:
+
+| Layer | World | Tech | Finance | Happy |
+|-------|-------|------|---------|-------|
+| Military bases | ✅ | ❌ | ❌ | ❌ |
+| Nuclear facilities | ✅ | ❌ | ❌ | ❌ |
+| Tech HQs | ❌ | ✅ | ❌ | ❌ |
+| Datacenters | ✅ | ✅ | ❌ | ❌ |
+| Stock exchanges | ✅ | ❌ | ✅ | ❌ |
+| Central banks | ❌ | ❌ | ✅ | ❌ |
+| Positive events | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## Analytics & Tracking
+
+Variant switches are tracked for analytics:
+
+```typescript title="src/services/analytics.ts:78,303"
+wm_variant_switched: new Set(['from', 'to']),
+
+trackEventBeforeUnload('wm_variant_switched', { from, to });
+```
+
+This allows monitoring user preferences for variant selection.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="World Monitor" icon="globe" href="/variants/world-monitor">
+    Full geopolitical intelligence variant
+  </Card>
+  <Card title="Tech Monitor" icon="laptop-code" href="/variants/tech-monitor">
+    AI & tech industry variant
+  </Card>
+  <Card title="Finance Monitor" icon="chart-line" href="/variants/finance-monitor">
+    Markets & trading variant
+  </Card>
+  <Card title="Happy Monitor" icon="sun" href="/variants/happy-monitor">
+    Positive news variant
+  </Card>
+</CardGroup>

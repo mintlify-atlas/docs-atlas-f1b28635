@@ -1,122 +1,177 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "World Monitor",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0891b2",
+    "light": "#06b6d4",
+    "dark": "#0e7490"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/koala73/worldmonitor"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/koala73/worldmonitor"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/interactive-globe",
+              "features/data-layers",
+              "features/ai-intelligence",
+              "features/live-news",
+              "features/desktop-app"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Data & Intelligence",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "intelligence/country-briefs",
+              "intelligence/instability-index",
+              "intelligence/threat-classification",
+              "intelligence/hotspot-detection",
+              "intelligence/signal-aggregation"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Variants",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "variants/overview",
+              "variants/world-monitor",
+              "variants/tech-monitor",
+              "variants/finance-monitor",
+              "variants/happy-monitor"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment-variables",
+              "configuration/api-keys",
+              "configuration/local-llm",
+              "configuration/feature-toggles"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/getting-started",
+              "development/architecture",
+              "development/proto-api",
+              "development/building",
+              "development/testing"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/vercel",
+              "deployment/desktop-builds",
+              "deployment/pwa"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api/introduction",
+              "api/authentication",
+              "api/rate-limits"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Services",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/services/conflict",
+              "api/services/military",
+              "api/services/maritime",
+              "api/services/aviation",
+              "api/services/intelligence",
+              "api/services/news",
+              "api/services/market",
+              "api/services/cyber",
+              "api/services/infrastructure",
+              "api/services/climate",
+              "api/services/seismology",
+              "api/services/displacement",
+              "api/services/prediction",
+              "api/services/economic",
+              "api/services/trade"
+            ]
+          },
+          {
+            "group": "Data Sources",
+            "pages": [
+              "api/data-sources/overview",
+              "api/data-sources/rss-feeds",
+              "api/data-sources/external-apis"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "User Guide",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "guide/overview",
+              "guide/interface",
+              "guide/navigation"
+            ]
+          },
+          {
+            "group": "Using the Dashboard",
+            "pages": [
+              "guide/map-controls",
+              "guide/panels",
+              "guide/news-feeds",
+              "guide/video-streams",
+              "guide/command-palette"
+            ]
+          },
+          {
+            "group": "Intelligence Features",
+            "pages": [
+              "guide/world-brief",
+              "guide/country-analysis",
+              "guide/keyword-monitoring",
+              "guide/signal-intelligence",
+              "guide/sharing-stories"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "guide/themes",
+              "guide/layouts",
+              "guide/localization"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

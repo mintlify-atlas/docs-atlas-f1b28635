@@ -1,0 +1,397 @@
+---
+title: News Feeds
+description: Reading, filtering, and monitoring RSS feeds with keyword alerts
+---
+
+World Monitor aggregates **150+ RSS feeds** across geopolitics, defense, energy, tech, and finance. Each variant loads its own curated feed set optimized for the domain.
+
+## Feed Organization
+
+Feeds are organized into categories based on the active variant:
+
+### Full Variant (Geopolitical)
+
+**~25 categories** including:
+
+- Breaking News (Reuters, AP, BBC)
+- Defense & Military (Defense News, Janes, Breaking Defense)
+- Geopolitics (Foreign Policy, The Diplomat, Carnegie)
+- Energy & Resources (Oil Price, Rigzone, S&P Global)
+- Intelligence & Security (The Cipher Brief, War on the Rocks)
+- Regional Focus (Middle East, Africa, Latin America, Asia)
+
+### Tech Variant
+
+**~20 categories** including:
+
+- AI & ML (VentureBeat AI, MIT Tech Review)
+- Startups & Funding (TechCrunch, VentureBeat)
+- Cloud & Infrastructure (The Register, Data Center Dynamics)
+- Cybersecurity (Krebs on Security, Dark Reading)
+- Developer News (Hacker News, The Verge)
+
+### Finance Variant
+
+**~18 categories** including:
+
+- Markets & Trading (Bloomberg, MarketWatch, CNBC)
+- Crypto & Blockchain (CoinDesk, Decrypt, The Block)
+- Central Banking (Central Banking, Macro Hive)
+- Commodities (Kitco, Futures Magazine)
+- Economic Policy (IMF, World Bank, WTO)
+
+## Reading News Items
+
+Each news item displays:
+
+### Item Components
+
+<Steps>
+  <Step title="Threat Badge">
+    Color-coded severity indicator:
+    - 🔴 **Critical** - Major conflicts, terror attacks, disasters
+    - 🟠 **High** - Significant geopolitical events
+    - 🟡 **Medium** - Notable developments
+    - 🟢 **Low** - Routine news
+    - ⚪ **Info** - Background information
+  </Step>
+  
+  <Step title="Headline Title">
+    Article headline with entity linking:
+    - Country names → clickable to country brief
+    - Leaders → entity profile
+    - Organizations → context info
+  </Step>
+  
+  <Step title="Source & Metadata">
+    - Source name with tier indicator (T1/T2/T3)
+    - Time ago (e.g., "2h ago")
+    - Propaganda risk score (if applicable)
+  </Step>
+  
+  <Step title="Action Buttons">
+    - **Read** - Open full article in new tab
+    - **Translate** - AI translation to UI language (if non-English)
+    - **Share** - Copy link or share to social platforms
+  </Step>
+</Steps>
+
+### Threat Classification
+
+Every news item passes through a **3-stage classification pipeline**:
+
+#### 1. Keyword Classifier (Instant)
+
+- Pattern-matches against ~120 threat keywords
+- Organized by severity tier (critical → high → medium → low → info)
+- 14 event categories (conflict, protest, disaster, diplomatic, etc.)
+- Word-boundary matching prevents false positives
+
+#### 2. Browser-Side ML (Async)
+
+Transformers.js runs locally:
+
+- Named Entity Recognition (NER)
+- Sentiment analysis
+- Topic classification
+- No server dependency
+
+#### 3. LLM Classifier (Batched Async)
+
+- Headlines batched and sent to Groq/Ollama
+- Results cached in Redis (24h TTL)
+- Overrides keyword result if confidence is higher
+- Exponential backoff on API errors
+
+<Info>
+  Users see keyword results instantly, with ML and LLM refinements arriving within seconds.
+</Info>
+
+## Clustering Mode
+
+News items can be displayed in two modes:
+
+### Flat List Mode
+
+- All items shown chronologically
+- No grouping
+- Fastest render
+- Best for scanning recent headlines
+
+### Clustered Mode (Default)
+
+- Items grouped by topic/entity
+- ML-based clustering runs in background
+- Progressive enhancement - flat list appears first, clustering applies when ready
+- Reduces visual clutter with related stories
+
+<Steps>
+  <Step title="Initial Render">
+    Items appear immediately in flat list (0ms delay).
+  </Step>
+  <Step title="Background Clustering">
+    ML worker analyzes headlines for topics, entities, sentiment.
+  </Step>
+  <Step title="Progressive Upgrade">
+    When clustering completes (1-3 seconds), view updates with grouped items.
+  </Step>
+</Steps>
+
+<Tip>
+  Toggle clustering mode via panel settings if you prefer always-flat display.
+</Tip>
+
+## Keyword Monitors
+
+Create custom alerts for terms of interest:
+
+### Creating Monitors
+
+<Steps>
+  <Step title="Access Monitor Settings">
+    Locate the keyword monitor section in the Live News panel header.
+  </Step>
+  <Step title="Enter Keywords">
+    Type comma-separated keywords:
+    ```
+    Ukraine, Taiwan, Iran nuclear, supply chain
+    ```
+  </Step>
+  <Step title="Word-Boundary Matching">
+    Keywords use word boundaries to prevent false matches:
+    - ✅ "ai" matches "AI breakthrough"
+    - ❌ "ai" does NOT match "train" or "chairman"
+  </Step>
+  <Step title="Auto Color-Coding">
+    Each monitor receives a color from a 10-color palette for visual distinction.
+  </Step>
+  <Step title="Real-Time Match Count">
+    Monitor badges show live count of matching items.
+  </Step>
+</Steps>
+
+### Monitor Scope
+
+Keyword monitors search across:
+
+- **Headline titles** - Primary text
+- **Descriptions** - Article summaries (when available)
+- **Both fields** - Union of matches
+
+### Managing Monitors
+
+<AccordionGroup>
+  <Accordion title="Editing Monitors">
+    Click the monitor chip to edit keywords. Changes apply immediately.
+  </Accordion>
+  
+  <Accordion title="Deleting Monitors">
+    Click the × button on a monitor chip to remove it.
+  </Accordion>
+  
+  <Accordion title="Monitor Persistence">
+    Monitors are saved to localStorage and restored on reload.
+  </Accordion>
+  
+  <Accordion title="Multi-Keyword Support">
+    Each monitor supports multiple keywords (comma-separated). An item matches if ANY keyword is found.
+  </Accordion>
+</AccordionGroup>
+
+## Source Quality Indicators
+
+### Source Tiers
+
+Feeds are classified into 3 tiers:
+
+| Tier | Description | Examples |
+|------|-------------|----------|
+| **T1** | Tier 1 - Highest credibility | Reuters, AP, BBC, Bloomberg |
+| **T2** | Tier 2 - Established sources | Defense News, TechCrunch, The Diplomat |
+| **T3** | Tier 3 - Secondary sources | Regional outlets, specialized blogs |
+
+### Propaganda Risk Scores
+
+Some sources receive propaganda risk labels:
+
+- **State Media** - Government-controlled outlets (RT, CGTN, Press TV)
+- **High Risk** - Known for bias or misinformation
+- **Moderate Risk** - Editorial bias but factual reporting
+
+<Warning>
+  Propaganda risk scores help you evaluate source credibility. Cross-reference important claims with Tier 1 sources.
+</Warning>
+
+## Related Assets
+
+News items automatically detect nearby infrastructure:
+
+### Asset Detection
+
+When a news item is geo-located (74-hub strategic location database):
+
+- **600km radius scan** - Identifies critical infrastructure
+- **Asset types** - Pipelines, cables, datacenters, bases, nuclear facilities
+- **Distance ranking** - Sorted by proximity
+- **Clickable links** - Jump to asset on map
+
+### Proximity Context
+
+Related assets provide instant geopolitical context:
+
+- Cable cut near a strategic chokepoint
+- Protest near a nuclear facility
+- Troop movements near a datacenter cluster
+- Pipeline disruption affecting energy routes
+
+<Steps>
+  <Step title="Locate Related Assets Section">
+    Scroll to bottom of news item card.
+  </Step>
+  <Step title="View Asset List">
+    See infrastructure within 600km, ranked by distance.
+  </Step>
+  <Step title="Click to Highlight">
+    Click any asset to highlight it on the map.
+  </Step>
+  <Step title="View Full Context">
+    Map centers on the asset with relevant layers enabled.
+  </Step>
+</Steps>
+
+## Filtering & Search
+
+### Category Filtering
+
+Each feed category has a dedicated sub-panel:
+
+- Click category tabs to switch between feeds
+- Each category maintains separate scroll position
+- New item badges per category
+
+### Time-Based Filtering
+
+Filter news by recency:
+
+- Items outside the selected time range are hidden
+- Coordinated with map time filter
+- Useful for focusing on breaking developments
+
+### Source Type Filtering
+
+Filter by source type:
+
+- **All** - Show all sources
+- **Tier 1 Only** - Highest credibility only
+- **Exclude State Media** - Hide propaganda risks
+
+## Feed Refresh
+
+News feeds update automatically:
+
+### Refresh Intervals
+
+- **Default**: Every 5 minutes
+- **High-priority feeds** (Breaking News): Every 2 minutes
+- **Low-priority feeds** (Opinion, Analysis): Every 10 minutes
+
+### Circuit Breakers
+
+If a feed fails repeatedly:
+
+- **5-minute cooldown** - Prevents cascading failures
+- **Exponential backoff** - Increases retry delay
+- **Error indicators** - Shows feed status in UI
+
+### Manual Refresh
+
+Force an immediate refresh:
+
+1. Locate the refresh button in panel header
+2. Click to trigger immediate fetch
+3. Loading indicator appears during fetch
+
+## Advanced Features
+
+### Deviation Indicators
+
+News panels show deviation levels when activity is abnormal:
+
+- 📊 **Elevated** - 1.5-2x normal volume
+- 📈 **High** - 2-3x normal volume
+- 🚨 **Critical** - 3x+ normal volume
+
+Based on temporal baseline anomaly detection (90-day rolling window).
+
+### Trending Keywords
+
+A separate panel shows spiking terms:
+
+- **2-hour window vs 7-day baseline** - Detects surges
+- **3x spike threshold** - Filters noise
+- **Source diversity** - Requires 2+ feeds
+- **CVE/APT extraction** - Identifies threat indicators
+- **Auto-summarization** - AI context for spikes (rate-limited)
+
+### Entity Extraction
+
+Headlines are analyzed for entities:
+
+- **Countries** - Auto-linked to country briefs
+- **Leaders** - World leader profiles
+- **Organizations** - UN, NATO, IMF, etc.
+- **Military entities** - Specific units, equipment
+
+## Export & Sharing
+
+### Individual Items
+
+- **Copy link** - Direct URL to article
+- **Share to social** - Twitter, LinkedIn, WhatsApp, Telegram
+- **Email** - Pre-formatted email with headline and link
+
+### Panel Summaries
+
+Generate AI summaries of panel content:
+
+1. Click ✨ sparkle button in panel header
+2. AI analyzes top 8 headlines
+3. Summary appears below header
+4. Cached for 10 minutes
+
+<Tip>
+  Summaries are variant-aware (geopolitical, tech, or finance framing) and language-aware (matches UI language).
+</Tip>
+
+## Localized Feeds
+
+Seven locales have native-language feed sets:
+
+- **French** - Le Monde, Jeune Afrique, France24
+- **Arabic** - Al Jazeera Arabic, Al Arabiya
+- **German** - DW German, Spiegel, FAZ
+- **Spanish** - El País, BBC Mundo
+- **Turkish** - BBC Türkçe, Hurriyet, DW Turkish
+- **Polish** - TVN24, Polsat News, Rzeczpospolita
+- **Russian** - BBC Russian, Meduza, Novaya Gazeta Europe
+- **Thai** - Bangkok Post, Thai PBS
+- **Vietnamese** - VnExpress, Tuoi Tre News
+
+Feeds automatically load based on UI language preference.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Video Streams" icon="video" href="/guide/video-streams">
+    Configure live video channels
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick search for news and entities
+  </Card>
+  <Card title="Map Controls" icon="map" href="/guide/map-controls">
+    Visualize news on the map
+  </Card>
+  <Card title="Panels" icon="table-columns" href="/guide/panels">
+    Customize news panel layout
+  </Card>
+</CardGroup>

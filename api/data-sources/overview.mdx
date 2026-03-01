@@ -1,0 +1,192 @@
+---
+title: 'Data Sources Overview'
+description: 'Comprehensive overview of World Monitor data sources, types, and update frequencies'
+icon: 'database'
+---
+
+## Overview
+
+World Monitor integrates **38 distinct external API sources** plus **150+ RSS feed domains** to provide unified real-time intelligence across geopolitical, financial, military, environmental, humanitarian, and technology domains.
+
+## Data Source Statistics
+
+| Metric | Count |
+|---|---|
+| Total external APIs | 38 |
+| RSS feed domains | ~150 |
+| Require API key (mandatory) | 10 |
+| Require API key (optional) | 2 |
+| Fully public / no auth | 26 |
+| Free tier sufficient | 36 |
+| Paid / commercial tier needed | 2 |
+| WebSocket sources | 1 |
+
+## Authentication Methods
+
+<AccordionGroup>
+  <Accordion title="API Key Required (Header/Query)">
+    - ACLED
+    - Finnhub
+    - FRED (Federal Reserve Economic Data)
+    - Wingbits
+    - AbuseIPDB
+    - NASA FIRMS
+    - Groq
+    - OpenRouter
+    - Cloudflare Radar
+    - EIA (Energy Information Administration)
+  </Accordion>
+
+  <Accordion title="Optional API Key">
+    - GitHub (60 req/hour without, 5000 req/hour with token)
+    - HDX HAPI (higher rate limits with app identifier)
+  </Accordion>
+
+  <Accordion title="No Authentication Required">
+    - UCDP, GDELT, NGA MSI
+    - Yahoo Finance, CoinGecko, Polymarket
+    - alternative.me, blockchain.info
+    - OpenSky, Feodo Tracker, URLhaus, C2IntelFeeds, AlienVault OTX
+    - USGS, NOAA, Status Pages, FAA
+    - UNHCR, WorldPop, World Bank
+    - Hacker News, ArXiv, pizzint.watch
+    - RSS feeds, Tech Events
+  </Accordion>
+
+  <Accordion title="Custom Authentication">
+    - AIS Relay (URL-based auth via WS_RELAY_URL)
+  </Accordion>
+</AccordionGroup>
+
+## Data Source Categories
+
+### Geopolitical Data
+- **ACLED** - Armed Conflict Location & Event Data
+- **UCDP** - Uppsala Conflict Data Program
+- **GDELT** - Global Database of Events, Language, and Tone
+- **NGA MSI** - Maritime Safety Information
+
+### Markets & Finance
+- **Finnhub** - Stock market data and ETF flows
+- **Yahoo Finance** - Stock indices (unofficial API)
+- **CoinGecko** - Cryptocurrency prices and market data
+- **FRED** - Federal Reserve Economic Data
+- **Polymarket** - Prediction markets via Gamma API
+- **alternative.me** - Fear & Greed Index
+- **blockchain.info** - Bitcoin hash rate
+
+### Military & Security
+- **OpenSky Network** - ADS-B aircraft tracking
+- **Wingbits** - Premium ADS-B data (commercial)
+- **Custom AIS Relay** - Ship tracking via AIS
+- **Feodo Tracker** - C2 botnet infrastructure
+- **URLhaus** - Malicious URL database
+- **C2IntelFeeds** - Community C2 IP/domain feeds
+- **AlienVault OTX** - Open Threat Exchange
+- **AbuseIPDB** - IP reputation scoring
+
+### Natural Events
+- **USGS** - Earthquake data (GeoJSON feeds)
+- **NASA FIRMS** - Satellite fire detection (VIIRS/MODIS)
+- **NOAA** - Climate monitoring and anomalies
+
+### AI / ML
+- **Groq** - Primary LLM provider (ultra-fast inference)
+- **OpenRouter** - Multi-model LLM aggregator (fallback)
+
+### Infrastructure & Status
+- **Cloudflare Radar** - Internet outage detection (Enterprise)
+- **Status Pages** - 33+ service status monitors
+- **FAA ASWS** - Airport status and delays
+
+### Humanitarian
+- **UNHCR** - Refugee and displacement statistics
+- **HDX HAPI** - OCHA Humanitarian Data Exchange
+- **WorldPop** - Population density for exposure analysis
+- **World Bank** - Development indicators
+
+### Content & Research
+- **Hacker News** - Tech community feed (Firebase API)
+- **GitHub** - Trending repositories and releases
+- **ArXiv** - Academic paper search
+- **EIA** - U.S. energy production and pricing
+
+## Update Frequencies
+
+World Monitor refreshes data sources at different intervals based on the nature of the data:
+
+| Data Source | Polling Interval | Cooldown on Error |
+|---|---|---|
+| RSS Feeds | 5 min per feed | 10 min |
+| Polymarket | 5 min | 10 min |
+| USGS Earthquakes | 5 min | 10 min |
+| ACLED | 5 min | 10 min |
+| GDELT | 5 min | 10 min |
+| Cloudflare Radar | 5 min | 10 min |
+| FRED Economic | 5 min | 10 min |
+| FAA Status | 5 min | 5 min |
+| NWS Weather | 5 min | 10 min |
+
+<Note>
+  RSS feeds use per-feed circuit breakers — one failing feed doesn't affect others.
+</Note>
+
+## Graceful Degradation
+
+When a data source becomes unavailable:
+
+1. **Cached data continues to display** - Stale but available via CDN/Redis
+2. **Status indicators update** - Service health shown in panels
+3. **Automatic recovery** - Resumes when cooldown expires
+4. **No user intervention required** - Transparent failover
+
+### Fallback Chains
+
+**AI Summarization**:
+```
+Ollama (local) → Groq (cloud) → OpenRouter (cloud) → Transformers.js (browser)
+```
+
+**Aircraft Data**:
+```
+Wingbits (premium) → OpenSky (public)
+```
+
+**News Classification**:
+```
+Keyword (instant) → ML (async) → LLM (batched, cached)
+```
+
+## Data Freshness Monitoring
+
+World Monitor tracks freshness across **28+ data sources** with explicit intelligence gap reporting. Each data source displays:
+
+- **Last updated timestamp**
+- **Freshness indicator** (green < 10min, yellow < 30min, red > 30min)
+- **Error states** with automatic retry
+- **Circuit breaker status** during cooldowns
+
+## API Key Requirements
+
+For the minimum viable setup, configure these keys:
+
+```bash
+ACLED_ACCESS_TOKEN=           # ACLED API key (researcher account)
+ACLED_EMAIL=                  # ACLED registered email
+FINNHUB_API_KEY=              # Finnhub stock data
+FRED_API_KEY=                 # Federal Reserve economic data
+GROQ_API_KEY=                 # Groq LLM (primary AI provider)
+```
+
+See the [API Keys](/configuration/api-keys) and [Environment Variables](/configuration/environment-variables) guides for the complete list.
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="RSS Feeds" icon="rss" href="/api/data-sources/rss-feeds">
+    150+ curated RSS feed sources by category
+  </Card>
+  <Card title="External APIs" icon="plug" href="/api/data-sources/external-apis">
+    Detailed API integration specifications
+  </Card>
+</CardGroup>

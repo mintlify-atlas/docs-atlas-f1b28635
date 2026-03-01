@@ -1,0 +1,439 @@
+---
+title: Testing
+description: End-to-end tests, API tests, and visual regression testing
+---
+
+## Overview
+
+World Monitor includes three test suites:
+
+1. **E2E Tests** — Playwright tests for full user flows across variants
+2. **API Tests** — Node.js tests for serverless functions and handlers
+3. **Visual Regression** — Screenshot comparison for map layers
+
+## E2E Tests (Playwright)
+
+### Run All Tests
+
+Run the complete E2E suite across all variants:
+
+```bash
+npm run test:e2e
+```
+
+This command runs:
+1. Runtime fetch tests (variant-agnostic API checks)
+2. Full variant tests
+3. Tech variant tests
+4. Finance variant tests
+
+### Run Tests by Variant
+
+<CodeGroup>
+```bash Full Variant
+npm run test:e2e:full
+```
+
+```bash Tech Variant
+npm run test:e2e:tech
+```
+
+```bash Finance Variant
+npm run test:e2e:finance
+```
+
+```bash Runtime Fetch (Variant-Agnostic)
+npm run test:e2e:runtime
+```
+</CodeGroup>
+
+### Test Configuration
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  testDir: './e2e',
+  workers: 1,                    // Serial execution (no parallelism)
+  timeout: 90000,                // 90 seconds per test
+  retries: 0,                    // Fail fast (no retries)
+  reporter: 'list',              // Verbose console output
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+    viewport: { width: 1280, height: 720 },
+    colorScheme: 'dark',
+    locale: 'en-US',
+    timezoneId: 'UTC',
+  },
+  webServer: {
+    command: 'VITE_E2E=1 npm run dev -- --host 127.0.0.1 --port 4173',
+    url: 'http://127.0.0.1:4173/tests/map-harness.html',
+    timeout: 120000,
+  },
+});
+```
+
+### Test Files
+
+| Test File | Purpose | Variant |
+| --- | --- | --- |
+| `runtime-fetch.spec.ts` | API endpoint validation | All |
+| `map-harness.spec.ts` | Map layer rendering | Full, Tech |
+| `circuit-breaker-persistence.spec.ts` | Circuit breaker behavior | Full |
+| `keyword-spike-flow.spec.ts` | Keyword spike detection | Full |
+| `theme-toggle.spec.ts` | Dark/light theme switching | All |
+| `mobile-map-popup.spec.ts` | Mobile map interactions | All |
+| `investments-panel.spec.ts` | Finance investments panel | Finance |
+
+### Example Test: Runtime Fetch
+
+```typescript
+// e2e/runtime-fetch.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('seismology API returns earthquakes', async ({ request }) => {
+  const response = await request.get('/api/seismology/v1/list-earthquakes?min_magnitude=4.5&days=7');
+  expect(response.status()).toBe(200);
+
+  const data = await response.json();
+  expect(data.earthquakes).toBeDefined();
+  expect(Array.isArray(data.earthquakes)).toBe(true);
+});
+
+test('aviation API returns airport delays', async ({ request }) => {
+  const response = await request.get('/api/aviation/v1/list-airport-delays');
+  expect(response.status()).toBe(200);
+
+  const data = await response.json();
+  expect(data.delays).toBeDefined();
+});
+```
+
+### Run Specific Test
+
+```bash
+npm run test:e2e:full -- -g "seismology API"
+```
+
+The `-g` flag matches test names via regex.
+
+### Debug Mode
+
+```bash
+npx playwright test --debug
+```
+
+Opens Playwright Inspector for step-by-step debugging.
+
+### Headed Mode
+
+```bash
+npx playwright test --headed
+```
+
+Runs tests in a visible browser window.
+
+## Visual Regression Tests
+
+### Golden Screenshot Tests
+
+Map layer rendering is validated using golden screenshots:
+
+```typescript
+// e2e/map-harness.spec.ts
+test('matches golden screenshots per layer and zoom', async ({ page }) => {
+  await page.goto('/tests/map-harness.html');
+
+  // Test military bases layer at zoom 4
+  await page.evaluate(() => {
+    window.testHarness.setZoom(4);
+    window.testHarness.toggleLayer('militaryBases', true);
+  });
+  await page.waitForTimeout(2000); // Wait for rendering
+  await expect(page).toHaveScreenshot('military-bases-z4.png');
+
+  // Test conflicts layer at zoom 6
+  await page.evaluate(() => {
+    window.testHarness.setZoom(6);
+    window.testHarness.toggleLayer('conflicts', true);
+  });
+  await page.waitForTimeout(2000);
+  await expect(page).toHaveScreenshot('conflicts-z6.png');
+});
+```
+
+### Run Visual Tests
+
+<CodeGroup>
+```bash Full Variant
+npm run test:e2e:visual:full
+```
+
+```bash Tech Variant
+npm run test:e2e:visual:tech
+```
+
+```bash All Variants
+npm run test:e2e:visual
+```
+</CodeGroup>
+
+### Update Golden Screenshots
+
+When map rendering changes intentionally:
+
+<CodeGroup>
+```bash Full Variant
+npm run test:e2e:visual:update:full
+```
+
+```bash Tech Variant
+npm run test:e2e:visual:update:tech
+```
+
+```bash All Variants
+npm run test:e2e:visual:update
+```
+</CodeGroup>
+
+This regenerates baseline screenshots in `e2e/map-harness.spec.ts-snapshots/`.
+
+<Warning>
+Only update golden screenshots when you've intentionally changed map rendering. Accidental updates will mask regressions.
+</Warning>
+
+## API Tests (Node.js)
+
+### Run API Tests
+
+```bash
+npm run test:sidecar
+```
+
+This command runs Node.js tests using the `--test` flag:
+
+```javascript
+// api/_cors.test.mjs
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { getCorsHeaders, isDisallowedOrigin } from './_cors.js';
+
+test('CORS allows worldmonitor.app', () => {
+  const req = new Request('https://worldmonitor.app/api/test', {
+    headers: { origin: 'https://worldmonitor.app' },
+  });
+  const headers = getCorsHeaders(req);
+  assert.strictEqual(headers['Access-Control-Allow-Origin'], 'https://worldmonitor.app');
+});
+
+test('CORS blocks unknown origin', () => {
+  const req = new Request('https://evil.com/api/test', {
+    headers: { origin: 'https://evil.com' },
+  });
+  assert.strictEqual(isDisallowedOrigin(req), true);
+});
+```
+
+### Test Files
+
+| Test File | Purpose |
+| --- | --- |
+| `api/_cors.test.mjs` | CORS policy validation |
+| `api/youtube/embed.test.mjs` | YouTube embed proxy |
+| `api/cyber-threats.test.mjs` | Threat intel API |
+| `api/usni-fleet.test.mjs` | USNI fleet parser |
+| `api/loaders-xml-wms-regression.test.mjs` | WMS layer regression |
+| `src-tauri/sidecar/local-api-server.test.mjs` | Desktop sidecar routing |
+| `scripts/ais-relay-rss.test.cjs` | Railway relay RSS proxy |
+
+### Data Validation Tests
+
+```bash
+npm run test:data
+```
+
+Runs tests in `tests/` using `tsx --test`:
+
+```typescript
+// tests/military-bases.test.mts
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { readFile } from 'node:fs/promises';
+
+test('military bases GeoJSON is valid', async () => {
+  const data = await readFile('./data/military-bases.geojson', 'utf-8');
+  const geojson = JSON.parse(data);
+
+  assert.strictEqual(geojson.type, 'FeatureCollection');
+  assert(Array.isArray(geojson.features));
+
+  for (const feature of geojson.features) {
+    assert.strictEqual(feature.type, 'Feature');
+    assert(feature.geometry);
+    assert(feature.properties);
+    assert(feature.properties.name);
+  }
+});
+```
+
+### RSS Feed Validation
+
+```bash
+npm run test:feeds
+```
+
+Validates all RSS feed URLs are reachable:
+
+```javascript
+// scripts/validate-rss-feeds.mjs
+import { RSS_FEEDS } from './config/rss-feeds.js';
+
+for (const feed of RSS_FEEDS) {
+  const response = await fetch(feed.url, { timeout: 10000 });
+  if (!response.ok) {
+    console.error(`❌ ${feed.name}: HTTP ${response.status}`);
+  } else {
+    console.log(`✅ ${feed.name}`);
+  }
+}
+```
+
+## Regression Testing
+
+### Map Overlay Behavior
+
+From the README:
+
+> Map overlay behavior is validated in Playwright using the map harness (`/tests/map-harness.html`).
+>
+> - Cluster-state cache initialization guard:
+>   - `updates protest marker click payload after data refresh`
+>   - `initializes cluster movement cache on first protest cluster render`
+> - Run by variant:
+>   - `npm run test:e2e:full -- -g "updates protest marker click payload after data refresh|initializes cluster movement cache on first protest cluster render"`
+>   - `npm run test:e2e:tech -- -g "updates protest marker click payload after data refresh|initializes cluster movement cache on first protest cluster render"`
+
+These tests ensure:
+1. **Cluster cache initialization** — Supercluster state is cached on first render
+2. **Click payload accuracy** — Marker click handlers receive up-to-date data after refresh
+
+### Run Regression Tests
+
+```bash
+# Full variant
+npm run test:e2e:full -- -g "cluster movement cache"
+
+# Tech variant
+npm run test:e2e:tech -- -g "cluster movement cache"
+```
+
+## Continuous Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:data
+      - run: npm run test:sidecar
+      - run: npx playwright install chromium
+      - run: npm run test:e2e
+```
+
+## Test Coverage
+
+### Covered Areas
+
+- API endpoint responses (20+ services)
+- Map layer rendering (40+ layers)
+- Circuit breaker persistence
+- Keyword spike detection
+- Theme switching (dark/light)
+- Mobile map interactions
+- Investment panel (Finance variant)
+- CORS policy
+- RSS feed parsing
+- GeoJSON data validation
+
+### Not Covered
+
+- WebSocket connections (AIS relay)
+- Desktop OS keychain integration
+- Ollama/LM Studio auto-discovery
+- Service worker updates
+- IndexedDB snapshot storage
+
+These areas require manual testing or platform-specific test environments.
+
+## Best Practices
+
+<Tip>
+**Write tests for bug fixes.** When you fix a bug, add a test that would have caught it.
+</Tip>
+
+<Tip>
+**Use `test:e2e:runtime` for API changes.** This test runs fast and validates all API endpoints.
+</Tip>
+
+<Warning>
+**Don't update golden screenshots blindly.** Review visual diffs carefully before running `--update-snapshots`.
+</Warning>
+
+<Note>
+Tests run serially (`workers: 1`) to avoid race conditions in shared state (service worker, localStorage).
+</Note>
+
+## Debugging Failed Tests
+
+### View Trace Files
+
+```bash
+npx playwright show-trace trace.zip
+```
+
+Playwright saves traces for failed tests in `test-results/`.
+
+### View Screenshots
+
+Failed tests save screenshots to `test-results/`:
+
+```
+test-results/
+├── map-harness-matches-golden-chromium/
+│   ├── test-failed-1.png
+│   └── trace.zip
+```
+
+### View Video Recordings
+
+Videos are saved for failed tests when `video: 'retain-on-failure'` is set:
+
+```typescript
+// playwright.config.ts
+use: {
+  video: 'retain-on-failure',
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deployment" icon="rocket" href="/deployment/overview">
+    Deploy to production
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="/contributing">
+    Contribute to World Monitor
+  </Card>
+</CardGroup>

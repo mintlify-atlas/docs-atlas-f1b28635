@@ -1,0 +1,372 @@
+---
+title: Panel Management
+description: Resizing, reordering, and customizing dashboard panels
+---
+
+World Monitor's panel system provides flexible control over your dashboard layout. Customize which panels appear, their order, and their size to match your workflow.
+
+## Panel Types
+
+Panels are organized into several categories based on data type:
+
+### Core Intelligence
+
+- **Live News** - Categorized RSS feeds with clustering
+- **Intelligence Insights** - AI-synthesized briefs and trending keywords
+- **Strategic Posture** - Military theater assessments
+- **Country Instability (CII)** - Real-time stability scores
+- **Strategic Risk** - Composite risk assessment
+
+### Real-Time Feeds
+
+- **Live Video Streams** - Global news channels
+- **Telegram Intelligence** - OSINT channels
+- **OREF Sirens** - Israeli rocket alerts
+- **Satellite Fires** - NASA FIRMS thermal data
+- **Climate Anomalies** - Temperature/precipitation deviations
+
+### Market Data (Finance Variant)
+
+- **Macro Signals** - 7-signal radar
+- **Crypto Prices** - BTC, ETH, SOL, XRP
+- **ETF Flows** - Bitcoin spot ETF tracker
+- **Stablecoin Health** - Peg monitoring
+
+### Tech Ecosystem (Tech Variant)
+
+- **Tech Hubs** - Startup activity
+- **AI Regulations** - Policy deadlines
+- **Service Status** - Cloud/AI uptime
+- **Tech Events** - Conference calendar
+
+## Enabling/Disabling Panels
+
+Control which panels appear on your dashboard:
+
+<Steps>
+  <Step title="Access Panel Settings">
+    Panel visibility is controlled via the main settings interface or by closing panels individually.
+  </Step>
+  <Step title="Toggle Panel Visibility">
+    Click the **×** button in a panel header to hide it. Re-enable via settings.
+  </Step>
+  <Step title="Settings Persistence">
+    Panel visibility preferences are saved to localStorage and restored on reload.
+  </Step>
+</Steps>
+
+<Info>
+  In the desktop app, the **Runtime Configuration** panel is always enabled and cannot be disabled - it provides essential credential management.
+</Info>
+
+## Panel Reordering
+
+Rearrange panels using drag-and-drop:
+
+<Steps>
+  <Step title="Locate Drag Handle">
+    Hover over any panel header to reveal the drag handle (usually on the left side).
+  </Step>
+  <Step title="Click and Drag">
+    Click and hold the drag handle, then move the panel to your desired position.
+  </Step>
+  <Step title="Drop to Place">
+    Release the mouse button to drop the panel in its new position.
+  </Step>
+  <Step title="Order Saved">
+    Your custom panel order is saved to localStorage as `panel-order`.
+  </Step>
+</Steps>
+
+<Tip>
+  Touch events are supported for tablet users - use touch-and-hold to initiate drag-and-drop.
+</Tip>
+
+## Panel Resizing
+
+Adjust panel heights to prioritize important information:
+
+### Row Span Control
+
+Panels support 4 height sizes:
+
+<CardGroup cols={2}>
+  <Card title="span-1" icon="compress">
+    Compact - Minimum height (~200px)
+  </Card>
+  <Card title="span-2" icon="arrows-up-down">
+    Standard - Default height (~400px)
+  </Card>
+  <Card title="span-3" icon="expand">
+    Large - Extended height (~600px)
+  </Card>
+  <Card title="span-4" icon="up-right-and-down-left-from-center">
+    Extra Large - Maximum height (~800px)
+  </Card>
+</CardGroup>
+
+### Resizing via Drag Handle
+
+<Steps>
+  <Step title="Locate Resize Handle">
+    Find the horizontal drag handle at the bottom edge of any panel.
+  </Step>
+  <Step title="Drag Vertically">
+    Click and drag the handle up (smaller) or down (larger).
+  </Step>
+  <Step title="Snap to Span">
+    The panel snaps to the nearest span size (1-4) based on drag distance.
+    
+    Resize step: **80 pixels** per span level.
+  </Step>
+  <Step title="Double-Click to Reset">
+    Double-click the resize handle to restore the panel's default height.
+  </Step>
+</Steps>
+
+### Column Span (Width) Control
+
+On ultra-wide monitors (≥ 2000px), panels can span multiple columns:
+
+<CardGroup cols={3}>
+  <Card title="col-span-1" icon="minimize">
+    Single column (default)
+  </Card>
+  <Card title="col-span-2" icon="maximize">
+    Double width
+  </Card>
+  <Card title="col-span-3" icon="window-maximize">
+    Triple width
+  </Card>
+</CardGroup>
+
+<Steps>
+  <Step title="Locate Column Resize Handle">
+    On ultra-wide layouts, find the vertical resize handle on the panel's right edge.
+  </Step>
+  <Step title="Drag Horizontally">
+    Click and drag the handle left (narrower) or right (wider).
+  </Step>
+  <Step title="Snap to Column Span">
+    The panel snaps to 1, 2, or 3 column widths.
+    
+    Resize step: **80 pixels** per column.
+  </Step>
+  <Step title="Auto-Clamp">
+    Maximum span is limited by grid width (typically 3 columns max).
+  </Step>
+</Steps>
+
+<Info>
+  Panel sizes are stored separately in localStorage:
+  - `worldmonitor-panel-spans` - Row heights
+  - `worldmonitor-panel-col-spans` - Column widths
+</Info>
+
+## Panel-Specific Features
+
+### Activity Tracking
+
+Certain panels track new content:
+
+- **Badge counter** - Shows number of new items since last view
+- **Pulse animation** - Draws attention to updates
+- **Auto-clear on scroll** - Marking items as "seen" when you scroll the panel
+- **Auto-clear on click** - Any click in the panel clears the badge
+
+<Tip>
+  Activity tracking applies to: Live News, Telegram Intelligence, OREF Sirens, and other feed-based panels.
+</Tip>
+
+### Panel Summaries
+
+News panels include an AI summarization feature:
+
+<Steps>
+  <Step title="Locate Sparkle Button">
+    Find the ✨ button in the panel header (next to the count).
+  </Step>
+  <Step title="Click to Summarize">
+    Click the sparkle button to generate an AI summary of the panel's content.
+  </Step>
+  <Step title="View Summary">
+    A summary section appears between the header and content, showing:
+    - Key themes from the top 8 headlines
+    - Variant-aware framing (geopolitical, tech, or finance focus)
+    - Language-aware output (matches UI language)
+  </Step>
+  <Step title="Cached Results">
+    Summaries are cached for 10 minutes to avoid redundant API calls.
+  </Step>
+</Steps>
+
+### Virtual Scrolling
+
+Panels with 15+ items use virtual scrolling for performance:
+
+- Only visible items are rendered in the DOM
+- 3-item overscan buffer above/below viewport
+- Smooth scrolling with requestAnimationFrame batching
+- Automatic ResizeObserver-based adaptation
+
+<Info>
+  Virtual scrolling is transparent to users but dramatically improves performance with large feeds (100+ items).
+</Info>
+
+## Layout Modes
+
+### Standard Layout (< 2000px)
+
+Panels stack vertically in a single column:
+
+- Full-width panels
+- Consistent vertical rhythm
+- Mobile-friendly
+
+### Ultra-Wide Layout (≥ 2000px)
+
+L-shaped grid with map on left:
+
+- Map occupies 60% width on left
+- Panels tile in a 3-column grid to the right and below
+- Automatic column adjustment based on viewport width
+- Uses CSS `display: contents` for efficient layout
+
+<Tip>
+  The layout automatically adapts when you resize your browser window. No manual configuration needed.
+</Tip>
+
+## Default Panel Order
+
+Each variant has an optimized default panel order:
+
+### Full Variant (Geopolitical)
+
+1. Live News
+2. Intelligence Insights
+3. Strategic Posture
+4. Country Instability (CII)
+5. Strategic Risk
+6. Telegram Intelligence
+7. OREF Sirens (if enabled)
+8. Satellite Fires
+9. Climate Anomalies
+
+### Tech Variant
+
+1. Live News
+2. Intelligence Insights (moved to top for tech focus)
+3. Tech Hubs
+4. AI Regulations
+5. Service Status
+6. Tech Events
+
+### Finance Variant
+
+1. Live News
+2. Macro Signals
+3. Crypto Prices
+4. ETF Flows
+5. Stablecoin Health
+6. Strategic Posture
+7. Country Instability
+
+## Panel Migrations
+
+World Monitor automatically migrates panel layouts when you:
+
+### Switch Variants
+
+When you switch from one variant to another:
+
+- Old panel order is cleared
+- Default order for new variant is applied
+- Layer preferences are reset to variant defaults
+- Size preferences are preserved (if applicable)
+
+<Warning>
+  Switching variants resets your panel configuration. Custom orders and sizes for the old variant are not preserved.
+</Warning>
+
+### Update Versions
+
+When new panels are added in updates:
+
+- Existing panel order is preserved
+- New panels are merged into your configuration
+- Migration keys prevent duplicate migrations
+
+Migration keys in localStorage:
+- `worldmonitor-panel-order-v1.9`
+- `worldmonitor-layout-reset-v2.5`
+- `worldmonitor-tech-insights-top-v1`
+
+## Resetting Panel Layout
+
+Restore default panel configuration:
+
+<Steps>
+  <Step title="Clear localStorage Keys">
+    Open browser DevTools (F12) → Console, then run:
+    ```javascript
+    localStorage.removeItem('panel-order');
+    localStorage.removeItem('worldmonitor-panel-spans');
+    localStorage.removeItem('worldmonitor-panel-col-spans');
+    ```
+  </Step>
+  <Step title="Reload Page">
+    Refresh the page (Cmd/Ctrl+R) to apply defaults.
+  </Step>
+  <Step title="Verify Reset">
+    Panels should now appear in default order with default sizes.
+  </Step>
+</Steps>
+
+<Tip>
+  For a complete reset including layer preferences, also remove:
+  ```javascript
+  localStorage.removeItem('worldmonitor-map-layers');
+  localStorage.removeItem('worldmonitor-panels');
+  ```
+</Tip>
+
+## Panel-Specific Settings
+
+Some panels have additional configuration:
+
+### Live News Panel
+
+- Keyword monitors (user-defined alerts)
+- Source filtering (tier 1/2/3)
+- Clustering mode toggle
+- Translation support
+
+### Live Video Streams Panel
+
+- Channel selection (8 default + 30 optional)
+- Global quality control (auto, 360p, 480p, 720p)
+- Idle-aware playback (pauses after 5 min)
+- HLS vs YouTube iframe mode
+
+### Strategic Posture Panel
+
+- Theater selection (9 theaters)
+- Posture level thresholds
+- Force projection indicators
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="News Feeds" icon="newspaper" href="/guide/news-feeds">
+    Filter and monitor RSS feeds
+  </Card>
+  <Card title="Video Streams" icon="video" href="/guide/video-streams">
+    Configure live video channels
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick panel navigation
+  </Card>
+  <Card title="Map Controls" icon="sliders" href="/guide/map-controls">
+    Layer and time filtering
+  </Card>
+</CardGroup>

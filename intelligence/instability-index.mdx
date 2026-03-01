@@ -1,0 +1,550 @@
+---
+title: 'Country Instability Index (CII)'
+description: 'Real-time stability scoring system with multi-signal fusion and component breakdown'
+icon: 'gauge-high'
+---
+
+## Overview
+
+The **Country Instability Index (CII)** is a real-time stability scoring system (0-100) that blends structural baseline risk with detected events across multiple intelligence streams. Every country with incoming data receives a live score automatically.
+
+<Note>
+  23 curated tier-1 nations have individually tuned baseline risk profiles. All other countries use universal default scoring (`DEFAULT_BASELINE_RISK = 15`, `DEFAULT_EVENT_MULTIPLIER = 1.0`).
+</Note>
+
+## Score Calculation Formula
+
+The CII is calculated using a **blended approach** that combines baseline risk (40%) with dynamic event scoring (60%):
+
+```typescript
+const eventScore = (
+  components.unrest * 0.25 +
+  components.conflict * 0.30 +
+  components.security * 0.20 +
+  components.information * 0.25
+);
+
+const blendedScore = (
+  baselineRisk * 0.4 +
+  eventScore * 0.6 +
+  hotspotBoost +
+  newsUrgencyBoost +
+  focalBoost +
+  displacementBoost +
+  climateBoost +
+  orefBlendBoost +
+  advisoryBoost +
+  supplementalSignalBoost
+);
+
+const floor = Math.max(getUcdpFloor(data), getAdvisoryFloor(data));
+const score = Math.round(Math.min(100, Math.max(floor, blendedScore)));
+```
+
+**Source**: `src/services/country-instability.ts:883-907`
+
+## Component Breakdown
+
+### Unrest Score (25% weight)
+
+Measures civil unrest events from ACLED protests:
+
+<ParamField path="protestCount" type="number">
+  Number of protest events detected in country (24h window).
+</ParamField>
+
+<ParamField path="eventMultiplier" type="number" default="1.0">
+  Country-specific scaling factor. High-volume democracies (US, France, India) use logarithmic scaling to prevent routine protests from inflating scores.
+
+  **Examples**:
+  - US: 0.3 (protests are routine, not destabilizing)
+  - Russia: 2.0 (protests are rare and significant)
+  - Iran: 2.0 (authoritarian state, every protest matters)
+</ParamField>
+
+<ParamField path="fatalityBoost" type="number">
+  `Math.min(30, fatalities * 5 * multiplier)` — deadly protests escalate score significantly.
+</ParamField>
+
+<ParamField path="severityBoost" type="number">
+  `Math.min(20, highSeverityCount * 10 * multiplier)` — protest severity classification from ACLED.
+</ParamField>
+
+<ParamField path="outageBoost" type="number">
+  Internet outages during protests indicate censorship:
+  - Total outage: +30 per event
+  - Major outage: +15 per event
+  - Partial outage: +5 per event
+  - Cap: 50 points
+</ParamField>
+
+**Formula**:
+```typescript
+function calcUnrestScore(data: CountryData, countryCode: string): number {
+  const protestCount = data.protests.length;
+  const multiplier = CURATED_COUNTRIES[countryCode]?.eventMultiplier ?? DEFAULT_EVENT_MULTIPLIER;
+
+  const isHighVolume = multiplier < 0.7;
+  const adjustedCount = isHighVolume
+    ? Math.log2(protestCount + 1) * multiplier * 5
+    : protestCount * multiplier;
+
+  const baseScore = Math.min(50, adjustedCount * 8);
+  const fatalityBoost = Math.min(30, fatalities * 5 * multiplier);
+  const severityBoost = Math.min(20, highSeverityCount * 10 * multiplier);
+  const outageBoost = Math.min(50, totalOutages * 30 + majorOutages * 15 + partialOutages * 5);
+
+  return Math.min(100, baseScore + fatalityBoost + severityBoost + outageBoost);
+}
+```
+
+**Source**: `src/services/country-instability.ts:683-716`
+
+### Conflict Score (30% weight)
+
+Measures armed conflict intensity from ACLED + GDELT + Iran attack events:
+
+<ParamField path="battleEvents" type="number">
+  Direct combat engagements (×3 multiplier).
+</ParamField>
+
+<ParamField path="explosionEvents" type="number">
+  Remote violence and explosions (×4 multiplier).
+</ParamField>
+
+<ParamField path="civilianViolence" type="number">
+  Violence against civilians (×5 multiplier + 10pt bonus cap).
+</ParamField>
+
+<ParamField path="totalFatalities" type="number">
+  `Math.min(40, Math.sqrt(totalFatalities) * 5 * multiplier)` — square root scaling prevents outlier events from dominating.
+</ParamField>
+
+<ParamField path="strikeBoost" type="number">
+  Recent strikes (7-day window):
+  - Base: +3 per strike
+  - High/critical severity: additional +5 per strike
+  - Cap: 50 points
+</ParamField>
+
+<ParamField path="orefBoost" type="number">
+  **Israel-specific**: OREF rocket alert integration
+  - Active alerts: +25 base
+  - Additional +5 per alert (up to +25 more)
+  - 24-hour history: +10 if ≥10 alerts, +5 if 3-9 alerts
+</ParamField>
+
+**Formula**:
+```typescript
+function calcConflictScore(data: CountryData, countryCode: string): number {
+  const multiplier = CURATED_COUNTRIES[countryCode]?.eventMultiplier ?? DEFAULT_EVENT_MULTIPLIER;
+
+  const eventScore = Math.min(50, (
+    battleCount * 3 +
+    explosionCount * 4 +
+    civilianCount * 5
+  ) * multiplier);
+
+  const fatalityScore = Math.min(40, Math.sqrt(totalFatalities) * 5 * multiplier);
+  const civilianBoost = civilianCount > 0 ? Math.min(10, civilianCount * 3) : 0;
+
+  const acledScore = eventScore + fatalityScore + civilianBoost;
+
+  // Fallback to HAPI humanitarian data if ACLED unavailable
+  const hapiFallback = events.length === 0 && data.hapiSummary
+    ? Math.min(60, data.hapiSummary.eventsPoliticalViolence * 3 * multiplier)
+    : 0;
+
+  // News floor: 2+ conflict/military headlines from tier-1/2 sources within 6h
+  const newsFloor = calcNewsConflictFloor(data, multiplier);
+
+  const strikeBoost = Math.min(50, recentStrikes.length * 3 + highSeverityStrikes * 5);
+  const orefBoost = countryCode === 'IL' && data.orefAlertCount > 0
+    ? 25 + Math.min(25, data.orefAlertCount * 5)
+    : 0;
+
+  return Math.min(100, Math.max(acledScore, hapiFallback, newsFloor) + strikeBoost + orefBoost);
+}
+```
+
+**Source**: `src/services/country-instability.ts:747-791`
+
+### Security Score (20% weight)
+
+Measures military activity and aviation disruption:
+
+<ParamField path="militaryFlights" type="number">
+  ADS-B tracked military aircraft (3pts each, cap 50).
+
+  **Foreign military presence**: Flights from non-resident operators are double-weighted to account for threat projection.
+</ParamField>
+
+<ParamField path="militaryVessels" type="number">
+  AIS + USNI tracked naval vessels (5pts each, cap 30).
+</ParamField>
+
+<ParamField path="aviationDisruption" type="number">
+  Airport delays/closures:
+  - Closure: +20
+  - Severe delay: +15
+  - Major delay: +10
+  - Moderate delay: +5
+  - Cap: 40 points
+</ParamField>
+
+<ParamField path="gpsJamming" type="number">
+  GPS/GNSS interference from ADS-B transponder analysis:
+  - High interference (>10%): +5 per H3 hex cell
+  - Medium interference (2-10%): +2 per hex
+  - Cap: 35 points
+
+  **Region tagging**: Interference zones mapped to 12 conflict regions (Iran-Iraq, Ukraine-Russia, Levant, Baltic, etc.)
+</ParamField>
+
+**Formula**:
+```typescript
+function calcSecurityScore(data: CountryData): number {
+  const flightScore = Math.min(50, data.militaryFlights.length * 3);
+  const vesselScore = Math.min(30, data.militaryVessels.length * 5);
+
+  const aviationScore = Math.min(40, data.aviationDisruptions.reduce((sum, a) => {
+    if (a.delayType === 'closure') return sum + 20;
+    if (a.severity === 'severe') return sum + 15;
+    if (a.severity === 'major') return sum + 10;
+    if (a.severity === 'moderate') return sum + 5;
+    return sum;
+  }, 0));
+
+  const gpsJammingScore = Math.min(35,
+    data.gpsJammingHighCount * 5 +
+    data.gpsJammingMediumCount * 2
+  );
+
+  return Math.min(100, flightScore + vesselScore + aviationScore + gpsJammingScore);
+}
+```
+
+**Source**: `src/services/country-instability.ts:803-821`
+
+### Information Score (25% weight)
+
+Measures news velocity and reporting intensity:
+
+<ParamField path="newsEventCount" type="number">
+  Clustered news events mentioning country (6h window).
+</ParamField>
+
+<ParamField path="velocity" type="number">
+  Average sources-per-hour across news clusters.
+
+  **Threshold**: High-volume countries (US, China, Russia) require velocity >5 to trigger boost. Others require >2.
+</ParamField>
+
+<ParamField path="alertBoost" type="number">
+  +20 * multiplier if any news cluster has `isAlert` flag (breaking news).
+</ParamField>
+
+**Formula**:
+```typescript
+function calcInformationScore(data: CountryData, countryCode: string): number {
+  const count = data.newsEvents.length;
+  if (count === 0) return 0;
+
+  const multiplier = CURATED_COUNTRIES[countryCode]?.eventMultiplier ?? DEFAULT_EVENT_MULTIPLIER;
+  const velocitySum = data.newsEvents.reduce((sum, e) => sum + (e.velocity?.sourcesPerHour || 0), 0);
+  const avgVelocity = velocitySum / count;
+
+  const isHighVolume = multiplier < 0.7;
+  const adjustedCount = isHighVolume
+    ? Math.log2(count + 1) * multiplier * 3
+    : count * multiplier;
+
+  const baseScore = Math.min(40, adjustedCount * 5);
+
+  const velocityThreshold = isHighVolume ? 5 : 2;
+  const velocityBoost = avgVelocity > velocityThreshold
+    ? Math.min(40, (avgVelocity - velocityThreshold) * 10 * multiplier)
+    : 0;
+
+  const alertBoost = data.newsEvents.some(e => e.isAlert) ? 20 * multiplier : 0;
+
+  return Math.min(100, baseScore + velocityBoost + alertBoost);
+}
+```
+
+**Source**: `src/services/country-instability.ts:823-846`
+
+## Additional Boosters
+
+### Hotspot Proximity Boost
+
+Events near intelligence hotspots (Tehran, Kyiv, Gaza, etc.) increase country scores:
+
+```typescript
+function trackHotspotActivity(lat: number, lon: number, weight: number = 1): void {
+  for (const hotspot of INTEL_HOTSPOTS) {
+    const dist = haversineKm(lat, lon, hotspot.lat, hotspot.lon);
+    if (dist < 150) {
+      const countryCodes = getHotspotCountries(hotspot.id);
+      for (const countryCode of countryCodes) {
+        hotspotActivityMap.set(countryCode, (hotspotActivityMap.get(countryCode) || 0) + weight);
+      }
+    }
+  }
+}
+
+function getHotspotBoost(countryCode: string): number {
+  const activity = hotspotActivityMap.get(countryCode) || 0;
+  return Math.min(10, activity * 1.5);
+}
+```
+
+**Source**: `src/services/country-instability.ts:304-348`
+
+### Focal Point Urgency Boost
+
+Correlation between news coverage and map signals:
+
+<ParamField path="criticalUrgency" type="number" default="+8">
+  Country appears as critical focal point (3+ signal types + high news coverage).
+</ParamField>
+
+<ParamField path="elevatedUrgency" type="number" default="+4">
+  Country appears as elevated focal point (2+ signal types + moderate news coverage).
+</ParamField>
+
+### Displacement Boost
+
+<ParamField path="massiveOutflow" type="number" default="+8">
+  ≥1M refugees + asylum seekers (UNHCR data).
+</ParamField>
+
+<ParamField path="significantOutflow" type="number" default="+4">
+  100K–1M refugees + asylum seekers.
+</ParamField>
+
+### Climate Stress Boost
+
+<ParamField path="extremeAnomaly" type="number" default="+15">
+  Temperature/precipitation >2 standard deviations from 30-day ERA5 baseline.
+</ParamField>
+
+<ParamField path="elevatedAnomaly" type="number" default="+8">
+  1.5-2 standard deviations from baseline.
+</ParamField>
+
+**Monitored zones**: Ukraine, Middle East (Iran, Israel, Saudi Arabia, Syria, Yemen), South Asia (Pakistan, India), Myanmar
+
+### Government Travel Advisory Boost
+
+<ParamField path="doNotTravel" type="number">
+  - Base: +15
+  - Multi-source consensus bonus:
+    - 3+ governments: +5
+    - 2 governments: +3
+  - **Floor**: Score cannot drop below 60 with Do-Not-Travel advisory
+</ParamField>
+
+<ParamField path="reconsiderTravel" type="number">
+  - Base: +10
+  - Multi-source bonus (same as above)
+  - **Floor**: Score cannot drop below 50
+</ParamField>
+
+<ParamField path="caution" type="number">
+  +5 (no floor)
+</ParamField>
+
+**Sources**: US State Dept, Australia DFAT, UK FCDO, New Zealand MFAT
+
+### Supplemental Signal Boost
+
+<ParamField path="aisDisruption" type="number">
+  Vessel tracking anomalies:
+  - High severity: +2.5 per event
+  - Elevated: +1.5 per event
+  - Low: +0.5 per event
+  - Cap: 10 points
+</ParamField>
+
+<ParamField path="satelliteFires" type="number">
+  NASA FIRMS thermal hotspots:
+  - High intensity (≥360K or ≥50MW): +1.5 per fire
+  - Normal fires: +0.25 each (20 fire cap)
+  - Cap: 8 points
+</ParamField>
+
+<ParamField path="cyberThreats" type="number">
+  Geolocated IOCs (C2 servers, phishing, malware):
+  - Critical: +3 per threat
+  - High: +1.8 per threat
+  - Medium: +0.9 per threat
+  - Cap: 12 points
+</ParamField>
+
+<ParamField path="temporalAnomalies" type="number">
+  Welford's algorithm detects deviations from 90-day baseline:
+  - Critical (z-score ≥3.0): +2 per anomaly
+  - Normal (z-score 1.5-3.0): +0.75 per anomaly
+  - Cap: 6 points
+</ParamField>
+
+## Floor Scores
+
+### UCDP Conflict Classification
+
+UN-classified active wars override optimistic scores:
+
+<ParamField path="war" type="number" default="70">
+  ≥1,000 battle deaths in the current calendar year.
+
+  **Example**: Ukraine automatically receives ≥70 CII due to UCDP "war" classification.
+</ParamField>
+
+<ParamField path="minor" type="number" default="50">
+  25-999 battle deaths.
+</ParamField>
+
+<ParamField path="none" type="number" default="0">
+  No UCDP conflict classification.
+</ParamField>
+
+**Source**: UCDP Georeferenced Event Dataset (GED) with automatic version discovery
+
+## Threat Level Ranges
+
+<ParamField path="critical" type="range" default="81-100">
+  Imminent or active crisis. Examples: Ukraine (85), Yemen (82), Syria (88).
+</ParamField>
+
+<ParamField path="high" type="range" default="66-80">
+  Significant instability. Examples: Iran (72), Myanmar (68).
+</ParamField>
+
+<ParamField path="elevated" type="range" default="51-65">
+  Moderate risk. Examples: Venezuela (58), Pakistan (54).
+</ParamField>
+
+<ParamField path="normal" type="range" default="31-50">
+  Baseline geopolitical activity. Examples: Russia (42), Saudi Arabia (38), Mexico (35).
+</ParamField>
+
+<ParamField path="low" type="range" default="0-30">
+  Stable. Examples: US (18), Germany (12), Japan (15).
+</ParamField>
+
+## Trend Detection
+
+Scores are compared against previous values (stored in `Map<string, number>`) to calculate 24-hour trends:
+
+```typescript
+function getTrend(code: string, current: number): CountryScore['trend'] {
+  const prev = previousScores.get(code);
+  if (prev === undefined) return 'stable';
+  const diff = current - prev;
+  if (diff >= 5) return 'rising';
+  if (diff <= -5) return 'falling';
+  return 'stable';
+}
+```
+
+**Threshold**: ±5 points required to trigger trend indicator.
+
+## Learning Mode
+
+On cold start (no cached scores), CII enters a 15-minute learning phase:
+
+<ParamField path="learningDuration" type="number" default="900000">
+  15 minutes in milliseconds. Dashboard displays learning progress bar.
+</ParamField>
+
+<ParamField path="cachedScoresBypass" type="boolean">
+  If cached scores from previous session exist (via `/api/risk-scores`), learning mode is skipped entirely.
+</ParamField>
+
+```typescript
+export function isInLearningMode(): boolean {
+  if (hasCachedScoresAvailable) return false;
+  if (isLearningComplete) return false;
+  if (learningStartTime === null) return true;
+
+  const elapsed = Date.now() - learningStartTime;
+  if (elapsed >= LEARNING_DURATION_MS) {
+    isLearningComplete = true;
+    return false;
+  }
+  return true;
+}
+```
+
+**Source**: `src/services/country-instability.ts:85-96`
+
+## Example Scores
+
+<CodeGroup>
+```json Ukraine (War Zone)
+{
+  "code": "UA",
+  "name": "Ukraine",
+  "score": 85,
+  "level": "critical",
+  "trend": "stable",
+  "change24h": -2,
+  "components": {
+    "unrest": 28,
+    "conflict": 95,
+    "security": 78,
+    "information": 88
+  },
+  "lastUpdated": "2026-03-01T12:00:00Z"
+}
+```
+
+```json Iran (Elevated Tensions)
+{
+  "code": "IR",
+  "name": "Iran",
+  "score": 72,
+  "level": "high",
+  "trend": "rising",
+  "change24h": 8,
+  "components": {
+    "unrest": 45,
+    "conflict": 68,
+    "security": 82,
+    "information": 75
+  },
+  "boosts": {
+    "hotspot": 6,
+    "focal": 4,
+    "advisory": 10,
+    "gpsJamming": 15
+  }
+}
+```
+
+```json United States (Stable)
+{
+  "code": "US",
+  "name": "United States",
+  "score": 18,
+  "level": "low",
+  "trend": "stable",
+  "change24h": -1,
+  "components": {
+    "unrest": 12,
+    "conflict": 5,
+    "security": 8,
+    "information": 42
+  }
+}
+```
+</CodeGroup>
+
+## Key Files
+
+- `src/services/country-instability.ts` — Core CII calculation engine
+- `src/services/focal-point-detector.ts` — News-signal correlation for urgency boost
+- `src/services/geo-convergence.ts` — Geographic event clustering
+- `src/config/countries.ts` — Curated country configurations
+- `api/risk-scores.ts` — Cached CII scores endpoint

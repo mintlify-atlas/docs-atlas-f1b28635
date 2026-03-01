@@ -1,0 +1,506 @@
+---
+title: "Trade Service"
+description: "Access WTO trade data, tariffs, restrictions, and barriers"
+---
+
+## Overview
+
+The Trade Service provides comprehensive trade policy intelligence from World Trade Organization (WTO) data sources. Access quantitative restrictions, tariff trends, bilateral trade flows, and non-tariff barrier notifications.
+
+**Base Path:** `/api/trade/v1`
+
+---
+
+## GetTradeRestrictions
+
+Get quantitative restrictions and export controls.
+
+**Endpoint:** `GET /api/trade/v1/get-trade-restrictions`
+
+### Request Parameters
+
+<ParamField query="countries" type="array">
+  WTO member codes to filter by. Empty = all.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Max results to return (server caps at 100).
+</ParamField>
+
+### Response
+
+<ResponseField name="restrictions" type="array">
+  List of trade restrictions.
+  
+  <Expandable title="TradeRestriction">
+    <ResponseField name="id" type="string">
+      Unique restriction identifier from WTO.
+    </ResponseField>
+    
+    <ResponseField name="reporting_country" type="string">
+      ISO 3166-1 alpha-3 or WTO member code of reporting country.
+    </ResponseField>
+    
+    <ResponseField name="affected_country" type="string">
+      Country affected by the restriction.
+    </ResponseField>
+    
+    <ResponseField name="product_sector" type="string">
+      Product sector or HS chapter description.
+    </ResponseField>
+    
+    <ResponseField name="measure_type" type="string">
+      Measure classification: "QR", "EXPORT_BAN", "IMPORT_BAN", "LICENSING".
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Human-readable description of the measure.
+    </ResponseField>
+    
+    <ResponseField name="status" type="string">
+      Current status: "IN_FORCE", "TERMINATED", "NOTIFIED".
+    </ResponseField>
+    
+    <ResponseField name="notified_at" type="string">
+      ISO 8601 date when measure was notified.
+    </ResponseField>
+    
+    <ResponseField name="source_url" type="string">
+      WTO source document URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="fetched_at" type="string">
+  ISO 8601 timestamp when data was fetched from WTO.
+</ResponseField>
+
+<ResponseField name="upstream_unavailable" type="boolean">
+  True if upstream fetch failed and results may be stale/empty.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/trade/v1/get-trade-restrictions?countries=840&countries=156&limit=10"
+```
+
+### Example Response
+
+```json
+{
+  "restrictions": [
+    {
+      "id": "WTO-2024-001",
+      "reporting_country": "USA",
+      "affected_country": "CHN",
+      "product_sector": "Semiconductors (HS 8542)",
+      "measure_type": "EXPORT_BAN",
+      "description": "Export controls on advanced semiconductor manufacturing equipment",
+      "status": "IN_FORCE",
+      "notified_at": "2024-01-15T00:00:00Z",
+      "source_url": "https://docs.wto.org/dol2fe/..."
+    }
+  ],
+  "fetched_at": "2024-03-01T12:00:00Z",
+  "upstream_unavailable": false
+}
+```
+
+---
+
+## GetTariffTrends
+
+Get tariff rate timeseries for a country pair.
+
+**Endpoint:** `GET /api/trade/v1/get-tariff-trends`
+
+### Request Parameters
+
+<ParamField query="reporting_country" type="string">
+  WTO member code of reporting country (e.g. "840" = US).
+</ParamField>
+
+<ParamField query="partner_country" type="string">
+  WTO member code of partner country (e.g. "156" = China).
+</ParamField>
+
+<ParamField query="product_sector" type="string">
+  Product sector filter (HS chapter). Empty = aggregate.
+</ParamField>
+
+<ParamField query="years" type="integer">
+  Number of years to look back (default 10, max 30).
+</ParamField>
+
+### Response
+
+<ResponseField name="datapoints" type="array">
+  Tariff data points ordered by year ascending.
+  
+  <Expandable title="TariffDataPoint">
+    <ResponseField name="reporting_country" type="string">
+      WTO member code of reporting country.
+    </ResponseField>
+    
+    <ResponseField name="partner_country" type="string">
+      WTO member code of partner country.
+    </ResponseField>
+    
+    <ResponseField name="product_sector" type="string">
+      Product sector or HS chapter.
+    </ResponseField>
+    
+    <ResponseField name="year" type="integer">
+      Year of observation.
+    </ResponseField>
+    
+    <ResponseField name="tariff_rate" type="number">
+      Applied MFN tariff rate (percentage).
+    </ResponseField>
+    
+    <ResponseField name="bound_rate" type="number">
+      WTO bound tariff rate (percentage).
+    </ResponseField>
+    
+    <ResponseField name="indicator_code" type="string">
+      WTO indicator code used for this datapoint.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="fetched_at" type="string">
+  ISO 8601 timestamp when data was fetched from WTO.
+</ResponseField>
+
+<ResponseField name="upstream_unavailable" type="boolean">
+  True if upstream fetch failed and results may be stale/empty.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/trade/v1/get-tariff-trends?reporting_country=840&partner_country=156&years=5"
+```
+
+### Example Response
+
+```json
+{
+  "datapoints": [
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "product_sector": "ALL",
+      "year": 2019,
+      "tariff_rate": 3.4,
+      "bound_rate": 3.5,
+      "indicator_code": "MFN_AVG"
+    },
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "product_sector": "ALL",
+      "year": 2020,
+      "tariff_rate": 19.3,
+      "bound_rate": 3.5,
+      "indicator_code": "MFN_AVG"
+    },
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "product_sector": "ALL",
+      "year": 2023,
+      "tariff_rate": 19.3,
+      "bound_rate": 3.5,
+      "indicator_code": "MFN_AVG"
+    }
+  ],
+  "fetched_at": "2024-03-01T12:00:00Z",
+  "upstream_unavailable": false
+}
+```
+
+---
+
+## GetTradeFlows
+
+Get bilateral merchandise trade flows.
+
+**Endpoint:** `GET /api/trade/v1/get-trade-flows`
+
+### Request Parameters
+
+<ParamField query="reporting_country" type="string">
+  WTO member code of reporting country.
+</ParamField>
+
+<ParamField query="partner_country" type="string">
+  WTO member code of partner country.
+</ParamField>
+
+<ParamField query="years" type="integer">
+  Number of years to look back (default 10, max 30).
+</ParamField>
+
+### Response
+
+<ResponseField name="flows" type="array">
+  Trade flow records ordered by year ascending.
+  
+  <Expandable title="TradeFlowRecord">
+    <ResponseField name="reporting_country" type="string">
+      WTO member code of reporting country.
+    </ResponseField>
+    
+    <ResponseField name="partner_country" type="string">
+      WTO member code of partner country.
+    </ResponseField>
+    
+    <ResponseField name="year" type="integer">
+      Year of observation.
+    </ResponseField>
+    
+    <ResponseField name="export_value_usd" type="number">
+      Merchandise export value in millions USD.
+    </ResponseField>
+    
+    <ResponseField name="import_value_usd" type="number">
+      Merchandise import value in millions USD.
+    </ResponseField>
+    
+    <ResponseField name="yoy_export_change" type="number">
+      Year-over-year export change (percentage).
+    </ResponseField>
+    
+    <ResponseField name="yoy_import_change" type="number">
+      Year-over-year import change (percentage).
+    </ResponseField>
+    
+    <ResponseField name="product_sector" type="string">
+      Product sector or HS chapter.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="fetched_at" type="string">
+  ISO 8601 timestamp when data was fetched from WTO.
+</ResponseField>
+
+<ResponseField name="upstream_unavailable" type="boolean">
+  True if upstream fetch failed and results may be stale/empty.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/trade/v1/get-trade-flows?reporting_country=840&partner_country=156&years=3"
+```
+
+### Example Response
+
+```json
+{
+  "flows": [
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "year": 2021,
+      "export_value_usd": 151065,
+      "import_value_usd": 505470,
+      "yoy_export_change": 21.4,
+      "yoy_import_change": 17.8,
+      "product_sector": "ALL"
+    },
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "year": 2022,
+      "export_value_usd": 153834,
+      "import_value_usd": 536806,
+      "yoy_export_change": 1.8,
+      "yoy_import_change": 6.2,
+      "product_sector": "ALL"
+    },
+    {
+      "reporting_country": "840",
+      "partner_country": "156",
+      "year": 2023,
+      "export_value_usd": 147789,
+      "import_value_usd": 427249,
+      "yoy_export_change": -3.9,
+      "yoy_import_change": -20.4,
+      "product_sector": "ALL"
+    }
+  ],
+  "fetched_at": "2024-03-01T12:00:00Z",
+  "upstream_unavailable": false
+}
+```
+
+---
+
+## GetTradeBarriers
+
+Get SPS/TBT barrier notifications.
+
+**Endpoint:** `GET /api/trade/v1/get-trade-barriers`
+
+### Request Parameters
+
+<ParamField query="countries" type="array">
+  WTO member codes to filter by. Empty = all.
+</ParamField>
+
+<ParamField query="measure_type" type="string">
+  Filter by measure type: "SPS", "TBT", or empty for both.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Max results to return (server caps at 100).
+</ParamField>
+
+### Response
+
+<ResponseField name="barriers" type="array">
+  List of SPS/TBT barrier notifications.
+  
+  <Expandable title="TradeBarrier">
+    <ResponseField name="id" type="string">
+      Unique barrier notification identifier.
+    </ResponseField>
+    
+    <ResponseField name="notifying_country" type="string">
+      Country that notified the measure.
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Title of the notification.
+    </ResponseField>
+    
+    <ResponseField name="measure_type" type="string">
+      Measure classification: "SPS" or "TBT".
+    </ResponseField>
+    
+    <ResponseField name="product_description" type="string">
+      Product description or affected goods.
+    </ResponseField>
+    
+    <ResponseField name="objective" type="string">
+      Stated objective of the measure.
+    </ResponseField>
+    
+    <ResponseField name="status" type="string">
+      Status of the notification.
+    </ResponseField>
+    
+    <ResponseField name="date_distributed" type="string">
+      ISO 8601 date when notification was distributed.
+    </ResponseField>
+    
+    <ResponseField name="source_url" type="string">
+      WTO source document URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="fetched_at" type="string">
+  ISO 8601 timestamp when data was fetched from WTO.
+</ResponseField>
+
+<ResponseField name="upstream_unavailable" type="boolean">
+  True if upstream fetch failed and results may be stale/empty.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/trade/v1/get-trade-barriers?measure_type=SPS&limit=5"
+```
+
+### Example Response
+
+```json
+{
+  "barriers": [
+    {
+      "id": "G-SPS-N-EU-832",
+      "notifying_country": "EU",
+      "title": "Maximum residue levels of pesticides in food",
+      "measure_type": "SPS",
+      "product_description": "Agricultural products (HS 01-24)",
+      "objective": "Food safety, Protection of human health",
+      "status": "Final",
+      "date_distributed": "2024-01-20T00:00:00Z",
+      "source_url": "https://docs.wto.org/dol2fe/..."
+    }
+  ],
+  "fetched_at": "2024-03-01T12:00:00Z",
+  "upstream_unavailable": false
+}
+```
+
+---
+
+## Trade Barrier Types
+
+<CardGroup cols={2}>
+  <Card title="SPS Measures" icon="microscope">
+    **Sanitary and Phytosanitary**
+    
+    Measures to protect human, animal, or plant health from risks such as pests, diseases, toxins, and additives.
+  </Card>
+  <Card title="TBT Measures" icon="shield-check">
+    **Technical Barriers to Trade**
+    
+    Standards, technical regulations, and conformity assessment procedures that may create obstacles to international trade.
+  </Card>
+</CardGroup>
+
+---
+
+## WTO Member Codes
+
+<Info>
+WTO member codes are typically 3-digit numeric codes. Common examples:
+- **840**: United States
+- **156**: China
+- **276**: Germany
+- **392**: Japan
+- **826**: United Kingdom
+
+Some endpoints also accept ISO 3166-1 alpha-3 country codes (e.g., USA, CHN, DEU).
+</Info>
+
+---
+
+## Data Source
+
+Trade data is sourced from:
+- **WTO**: World Trade Organization
+- **Integrated Database (IDB)**: Tariff and trade data
+- **I-TIP Services**: Trade policy information
+- **SPS & TBT Information Management Systems**: Non-tariff barrier notifications
+- Updates vary by dataset (daily to quarterly)
+
+---
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Trade Policy Analysis">
+    Monitor tariff changes, trade restrictions, and non-tariff barriers to assess trade policy impacts on specific industries or countries.
+  </Accordion>
+  
+  <Accordion title="Supply Chain Risk">
+    Track export controls and trade restrictions that could disrupt global supply chains and affect business operations.
+  </Accordion>
+  
+  <Accordion title="Market Entry Strategy">
+    Analyze tariff rates and trade barriers when evaluating new market opportunities for international expansion.
+  </Accordion>
+  
+  <Accordion title="Compliance Monitoring">
+    Stay informed about new SPS and TBT measures that may affect product compliance requirements in target markets.
+  </Accordion>
+</AccordionGroup>

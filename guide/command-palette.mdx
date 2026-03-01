@@ -1,0 +1,516 @@
+---
+title: Command Palette
+description: Fuzzy search, quick navigation, and layer commands via Cmd+K
+---
+
+World Monitor's **Command Palette** provides instant access to countries, news, hotspots, infrastructure, and layer controls via a unified fuzzy search interface.
+
+## Opening the Palette
+
+Press **Cmd+K** (Mac) or **Ctrl+K** (Windows/Linux) to open the command palette.
+
+<Tip>
+  The keyboard shortcut works from anywhere in the dashboard - no need to click an input field first.
+</Tip>
+
+## Search Categories
+
+The palette searches across **20+ result types**:
+
+### Geographic
+
+<CardGroup cols={2}>
+  <Card title="Countries" icon="flag">
+    All ~250 ISO countries with flag emoji icons
+  </Card>
+  <Card title="Hotspots" icon="fire">
+    Intelligence hotspots with escalation scores
+  </Card>
+</CardGroup>
+
+### News & Intelligence
+
+<CardGroup cols={2}>
+  <Card title="News Articles" icon="newspaper">
+    Recent headlines from all active feeds
+  </Card>
+  <Card title="Prediction Markets" icon="chart-line">
+    Polymarket contracts by volume
+  </Card>
+</CardGroup>
+
+### Infrastructure
+
+<CardGroup cols={3}>
+  <Card title="Military Bases" icon="shield">
+    220+ bases from 9 operators
+  </Card>
+  <Card title="Undersea Cables" icon="network-wired">
+    Cable routes and landing points
+  </Card>
+  <Card title="Pipelines" icon="oil-well">
+    Oil and gas networks
+  </Card>
+  <Card title="Datacenters" icon="server">
+    111 AI datacenter clusters
+  </Card>
+  <Card title="Nuclear Facilities" icon="radiation">
+    Nuclear plants and reactors
+  </Card>
+  <Card title="Irradiators" icon="atom">
+    Gamma irradiation facilities
+  </Card>
+</CardGroup>
+
+### Events
+
+<CardGroup cols={3}>
+  <Card title="Conflicts" icon="explosion">
+    Active conflict zones
+  </Card>
+  <Card title="Earthquakes" icon="earth-crack">
+    Recent seismic events M4.5+
+  </Card>
+  <Card title="Outages" icon="plug">
+    Internet disruptions
+  </Card>
+</CardGroup>
+
+### Tech Variant
+
+<CardGroup cols={3}>
+  <Card title="Tech Companies" icon="building">
+    HQs and major offices
+  </Card>
+  <Card title="AI Labs" icon="brain">
+    Research institutions
+  </Card>
+  <Card title="Startups" icon="rocket">
+    Startup ecosystem
+  </Card>
+  <Card title="Tech Events" icon="calendar">
+    Upcoming conferences
+  </Card>
+  <Card title="Accelerators" icon="gauge-high">
+    YC, Techstars, 500
+  </Card>
+</CardGroup>
+
+### Finance Variant
+
+<CardGroup cols={2}>
+  <Card title="Stock Exchanges" icon="building-columns">
+    92 global exchanges
+  </Card>
+  <Card title="Financial Centers" icon="landmark">
+    19 GFCI-ranked hubs
+  </Card>
+  <Card title="Central Banks" icon="bank">
+    13 major central banks
+  </Card>
+  <Card title="Commodity Hubs" icon="wheat">
+    Exchanges and physical hubs
+  </Card>
+</CardGroup>
+
+## Fuzzy Search Algorithm
+
+The palette uses **intelligent fuzzy matching**:
+
+### Scoring Tiers
+
+| Match Type | Score | Example |
+|------------|-------|----------|
+| **Exact match** | 3 pts | "iran" → Iran |
+| **Prefix match** | 2 pts | "chi" → China |
+| **Substring match** | 1 pt | "land" → Thailand |
+
+### Country Aliases
+
+Curated countries include search aliases:
+
+- **"kremlin"** or **"putin"** → Russia
+- **"white house"** or **"biden"** → United States
+- **"xi jinping"** or **"beijing"** → China
+- **"supreme leader"** or **"tehran"** → Iran
+- **"kim jong un"** or **"pyongyang"** → North Korea
+
+<Tip>
+  Type contextual terms to find countries. "Kremlin" instantly brings up Russia, "Pentagon" shows United States.
+</Tip>
+
+## Using the Palette
+
+<Steps>
+  <Step title="Open Palette">
+    Press **Cmd/Ctrl+K** from anywhere in the dashboard.
+  </Step>
+  <Step title="Start Typing">
+    Enter your search query (minimum 2 characters).
+    
+    Examples:
+    - `ukraine` - Find Ukraine country
+    - `conflict` - Search conflicts and news about conflicts
+    - `cable` - Find undersea cables
+    - `nuclear iran` - News about Iran's nuclear program
+  </Step>
+  <Step title="Navigate Results">
+    Use **↑/↓ arrow keys** to move through results.
+  </Step>
+  <Step title="Select Result">
+    Press **Enter** to select the highlighted result, or click with mouse.
+  </Step>
+  <Step title="View Details">
+    - **Countries**: Opens country brief page
+    - **News**: Opens article in new tab
+    - **Infrastructure**: Centers map and highlights asset
+    - **Commands**: Executes action (layer toggle, etc.)
+  </Step>
+</Steps>
+
+## Layer Commands
+
+Quickly toggle map layers via commands:
+
+### Command Syntax
+
+Type `layers:` followed by a preset name:
+
+```
+layers:military
+layers:finance
+layers:infrastructure
+layers:conflict
+layers:natural
+```
+
+### Available Presets
+
+<AccordionGroup>
+  <Accordion title="layers:military">
+    Enables:
+    - Military bases
+    - Military flights
+    - Naval vessels (AIS)
+    - Nuclear facilities
+    
+    Use for defense and strategic monitoring.
+  </Accordion>
+  
+  <Accordion title="layers:finance">
+    Enables (Finance variant):
+    - Stock exchanges
+    - Financial centers
+    - Central banks
+    - Commodity hubs
+    
+    Use for market intelligence.
+  </Accordion>
+  
+  <Accordion title="layers:infrastructure">
+    Enables:
+    - Undersea cables
+    - Pipelines
+    - Datacenters
+    - Ports
+    
+    Use for infrastructure monitoring.
+  </Accordion>
+  
+  <Accordion title="layers:conflict">
+    Enables:
+    - Conflicts
+    - Protests
+    - Hotspots
+    - UCDP events
+    
+    Use for geopolitical crisis tracking.
+  </Accordion>
+  
+  <Accordion title="layers:natural">
+    Enables:
+    - Natural disasters (USGS, GDACS, EONET)
+    - Weather alerts
+    - Satellite fires
+    - Earthquakes
+    
+    Use for environmental monitoring.
+  </Accordion>
+</AccordionGroup>
+
+### Individual Layer Toggles
+
+Toggle specific layers:
+
+```
+layer:conflicts
+layer:bases
+layer:cables
+layer:nuclear
+layer:protests
+layer:fires
+```
+
+<Steps>
+  <Step title="Type Command">
+    Open palette and type: `layer:conflicts`
+  </Step>
+  <Step title="Execute">
+    Press Enter to toggle the layer on/off.
+  </Step>
+  <Step title="Map Updates">
+    The conflicts layer toggles immediately.
+  </Step>
+</Steps>
+
+## Panel Commands
+
+Jump to specific panels:
+
+```
+panel:live-news
+panel:insights
+panel:strategic-posture
+panel:cii
+panel:macro-signals
+panel:crypto
+```
+
+<Info>
+  Panel commands only appear if the panel is currently enabled in your configuration.
+</Info>
+
+## Recent Searches
+
+The palette remembers your recent searches:
+
+- **Max 8 entries** - Most recent searches shown first
+- **Stored in localStorage** - Persists across sessions
+- **Clearing**: Close and reopen palette to see updated recents
+
+### When Empty Query
+
+If you open the palette without typing:
+
+- Recent searches appear first
+- Most-used commands suggested
+- Quick access to common tasks
+
+## Keyboard Navigation
+
+| Key | Action |
+|-----|--------|
+| **Cmd/Ctrl+K** | Open palette |
+| **Esc** | Close palette |
+| **↑/↓** | Navigate results |
+| **Enter** | Select highlighted result |
+| **Tab** | Jump to next result |
+| **Shift+Tab** | Jump to previous result |
+| **Cmd/Ctrl+Enter** | Open in new tab (news/links) |
+
+## Search Tips
+
+### Finding Countries
+
+<AccordionGroup>
+  <Accordion title="ISO Codes">
+    Use 2-letter ISO codes for instant match:
+    - `US` → United States
+    - `CN` → China
+    - `IR` → Iran
+    - `UA` → Ukraine
+  </Accordion>
+  
+  <Accordion title="Partial Names">
+    Type any part of the country name:
+    - `audi` → Saudi Arabia
+    - `viet` → Vietnam
+    - `zealan` → New Zealand
+  </Accordion>
+  
+  <Accordion title="Contextual Terms">
+    Use associated terms:
+    - `kremlin` → Russia
+    - `pentagon` → United States
+    - `forbidden city` → China
+  </Accordion>
+</AccordionGroup>
+
+### Finding Infrastructure
+
+<Steps>
+  <Step title="Type Asset Type">
+    Start with asset category: `cable`, `base`, `nuclear`, `pipeline`
+  </Step>
+  <Step title="Add Location">
+    Refine with location: `cable mediterranean`, `base japan`
+  </Step>
+  <Step title="View Results">
+    All matching assets appear with distance/location info.
+  </Step>
+</Steps>
+
+### Finding News
+
+<Steps>
+  <Step title="Search Keywords">
+    Type topic or entity: `ukraine war`, `ai regulation`, `bitcoin`
+  </Step>
+  <Step title="Filter by Recency">
+    Results are sorted by timestamp (newest first)
+  </Step>
+  <Step title="Check Threat Level">
+    Color-coded badges show severity (red=critical, orange=high, etc.)
+  </Step>
+</Steps>
+
+## Advanced Features
+
+### Multi-Word Search
+
+Search across multiple terms:
+
+```
+iran nuclear
+china taiwan
+bitcoin etf
+ai regulation eu
+```
+
+Matches items containing **any** of the terms (OR logic).
+
+### Case-Insensitive
+
+All searches are case-insensitive:
+
+- `CHINA` = `china` = `China`
+- `BITCOIN` = `bitcoin` = `Bitcoin`
+
+### Special Characters
+
+Special characters are handled:
+
+- **Accents**: `São Paulo` matches `sao paulo`
+- **Apostrophes**: `Côte d'Ivoire` matches `cote divoire`
+- **Hyphens**: `North Korea` matches `north-korea`
+
+### Result Limits
+
+To prevent overwhelming the UI:
+
+- **Max 24 results** per query
+- **Max 5 commands** shown
+- **Grouped by type** for clarity
+
+## Country Brief Navigation
+
+The palette provides instant access to all country briefs:
+
+<Steps>
+  <Step title="Type Country Name">
+    Enter full or partial country name: `germany`, `brazil`, `japan`
+  </Step>
+  <Step title="See Flag Icon">
+    Results show flag emoji for visual identification.
+  </Step>
+  <Step title="Select Country">
+    Press Enter or click to open full intelligence dossier:
+    - CII score with component breakdown
+    - AI-generated analysis
+    - Top news headlines
+    - Active signals (protests, military, etc.)
+    - 7-day event timeline
+    - Prediction markets
+    - Infrastructure exposure
+  </Step>
+</Steps>
+
+## Customization
+
+### Placeholder Text
+
+Default placeholder: `"Search countries, news, hotspots, markets, bases, and more..."`
+
+### Hint Text
+
+Footer shows keyboard shortcuts:
+
+- `↑↓` Navigate
+- `↵` Select
+- `esc` Close
+
+### Styling
+
+The palette adapts to the active theme:
+
+- **Dark theme**: Dark overlay, light text
+- **Light theme**: Light overlay, dark text
+
+## Troubleshooting
+
+### Palette Not Opening
+
+<AccordionGroup>
+  <Accordion title="Keyboard Shortcut Conflict">
+    Another app or browser extension may be capturing Cmd/Ctrl+K.
+    
+    **Solution**: Disable conflicting extensions or rebind their shortcuts.
+  </Accordion>
+  
+  <Accordion title="Modal Already Open">
+    The palette won't open if another modal is active.
+    
+    **Solution**: Close any open modals (country brief, settings) first.
+  </Accordion>
+  
+  <Accordion title="Browser Focus Issue">
+    The browser window must have focus for keyboard shortcuts to work.
+    
+    **Solution**: Click anywhere in the dashboard first, then try Cmd/Ctrl+K.
+  </Accordion>
+</AccordionGroup>
+
+### No Results Appearing
+
+<Steps>
+  <Step title="Check Query Length">
+    Minimum 2 characters required for search. Type more letters.
+  </Step>
+  <Step title="Verify Data Loaded">
+    Ensure the dashboard has finished loading data. Look for panel content.
+  </Step>
+  <Step title="Try Different Terms">
+    Use alternative spellings or aliases (e.g., "USA" instead of "United States").
+  </Step>
+</Steps>
+
+### Slow Search Performance
+
+<AccordionGroup>
+  <Accordion title="Large Dataset">
+    With 20+ result types and 1000+ items, searches may take 100-200ms.
+    
+    **This is normal** - results appear nearly instantly.
+  </Accordion>
+  
+  <Accordion title="Browser Performance">
+    Close other tabs or restart browser if palette feels sluggish.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Map Navigation" icon="map" href="/guide/navigation">
+    Regional presets and URL sharing
+  </Card>
+  <Card title="News Feeds" icon="newspaper" href="/guide/news-feeds">
+    Reading and filtering RSS feeds
+  </Card>
+  <Card title="Map Controls" icon="sliders" href="/guide/map-controls">
+    Layer toggles and time filtering
+  </Card>
+  <Card title="Panels" icon="table-columns" href="/guide/panels">
+    Customize dashboard layout
+  </Card>
+</CardGroup>

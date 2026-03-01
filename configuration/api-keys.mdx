@@ -1,0 +1,437 @@
+---
+title: API Keys
+description: How to obtain and configure third-party API keys for World Monitor
+icon: key
+---
+
+World Monitor integrates with 20+ external data sources. This guide shows you how to obtain and configure each API key.
+
+<Warning>
+  **All API keys are optional**. The dashboard gracefully degrades when keys are missing — corresponding features are simply disabled.
+</Warning>
+
+## AI Providers
+
+### Groq (Primary)
+
+**Purpose**: Fast LLM inference for AI-generated news briefs and threat classification.
+
+**Free Tier**: 14,400 requests/day
+
+**How to get your key**:
+
+1. Visit https://console.groq.com/
+2. Sign up with GitHub, Google, or email
+3. Navigate to **API Keys** in the left sidebar
+4. Click **Create API Key**
+5. Copy the key (starts with `gsk_`)
+
+**Configuration**:
+
+```bash .env.local
+GROQ_API_KEY=gsk_your_api_key_here
+```
+
+**Fallback**: If Groq is unavailable, the system falls back to OpenRouter, then local browser models.
+
+### OpenRouter (Fallback)
+
+**Purpose**: Multi-model LLM fallback when Groq is rate-limited or unavailable.
+
+**Free Tier**: 50 requests/day (limited)
+
+**How to get your key**:
+
+1. Visit https://openrouter.ai/
+2. Sign up and verify your email
+3. Go to **Settings → Keys**
+4. Click **Create Key**
+5. Copy the key (starts with `sk-or-`)
+
+**Configuration**:
+
+```bash .env.local
+OPENROUTER_API_KEY=sk-or-v1-your_api_key_here
+```
+
+<Note>
+  OpenRouter requires payment for high-volume usage. The free tier is suitable for testing only.
+</Note>
+
+## Economic Data
+
+### FRED (Federal Reserve Economic Data)
+
+**Purpose**: Macro indicators, GDP, unemployment, inflation, Baltic Dry Index.
+
+**Free Tier**: Unlimited (non-commercial use)
+
+**How to get your key**:
+
+1. Visit https://fred.stlouisfed.org/docs/api/api_key.html
+2. Click **Request API Key**
+3. Sign up with email (instant approval)
+4. Copy the 32-character hexadecimal key
+
+**Configuration**:
+
+```bash .env.local
+FRED_API_KEY=abcdef1234567890abcdef1234567890
+```
+
+**Used by**: Economic panel, macro signals, supply chain shipping rates.
+
+### EIA (Energy Information Administration)
+
+**Purpose**: Oil prices (WTI, Brent), U.S. production, inventory levels.
+
+**Free Tier**: Unlimited
+
+**How to get your key**:
+
+1. Visit https://www.eia.gov/opendata/register.php
+2. Fill out the registration form
+3. Check your email for the API key
+4. Copy the 40-character key
+
+**Configuration**:
+
+```bash .env.local
+EIA_API_KEY=your_40_character_api_key_here
+```
+
+**Used by**: Oil analytics panel, energy capacity metrics.
+
+## Market Data
+
+### Finnhub
+
+**Purpose**: Real-time stock quotes, crypto prices, market data.
+
+**Free Tier**: 60 API calls/minute
+
+**How to get your key**:
+
+1. Visit https://finnhub.io/register
+2. Sign up with email
+3. Verify your email
+4. Copy the API key from the dashboard
+
+**Configuration**:
+
+```bash .env.local
+FINNHUB_API_KEY=your_api_key_here
+```
+
+**Used by**: Market quotes, stock indices, sector summaries.
+
+<Note>
+  The dashboard falls back to Yahoo Finance for indices (^GSPC, ^DJI) and CoinGecko for crypto when Finnhub is unavailable.
+</Note>
+
+## Conflict & Threat Data
+
+### ACLED (Armed Conflict Location & Event Data)
+
+**Purpose**: Conflict events, protests, battles, violence against civilians.
+
+**Free Tier**: Available for researchers and non-commercial use
+
+**How to get your key**:
+
+1. Visit https://developer.acleddata.com/
+2. Click **Request Access**
+3. Fill out the researcher application form
+4. Wait for email approval (1-3 business days)
+5. Copy the access token from the email
+
+**Configuration**:
+
+```bash .env.local
+ACLED_ACCESS_TOKEN=your_access_token_here
+```
+
+**Used by**: Conflict layer, protest markers, unrest events, Country Instability Index.
+
+<Warning>
+  ACLED has strict rate limits (10 requests/minute). The dashboard caches responses for 15 minutes.
+</Warning>
+
+### URLhaus (abuse.ch)
+
+**Purpose**: Malicious URL IOCs for cyber threat layer.
+
+**Free Tier**: Unlimited
+
+**How to get your key**:
+
+1. Visit https://auth.abuse.ch/
+2. Create an account
+3. Navigate to **API Keys**
+4. Generate a new key
+
+**Configuration**:
+
+```bash .env.local
+URLHAUS_AUTH_KEY=your_api_key_here
+```
+
+### AlienVault OTX
+
+**Purpose**: Cyber threat intelligence enrichment.
+
+**Free Tier**: Unlimited
+
+**How to get your key**:
+
+1. Visit https://otx.alienvault.com/
+2. Sign up for a free account
+3. Go to **Settings → API Integration**
+4. Copy the OTX Key
+
+**Configuration**:
+
+```bash .env.local
+OTX_API_KEY=your_otx_key_here
+```
+
+### AbuseIPDB
+
+**Purpose**: IP reputation enrichment for cyber threat layer.
+
+**Free Tier**: 1,000 requests/day
+
+**How to get your key**:
+
+1. Visit https://www.abuseipdb.com/login
+2. Create an account
+3. Go to **API** in the top menu
+4. Copy the API v2 key
+
+**Configuration**:
+
+```bash .env.local
+ABUSEIPDB_API_KEY=your_api_key_here
+```
+
+## Infrastructure Data
+
+### Cloudflare Radar
+
+**Purpose**: Internet outage detection.
+
+**Free Tier**: Included with free Cloudflare account
+
+**How to get your token**:
+
+1. Visit https://dash.cloudflare.com/profile/api-tokens
+2. Sign up for a free Cloudflare account
+3. Click **Create Token**
+4. Use the **Read Analytics** template
+5. Copy the token
+
+**Configuration**:
+
+```bash .env.local
+CLOUDFLARE_API_TOKEN=your_token_here
+```
+
+**Used by**: Internet outages layer, Country Instability Index (information velocity component).
+
+### NASA FIRMS
+
+**Purpose**: Satellite fire detection (VIIRS thermal hotspots).
+
+**Free Tier**: Unlimited
+
+**How to get your key**:
+
+1. Visit https://firms.modaps.eosdis.nasa.gov/api/area/
+2. Request a MAP_KEY (instant)
+3. Check your email
+4. Copy the key from the email
+
+**Configuration**:
+
+```bash .env.local
+NASA_FIRMS_API_KEY=your_map_key_here
+```
+
+**Used by**: Fire detection layer, wildfire events.
+
+## Tracking & Aviation
+
+### AISStream
+
+**Purpose**: Live vessel positions via WebSocket (AIS data).
+
+**Free Tier**: Limited (contact for details)
+
+**How to get your key**:
+
+1. Visit https://aisstream.io/authenticate
+2. Sign up with email
+3. Copy the API key from the dashboard
+
+**Configuration**:
+
+```bash .env.local
+AISSTREAM_API_KEY=your_api_key_here
+```
+
+**Deployment**: Runs on the Railway relay server (`scripts/ais-relay.cjs`).
+
+### OpenSky Network
+
+**Purpose**: Military flight tracking (ADS-B data).
+
+**Free Tier**: Anonymous access available, OAuth credentials provide higher rate limits.
+
+**How to get your credentials**:
+
+1. Visit https://opensky-network.org/login?view=registration
+2. Create an account
+3. Request OAuth credentials via their support forum
+4. Copy the client ID and secret
+
+**Configuration**:
+
+```bash .env.local
+OPENSKY_CLIENT_ID=your_client_id
+OPENSKY_CLIENT_SECRET=your_client_secret
+```
+
+**Used by**: Military flight layer, theater posture assessment.
+
+### Wingbits
+
+**Purpose**: Aircraft enrichment metadata (owner, operator, type).
+
+**Free Tier**: Contact for pricing
+
+**How to get your key**:
+
+1. Visit https://wingbits.com/register
+2. Contact their sales team
+3. Copy the API key from your account dashboard
+
+**Configuration**:
+
+```bash .env.local
+WINGBITS_API_KEY=your_api_key_here
+```
+
+<Note>
+  The dashboard uses heuristic classification when Wingbits is unavailable. Military confidence levels are reduced.
+</Note>
+
+### AviationStack
+
+**Purpose**: International airport delay data.
+
+**Free Tier**: 100 requests/month
+
+**How to get your key**:
+
+1. Visit https://aviationstack.com/signup/free
+2. Sign up with email
+3. Verify your email
+4. Copy the API key from the dashboard
+
+**Configuration**:
+
+```bash .env.local
+AVIATIONSTACK_API=your_api_key_here
+```
+
+### ICAO NOTAM
+
+**Purpose**: Airport closure detection (Middle East focus).
+
+**Free Tier**: Contact for details
+
+**How to get your key**:
+
+1. Visit https://dataservices.icao.int/
+2. Request API access
+3. Copy the API key
+
+**Configuration**:
+
+```bash .env.local
+ICAO_API_KEY=your_api_key_here
+```
+
+## Trade Data
+
+### WTO (World Trade Organization)
+
+**Purpose**: Trade restrictions, tariff trends, barriers, bilateral flows.
+
+**Free Tier**: Contact for details
+
+**How to get your key**:
+
+1. Visit https://apiportal.wto.org/
+2. Register for API access
+3. Copy the API key
+
+**Configuration**:
+
+```bash .env.local
+WTO_API_KEY=your_api_key_here
+```
+
+## Telegram OSINT
+
+Required for Telegram intelligence feed (27 OSINT channels).
+
+**How to get your credentials**:
+
+1. Visit https://my.telegram.org/apps
+2. Log in with your Telegram account
+3. Create a new application
+4. Copy the `API ID` and `API Hash`
+5. Run `scripts/telegram/session-auth.mjs` to generate a session string
+
+**Configuration**:
+
+```bash .env.local
+TELEGRAM_API_ID=12345678
+TELEGRAM_API_HASH=abcdef1234567890abcdef1234567890
+TELEGRAM_SESSION=your_gramjs_string_session
+TELEGRAM_CHANNEL_SET=full  # or tech, finance
+```
+
+<Warning>
+  Telegram session strings are sensitive. Never commit them to git.
+</Warning>
+
+## Desktop App Keys
+
+Desktop app users configure API keys via the **Settings** window (Cmd+, or Ctrl+,). Keys are stored in the OS keychain:
+
+- **macOS**: Keychain Access
+- **Windows**: Credential Manager
+- **Linux**: Secret Service API (gnome-keyring, kwallet)
+
+See [Desktop App Configuration](/configuration/local-llm#desktop-settings) for details.
+
+## Verifying API Keys
+
+The desktop settings window includes **per-key validation**:
+
+1. Open Settings (Cmd+, or Ctrl+,)
+2. Navigate to the appropriate category
+3. Enter your API key
+4. Click **Save & Verify**
+5. Status indicator shows ✓ (valid) or ✗ (invalid)
+
+**Validation checks**:
+- URL format for endpoint URLs
+- Key length for known formats
+- Live API test for supported providers (Groq, Finnhub, FRED, etc.)
+
+<Note>
+  Cloud/web deployments do **not** validate credentials client-side. Credentials are validated server-side when the API handler runs.
+</Note>

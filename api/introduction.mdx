@@ -1,0 +1,163 @@
+---
+title: 'API Introduction'
+description: 'Overview of the World Monitor API architecture, versioning, and proto-first design'
+---
+
+## Overview
+
+The World Monitor API provides programmatic access to real-time global intelligence data across 19 specialized domains including military operations, economic indicators, cybersecurity threats, natural disasters, and market data.
+
+## Proto-First Architecture
+
+World Monitor uses **Sebuf** (Simple, Efficient Buffers), a Protocol Buffers-based framework that generates both client and server code from `.proto` schema definitions.
+
+### How It Works
+
+1. **Schema Definition**: All APIs are defined in `.proto` files under `proto/worldmonitor/{domain}/v1/`
+2. **HTTP Annotations**: The `sebuf.http.annotations` extension maps RPC methods to HTTP endpoints
+3. **Code Generation**: TypeScript client/server code is generated from proto definitions
+4. **Type Safety**: Full end-to-end type safety from request to response
+
+### HTTP Annotations
+
+Sebuf uses custom Protocol Buffer extensions to define HTTP routing:
+
+```protobuf
+service WildfireService {
+  option (sebuf.http.service_config) = {base_path: "/api/wildfire/v1"};
+
+  rpc ListFireDetections(ListFireDetectionsRequest) returns (ListFireDetectionsResponse) {
+    option (sebuf.http.config) = {path: "/list-fire-detections", method: HTTP_METHOD_GET};
+  }
+}
+```
+
+This generates the endpoint: `GET /api/wildfire/v1/list-fire-detections`
+
+### HTTP Methods
+
+Sebuf supports all standard HTTP methods:
+
+- `HTTP_METHOD_GET` - Idempotent read operations (most common)
+- `HTTP_METHOD_POST` - Write operations and complex queries
+- `HTTP_METHOD_PUT` - Full resource updates
+- `HTTP_METHOD_DELETE` - Resource deletion
+- `HTTP_METHOD_PATCH` - Partial resource updates
+- `HTTP_METHOD_UNSPECIFIED` - Defaults to POST
+
+## API Domains
+
+The API is organized into 19 domain-specific services:
+
+| Domain | Base Path | Description |
+|--------|-----------|-------------|
+| **Aviation** | `/api/aviation/v1` | Airport delays, flight tracking |
+| **Climate** | `/api/climate/v1` | Climate anomalies, temperature trends |
+| **Conflict** | `/api/conflict/v1` | ACLED events, humanitarian data |
+| **Cyber** | `/api/cyber/v1` | Cybersecurity threats, vulnerabilities |
+| **Displacement** | `/api/displacement/v1` | Population exposure, displacement data |
+| **Economic** | `/api/economic/v1` | FRED, World Bank, BIS, EIA data |
+| **Giving** | `/api/giving/v1` | Philanthropic giving data |
+| **Infrastructure** | `/api/infrastructure/v1` | Internet outages, service status |
+| **Intelligence** | `/api/intelligence/v1` | Risk scores, GDELT, AI classification |
+| **Maritime** | `/api/maritime/v1` | AIS vessel tracking, navigational warnings |
+| **Market** | `/api/market/v1` | Stocks, crypto, commodities, ETF flows |
+| **Military** | `/api/military/v1` | Flight tracking, vessel positions, bases |
+| **News** | `/api/news/v1` | AI article summarization |
+| **Positive Events** | `/api/positive_events/v1` | Constructive global events |
+| **Prediction** | `/api/prediction/v1` | Prediction market data |
+| **Research** | `/api/research/v1` | arXiv papers, GitHub trends, Hacker News |
+| **Seismology** | `/api/seismology/v1` | Earthquake data from USGS |
+| **Supply Chain** | `/api/supply_chain/v1` | Shipping rates, critical minerals |
+| **Trade** | `/api/trade/v1` | Tariff trends, trade barriers, flows |
+| **Wildfire** | `/api/wildfire/v1` | NASA FIRMS fire detections |
+
+## Endpoint Patterns
+
+All endpoints follow consistent naming conventions:
+
+- **List operations**: `/list-{resource}` - Returns paginated collections
+- **Get operations**: `/get-{resource}` - Returns single resource or computed data
+- **Action operations**: `/{verb}-{resource}` - Performs specific actions
+
+### Example Endpoints
+
+```
+GET  /api/market/v1/list-market-quotes
+GET  /api/military/v1/list-military-flights
+GET  /api/seismology/v1/list-earthquakes
+POST /api/news/v1/summarize-article
+GET  /api/intelligence/v1/get-risk-scores
+GET  /api/economic/v1/get-fred-series
+```
+
+## Versioning
+
+All APIs are versioned using `/v1/` in the path. Version numbers follow semantic versioning:
+
+- **Major version** (v1, v2): Breaking changes to request/response schemas
+- **Minor version**: Backward-compatible additions (new fields, endpoints)
+- **Patch version**: Bug fixes and internal improvements
+
+The current API version is **v1** for all services. When breaking changes are required, a new version (v2) will be introduced while maintaining v1 for backward compatibility.
+
+## Data Formats
+
+### Request Format
+
+- **GET requests**: Query parameters (URL-encoded)
+- **POST requests**: JSON body with camelCase field names
+
+### Response Format
+
+All successful responses return JSON with:
+
+```json
+{
+  "items": [...],        // For list operations
+  "pagination": {...},   // Optional pagination metadata
+  "data": {...}          // For get operations
+}
+```
+
+### Error Format
+
+Errors return JSON with HTTP status codes:
+
+```json
+{
+  "error": "Error description",
+  "message": "Detailed error message"
+}
+```
+
+Common status codes:
+- `400` - Bad Request (invalid parameters)
+- `401` - Unauthorized (missing/invalid API key)
+- `403` - Forbidden (origin not allowed)
+- `404` - Not Found (endpoint doesn't exist)
+- `429` - Too Many Requests (rate limit exceeded)
+- `500` - Internal Server Error
+
+## Edge Caching
+
+Endpoints are cached at the edge with different strategies:
+
+- **Fast** (2 min): Real-time market data, earthquakes
+- **Medium** (5 min): Default for most endpoints
+- **Slow** (15 min): Composite analytics, risk scores
+- **Static** (1 hour): Historical data, reports
+- **No-store**: Live vessel tracking, personalized data
+
+Cache tiers are automatically applied based on endpoint characteristics. Add `?_debug=1` to see the cache tier in response headers.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to authenticate API requests
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/api/rate-limits">
+    Understand rate limiting and quotas
+  </Card>
+</CardGroup>

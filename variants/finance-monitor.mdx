@@ -1,0 +1,344 @@
+---
+title: Finance Monitor
+description: Real-time markets & trading dashboard tracking global stock exchanges, central banks, and commodities
+---
+
+## Overview
+
+**Finance Monitor** is a specialized variant focused on **global markets, trading intelligence, and financial infrastructure**. It tracks 92 stock exchanges, 19 financial centers, 13 central banks, commodities, forex, crypto, and economic indicators worldwide.
+
+<Info>
+  **Live Demo:** [finance.worldmonitor.app](https://finance.worldmonitor.app)
+</Info>
+
+---
+
+## Key Features
+
+### Market Coverage
+
+- **92 global stock exchanges** mapped by geography:
+  - **Mega markets:** NYSE, NASDAQ, Shanghai Stock Exchange, Euronext, Tokyo Stock Exchange
+  - **Major exchanges:** Hong Kong, London, NSE/BSE (India), Toronto, Korea Exchange, Saudi Tadawul
+  - **Emerging markets:** São Paulo, Johannesburg, Jakarta, Istanbul, Warsaw, Cairo
+- **19 financial centers** ranked by Global Financial Centres Index (New York #1 → offshore centers)
+- **13 central banks** (Federal Reserve, ECB, BoJ, BoE, PBoC, SNB, RBA, BoC, RBI, BoK, BCB, SAMA) + supranational institutions (BIS, IMF)
+- **10 commodity hubs** (CME Group, ICE, LME, SHFE, DCE, TOCOM, DGCX, MCX, Rotterdam, Houston)
+
+### Finance-Specific Layers
+
+- **Stock exchanges** with market cap, trading hours, and index data
+- **Financial centers** with GFCI rank and specialization (banking, insurance, fintech)
+- **Central banks** with policy rate data and meeting schedules
+- **Commodity hubs** (physical + exchanges) with spot price tracking
+- **Gulf FDI investments** — 64 Saudi/UAE foreign direct investments plotted globally, color-coded by status (operational, under-construction, announced), sized by investment amount
+- **WTO trade policy intelligence** — active trade restrictions, tariff trends, bilateral trade flows, SPS/TBT barriers
+
+### Market Radar
+
+7-signal macro radar with composite BUY/CASH verdict:
+
+1. **Bitcoin technical trend** (SMA50, SMA200, VWAP, Mayer Multiple)
+2. **Fear & Greed Index** with 30-day history
+3. **JPY liquidity signal** (USD/JPY rate)
+4. **BTC spot ETF flows** (IBIT, FBTC, GBTC, and 7 more)
+5. **Stablecoin peg health** (USDT, USDC, DAI, FDUSD, USDe)
+6. **QQQ/XLP macro regime** (risk-on vs. risk-off)
+7. **Bitcoin hash rate** (network security)
+
+Inline SVG sparklines and donut gauges for visual trends.
+
+### Finance News Feeds (120+)
+
+- **Market news:** Bloomberg, CNBC, MarketWatch, Financial Times, Yahoo Finance
+- **Central banks:** Federal Reserve, ECB, Bank of England, BoJ, PBoC
+- **Regulatory:** SEC, FINRA, CFTC, FCA, ESMA
+- **Economic data:** FRED (Federal Reserve Economic Data), EIA, World Bank, IMF
+- **Crypto:** CoinDesk, Cointelegraph, The Block
+- **Commodities:** OPEC, IEA, CME Group, ICE
+
+---
+
+## Variant-Specific Configuration
+
+### Build Command
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    npm run dev:finance
+    ```
+  </Tab>
+  <Tab title="Production Build">
+    ```bash
+    npm run build:finance
+    ```
+  </Tab>
+  <Tab title="Desktop App">
+    ```bash
+    npm run desktop:build:finance
+    ```
+  </Tab>
+</Tabs>
+
+### Metadata (vite.config.ts:120-144)
+
+```typescript
+finance: {
+  title: 'Finance Monitor - Real-Time Markets & Trading Dashboard',
+  description: 'Real-time finance and trading dashboard tracking global markets, stock exchanges, central banks, commodities, forex, crypto, and economic indicators worldwide.',
+  keywords: 'finance dashboard, trading dashboard, stock market, forex, commodities, central banks, crypto, economic indicators, market news, financial centers, stock exchanges, bonds, derivatives, fintech, hedge funds, IPO tracker, market analysis',
+  url: 'https://finance.worldmonitor.app/',
+  siteName: 'Finance Monitor',
+  shortName: 'FinanceMonitor',
+  subject: 'Global Markets, Trading, and Financial Intelligence',
+  classification: 'Finance Dashboard, Market Tracker, Trading Intelligence',
+  categories: ['finance', 'news'],
+  features: [
+    'Real-time market data',
+    'Stock exchange mapping',
+    'Central bank monitoring',
+    'Commodity price tracking',
+    'Forex & currency news',
+    'Crypto & digital assets',
+    'Economic indicator alerts',
+    'IPO & earnings tracking',
+    'Financial center mapping',
+    'Sector heatmap',
+    'Market radar signals',
+  ],
+}
+```
+
+---
+
+## Data Sources
+
+### Market Data APIs
+
+| Source | Data Type | Update Frequency |
+|--------|-----------|------------------|
+| **Finnhub** | Stock quotes, forex, crypto | 1 minute |
+| **Yahoo Finance** | Stock indices, commodity prices | 5 minutes |
+| **FRED** | Economic indicators (unemployment, GDP, CPI) | Daily |
+| **EIA** | Oil prices, production, inventory | Weekly |
+| **CoinGecko** | Crypto prices (BTC, ETH, SOL, XRP) | 2 minutes |
+| **Polymarket** | Prediction markets | 2 minutes |
+| **BIS** | Central bank policy rates, REER, credit-to-GDP | Monthly |
+| **WTO** | Trade restrictions, tariff trends | Quarterly |
+
+### News Feeds (120+)
+
+<AccordionGroup>
+  <Accordion title="Market News (30+ sources)">
+    - Bloomberg, CNBC, MarketWatch, Financial Times
+    - Yahoo Finance, Reuters Finance, Seeking Alpha
+    - Barron's, Investor's Business Daily, The Motley Fool
+  </Accordion>
+
+  <Accordion title="Central Banks (13 sources)">
+    - Federal Reserve, ECB, Bank of England, BoJ
+    - PBoC, SNB, RBA, BoC, RBI, BoK, BCB, SAMA
+    - BIS, IMF (supranational institutions)
+  </Accordion>
+
+  <Accordion title="Regulatory (10+ sources)">
+    - SEC (filings, enforcement), FINRA, CFTC
+    - FCA (UK), ESMA (EU), MAS (Singapore)
+    - ASIC (Australia), FSA (Japan)
+  </Accordion>
+
+  <Accordion title="Crypto (15+ sources)">
+    - CoinDesk, Cointelegraph, The Block
+    - CryptoSlate, Decrypt, Bitcoin Magazine
+    - DeFi Llama, Dune Analytics
+  </Accordion>
+
+  <Accordion title="Commodities (10+ sources)">
+    - OPEC, IEA, CME Group, ICE
+    - LME, SHFE, TOCOM, DGCX
+    - World Bank Commodities, IMF Primary Commodity Prices
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Map Layers
+
+<CardGroup cols={2}>
+  <Card title="Stock Exchanges" icon="building-columns">
+    92 exchanges with market cap and trading hours
+  </Card>
+  <Card title="Financial Centers" icon="city">
+    19 GFCI-ranked centers (New York, London, Singapore, etc.)
+  </Card>
+  <Card title="Central Banks" icon="landmark">
+    13 central banks + BIS + IMF with policy rate data
+  </Card>
+  <Card title="Commodity Hubs" icon="scale-balanced">
+    10 exchanges + physical hubs (Rotterdam, Houston)
+  </Card>
+  <Card title="Gulf FDI" icon="money-bill-trend-up">
+    64 Saudi/UAE investments globally (operational, under-construction, announced)
+  </Card>
+  <Card title="Trade Routes" icon="route">
+    19 global trade routes (container, energy, bulk) with chokepoints
+  </Card>
+</CardGroup>
+
+---
+
+## Finance-Specific Features
+
+### Gulf FDI Investment Layer
+
+**64 Saudi/UAE foreign direct investments** plotted globally:
+
+- **Color-coded by status:**
+  - Green: Operational
+  - Yellow: Under construction
+  - Blue: Announced
+- **Sized by investment amount:** $100M → $10B+
+- **Sectors:** Energy, real estate, infrastructure, tech, healthcare
+
+**Data source:** Public announcements from sovereign wealth funds (PIF, Mubadala, ADQ, ADIA)
+
+### WTO Trade Policy Intelligence
+
+Tracks trade restrictions and barriers from the World Trade Organization:
+
+- **Active trade restrictions** (tariffs, quotas, embargoes)
+- **Tariff trends** (average applied rates by country)
+- **Bilateral trade flows** (top import/export partners)
+- **SPS/TBT barriers** (sanitary/phytosanitary and technical barriers to trade)
+
+**Data source:** WTO API (requires `WTO_API_KEY` in runtime config)
+
+### BIS Central Bank Data
+
+Bank for International Settlements data integration:
+
+- **Policy rates** across major economies (updated monthly)
+- **Real effective exchange rates (REER)** for 60+ currencies
+- **Credit-to-GDP ratios** (financial stability indicator)
+
+**Code reference:** `src/services/economic/index.ts` (BIS data handler)
+
+### Market Radar Composite Signal
+
+The 7-signal radar produces a **BUY/CASH verdict** using weighted scoring:
+
+```typescript
+const signals = [
+  { name: 'BTC Trend', weight: 0.20, value: btcTrendScore },
+  { name: 'Fear & Greed', weight: 0.15, value: fearGreedScore },
+  { name: 'JPY Liquidity', weight: 0.10, value: jpyScore },
+  { name: 'ETF Flows', weight: 0.15, value: etfFlowScore },
+  { name: 'Stablecoin Peg', weight: 0.15, value: stablecoinScore },
+  { name: 'QQQ/XLP', weight: 0.15, value: qqQxlpScore },
+  { name: 'Hash Rate', weight: 0.10, value: hashRateScore },
+];
+
+const composite = signals.reduce((sum, s) => sum + s.value * s.weight, 0);
+const verdict = composite > 0.6 ? 'BUY' : composite < 0.4 ? 'CASH' : 'NEUTRAL';
+```
+
+---
+
+## Use Cases
+
+### Traders
+
+- **Multi-asset correlation:** Track crypto, stocks, commodities, and forex in one view
+- **Macro regime detection:** QQQ/XLP ratio signals risk-on vs. risk-off
+- **Central bank calendar:** Policy rate decisions and meeting schedules
+
+### Institutional Investors
+
+- **Emerging market coverage:** 92 exchanges including frontier markets (Cairo, Lagos, Nairobi)
+- **Sovereign wealth fund tracking:** Gulf FDI layer shows PIF/Mubadala/ADQ investments
+- **Trade policy risk:** WTO trade restrictions impact supply chain and tariff exposure
+
+### Economists
+
+- **BIS data access:** Policy rates, REER, and credit-to-GDP ratios in one dashboard
+- **Economic indicator alerts:** FRED integration for unemployment, GDP, CPI, inflation
+- **Commodity price tracking:** Oil (WTI, Brent), metals (gold, copper, lithium), agricultural
+
+### Crypto Analysts
+
+- **ETF flow tracker:** IBIT, FBTC, GBTC inflows/outflows (daily updates)
+- **Stablecoin peg health:** USDT, USDC, DAI, FDUSD, USDe deviation from $1.00
+- **Hash rate monitoring:** Bitcoin network security proxy
+- **On-chain metrics:** Integration with Dune Analytics, Glassnode, CryptoQuant
+
+---
+
+## Desktop vs. Web
+
+<Tabs>
+  <Tab title="Desktop App (Tauri)">
+    **Download:**
+    - [macOS Apple Silicon (.dmg)](https://worldmonitor.app/api/download?platform=macos-arm64&variant=finance)
+    - [macOS Intel (.dmg)](https://worldmonitor.app/api/download?platform=macos-x64&variant=finance)
+    - [Windows (.exe)](https://worldmonitor.app/api/download?platform=windows-exe&variant=finance)
+    - [Linux (.AppImage)](https://worldmonitor.app/api/download?platform=linux-appimage&variant=finance)
+
+    **Finance-Specific Settings:**
+    - Finnhub API key (real-time stock quotes)
+    - FRED API key (economic indicators)
+    - EIA API key (oil analytics)
+    - WTO API key (trade policy data)
+    - Polygon.io API key (historical market data)
+  </Tab>
+
+  <Tab title="Web App (PWA)">
+    **Access:**
+    - [finance.worldmonitor.app](https://finance.worldmonitor.app)
+
+    **Features:**
+    - Installable to home screen
+    - Offline map support (stock exchange and financial center layers cached)
+    - Auto-updating service worker
+    - Finance variant categories fetch with **5 concurrent requests** (vs 3 for other variants) for ~10-15 second faster cold starts
+  </Tab>
+</Tabs>
+
+---
+
+## E2E Testing
+
+Finance Monitor has variant-specific regression tests:
+
+```bash
+# Run all Finance Monitor E2E tests
+npm run test:e2e:finance
+
+# Visual regression tests
+npm run test:e2e:visual:finance
+
+# Update golden screenshots
+npm run test:e2e:visual:update:finance
+```
+
+Test coverage includes:
+- Stock exchange layer rendering
+- Central bank marker clustering
+- Gulf FDI investment status color-coding
+- Market radar composite signal calculation
+
+---
+
+## Related Variants
+
+<CardGroup cols={3}>
+  <Card title="World Monitor" icon="globe" href="/variants/world-monitor">
+    Geopolitical intelligence
+  </Card>
+  <Card title="Tech Monitor" icon="laptop-code" href="/variants/tech-monitor">
+    AI & tech industry
+  </Card>
+  <Card title="Happy Monitor" icon="sun" href="/variants/happy-monitor">
+    Positive news
+  </Card>
+</CardGroup>

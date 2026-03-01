@@ -1,0 +1,200 @@
+---
+title: AviationService
+description: Flight delay data from FAA and Eurocontrol
+---
+
+The AviationService provides APIs for accessing current airport delay alerts from the FAA (Federal Aviation Administration) and Eurocontrol.
+
+## Base Path
+
+```
+/api/aviation/v1
+```
+
+## ListAirportDelays
+
+Retrieves current airport delay alerts with filtering by region and severity.
+
+**Endpoint:** `GET /api/aviation/v1/list-airport-delays`
+
+### Request Parameters
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="region" type="AirportRegion">
+  Optional region filter: `AIRPORT_REGION_AMERICAS`, `AIRPORT_REGION_EUROPE`, `AIRPORT_REGION_APAC`, `AIRPORT_REGION_MENA`, or `AIRPORT_REGION_AFRICA`
+</ParamField>
+
+<ParamField query="min_severity" type="FlightDelaySeverity">
+  Optional minimum severity filter: `FLIGHT_DELAY_SEVERITY_NORMAL`, `FLIGHT_DELAY_SEVERITY_MINOR`, `FLIGHT_DELAY_SEVERITY_MODERATE`, `FLIGHT_DELAY_SEVERITY_MAJOR`, or `FLIGHT_DELAY_SEVERITY_SEVERE`
+</ParamField>
+
+### Response
+
+<ResponseField name="alerts" type="AirportDelayAlert[]">
+  The list of airport delay alerts
+  
+  <Expandable title="AirportDelayAlert">
+    <ResponseField name="id" type="string" required>
+      Unique alert identifier
+    </ResponseField>
+    
+    <ResponseField name="iata" type="string">
+      IATA airport code (e.g., "JFK")
+    </ResponseField>
+    
+    <ResponseField name="icao" type="string">
+      ICAO airport code (e.g., "KJFK")
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Airport name
+    </ResponseField>
+    
+    <ResponseField name="city" type="string">
+      City where the airport is located
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country code (ISO 3166-1 alpha-2)
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Airport location
+    </ResponseField>
+    
+    <ResponseField name="region" type="AirportRegion">
+      Geographic region
+    </ResponseField>
+    
+    <ResponseField name="delay_type" type="FlightDelayType">
+      Type of delay: `FLIGHT_DELAY_TYPE_GROUND_STOP`, `FLIGHT_DELAY_TYPE_GROUND_DELAY`, `FLIGHT_DELAY_TYPE_DEPARTURE_DELAY`, `FLIGHT_DELAY_TYPE_ARRIVAL_DELAY`, `FLIGHT_DELAY_TYPE_GENERAL`, or `FLIGHT_DELAY_TYPE_CLOSURE`
+    </ResponseField>
+    
+    <ResponseField name="severity" type="FlightDelaySeverity">
+      Delay severity
+    </ResponseField>
+    
+    <ResponseField name="avg_delay_minutes" type="int32">
+      Average delay in minutes
+    </ResponseField>
+    
+    <ResponseField name="delayed_flights_pct" type="double">
+      Percentage of delayed flights
+    </ResponseField>
+    
+    <ResponseField name="cancelled_flights" type="int32">
+      Number of cancelled flights
+    </ResponseField>
+    
+    <ResponseField name="total_flights" type="int32">
+      Total flights scheduled
+    </ResponseField>
+    
+    <ResponseField name="reason" type="string">
+      Human-readable reason for delays
+    </ResponseField>
+    
+    <ResponseField name="source" type="FlightDelaySource">
+      Data source: `FLIGHT_DELAY_SOURCE_FAA`, `FLIGHT_DELAY_SOURCE_EUROCONTROL`, or `FLIGHT_DELAY_SOURCE_COMPUTED`
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="int64">
+      Last data update time, as Unix epoch milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/aviation/v1/list-airport-delays?region=AIRPORT_REGION_AMERICAS&min_severity=FLIGHT_DELAY_SEVERITY_MODERATE&page_size=50"
+```
+
+### Example Response
+
+```json
+{
+  "alerts": [
+    {
+      "id": "jfk-delay-20240301",
+      "iata": "JFK",
+      "icao": "KJFK",
+      "name": "John F. Kennedy International Airport",
+      "city": "New York",
+      "country": "US",
+      "location": {
+        "latitude": 40.6413,
+        "longitude": -73.7781
+      },
+      "region": "AIRPORT_REGION_AMERICAS",
+      "delay_type": "FLIGHT_DELAY_TYPE_DEPARTURE_DELAY",
+      "severity": "FLIGHT_DELAY_SEVERITY_MODERATE",
+      "avg_delay_minutes": 32,
+      "delayed_flights_pct": 68.5,
+      "cancelled_flights": 12,
+      "total_flights": 287,
+      "reason": "Weather: Low visibility and strong winds",
+      "source": "FLIGHT_DELAY_SOURCE_FAA",
+      "updated_at": 1709251200000
+    },
+    {
+      "id": "ord-delay-20240301",
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago O'Hare International Airport",
+      "city": "Chicago",
+      "country": "US",
+      "location": {
+        "latitude": 41.9742,
+        "longitude": -87.9073
+      },
+      "region": "AIRPORT_REGION_AMERICAS",
+      "delay_type": "FLIGHT_DELAY_TYPE_GROUND_DELAY",
+      "severity": "FLIGHT_DELAY_SEVERITY_MAJOR",
+      "avg_delay_minutes": 58,
+      "delayed_flights_pct": 82.3,
+      "cancelled_flights": 34,
+      "total_flights": 412,
+      "reason": "Snow and ice accumulation on runways",
+      "source": "FLIGHT_DELAY_SOURCE_FAA",
+      "updated_at": 1709251800000
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjUwfQ==",
+    "has_more": true
+  }
+}
+```
+
+## Delay Severity Levels
+
+The `FlightDelaySeverity` enum provides standardized severity classifications:
+
+- **NORMAL**: Normal operations with no delays
+- **MINOR**: Minor delays under 15 minutes
+- **MODERATE**: Moderate delays 15-45 minutes
+- **MAJOR**: Major delays 45-90 minutes  
+- **SEVERE**: Severe delays over 90 minutes
+
+## Delay Types
+
+The `FlightDelayType` enum classifies different types of delays:
+
+- **GROUND_STOP**: No departures or arrivals permitted
+- **GROUND_DELAY**: Ground delay program in effect
+- **DEPARTURE_DELAY**: Delays affecting departing flights
+- **ARRIVAL_DELAY**: Delays affecting arriving flights
+- **GENERAL**: General delay condition
+- **CLOSURE**: Airport or airspace closure

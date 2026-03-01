@@ -1,0 +1,598 @@
+---
+title: Desktop Application
+description: Native Tauri desktop app for macOS, Windows, and Linux with local API sidecar and OS integration
+---
+
+## Overview
+
+World Monitor's desktop application is built with **Tauri 2.0**, packaging the full web dashboard with a local Node.js sidecar that runs all 60+ API handlers entirely on your machine.
+
+<Info>
+  **Version**: 2.5.21 | **Platforms**: macOS (Intel + Apple Silicon), Windows (EXE/MSI), Linux (AppImage)
+</Info>
+
+## Download Links
+
+<Tabs>
+  <Tab title="macOS">
+    **Apple Silicon (M1/M2/M3)**
+    ```
+    https://worldmonitor.app/api/download?platform=macos-arm64
+    ```
+    
+    **Intel**
+    ```
+    https://worldmonitor.app/api/download?platform=macos-x64
+    ```
+    
+    **Installation:**
+    1. Download `.dmg` file
+    2. Open and drag to Applications
+    3. First launch: Right-click → Open (bypasses Gatekeeper)
+    4. Grant permissions when prompted
+  </Tab>
+  
+  <Tab title="Windows">
+    **Installer (Recommended)**
+    ```
+    https://worldmonitor.app/api/download?platform=windows-exe
+    ```
+    
+    **MSI Package**
+    ```
+    https://worldmonitor.app/api/download?platform=windows-msi
+    ```
+    
+    **Installation:**
+    1. Run installer
+    2. Follow setup wizard
+    3. Launch from Start Menu
+    4. Windows Defender: Allow network access
+  </Tab>
+  
+  <Tab title="Linux">
+    **AppImage (Universal)**
+    ```
+    https://worldmonitor.app/api/download?platform=linux-appimage
+    ```
+    
+    **Installation:**
+    ```bash
+    chmod +x World-Monitor-*.AppImage
+    ./World-Monitor-*.AppImage
+    ```
+    
+    Includes bundled media frameworks.
+  </Tab>
+</Tabs>
+
+## Variant Downloads
+
+Download specific variants:
+
+```
+# Tech Monitor
+https://worldmonitor.app/api/download?platform=macos-arm64&variant=tech
+
+# Finance Monitor  
+https://worldmonitor.app/api/download?platform=windows-exe&variant=finance
+
+# Full (default)
+https://worldmonitor.app/api/download?platform=linux-appimage&variant=full
+```
+
+## Architecture
+
+### Tauri Runtime
+
+```json
+// From src-tauri/tauri.conf.json
+{
+  "productName": "World Monitor",
+  "mainBinaryName": "world-monitor",
+  "version": "2.5.21",
+  "identifier": "app.worldmonitor.desktop"
+}
+```
+
+The app consists of:
+
+1. **Rust Core** - Native window management, IPC, system integration
+2. **WebView** - Renders the full web dashboard
+3. **Node.js Sidecar** - Runs local API server on random port
+
+### Local API Sidecar
+
+Built from `/api` directory during build:
+
+```bash
+# From package.json scripts
+npm run build:sidecar-sebuf
+npm run desktop:build:full
+```
+
+Sidecar provides:
+- **60+ API endpoints** (same as Vercel cloud deployment)
+- **RSS proxy** (150+ feeds fetched locally)
+- **Data caching** (Redis-compatible in-memory)
+- **Sebuf RPC handlers** (20 typed services)
+
+<Info>
+  The desktop app can operate as a **fully self-contained intelligence platform** with zero cloud dependencies.
+</Info>
+
+### Token-Authenticated Sidecar
+
+Prevents other local processes from accessing the sidecar:
+
+```typescript
+// Session token generated per launch
+// Uses randomized hashing
+// Included in all localhost requests
+// Validates origin and token
+```
+
+**Security:**
+- Token unique per app instance
+- Not stored on disk
+- Regenerated on each launch
+- Prevents localhost hijacking
+
+## OS Keychain Integration
+
+API keys stored securely in system credential manager:
+
+<Tabs>
+  <Tab title="macOS">
+    **Keychain Access**
+    
+    - All secrets in single entry: `secrets-vault`
+    - JSON blob format
+    - Protected by macOS security
+    - Touch ID / password unlock
+    
+    **Migration:**
+    ```typescript
+    // One-time migration from individual entries
+    // Consolidates 20+ entries → 1 vault
+    // Reduces authorization prompts from 20+ → 1 per launch
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    **Credential Manager**
+    
+    - `secrets-vault` entry
+    - Windows encryption
+    - User-scope storage
+    - Survives reinstalls
+  </Tab>
+  
+  <Tab title="Linux">
+    **Secret Service API**
+    
+    - Compatible with GNOME Keyring
+    - KDE Wallet
+    - Other freedesktop.org implementations
+  </Tab>
+</Tabs>
+
+<Note>
+  **Never stored in plaintext files** - all API keys go through OS-level encryption.
+</Note>
+
+## Settings Window
+
+Dedicated configuration UI (Cmd+, or Ctrl+,):
+
+<Tabs>
+  <Tab title="LLMs Tab">
+    **Local AI Configuration**
+    
+    - **Ollama Endpoint**
+      - Default: `http://localhost:11434`
+      - Custom endpoints supported
+      - Connection test button
+    
+    - **Model Selection**
+      - Auto-discovered from endpoint
+      - Dropdown with available models
+      - Filters out embedding-only models
+      - Manual fallback if discovery fails
+    
+    - **Cloud APIs**
+      - Groq API key
+      - OpenRouter API key
+    
+    **Model Discovery:**
+    ```typescript
+    // Tries Ollama native: /api/tags
+    // Falls back to OpenAI-compatible: /v1/models
+    // Populates dropdown immediately
+    ```
+  </Tab>
+  
+  <Tab title="API Keys Tab">
+    **Data Source Credentials**
+    
+    12+ API key fields:
+    - Cloudflare Radar
+    - OpenSky Network
+    - Finnhub
+    - NASA FIRMS
+    - FRED (Federal Reserve Economic Data)
+    - EIA (Energy Information Administration)
+    - Telegram (MTProto)
+    - Threat intelligence feeds
+    - And more...
+    
+    **Per-Key Validation:**
+    - Green checkmark: Valid
+    - Red X: Invalid/unreachable
+    - Yellow warning: Connection issue
+    - Validates on save
+  </Tab>
+  
+  <Tab title="Debug & Logs Tab">
+    **Developer Tools**
+    
+    - **Traffic Log**
+      - Last 200 requests
+      - Timing information
+      - Status codes
+      - Error details
+    
+    - **Verbose Mode Toggle**
+      - Persistent across restarts
+      - Detailed logging
+    
+    - **DevTools Toggle**
+      - Cmd+Alt+I (macOS)
+      - Ctrl+Alt+I (Windows/Linux)
+      - Opens embedded web inspector
+    
+    - **Log Files**
+      - Location shown
+      - Open in finder/explorer
+  </Tab>
+</Tabs>
+
+### Cross-Window Secret Sync
+
+Settings and main window run in separate webviews:
+
+```typescript
+// Saving in Settings:
+// 1. Writes to OS keychain
+// 2. Broadcasts localStorage change event
+// 3. Main window listens
+// 4. Hot-reloads all secrets
+// 5. No app restart required
+```
+
+<Tip>
+  Change API keys in Settings → immediately available in main window without restarting.
+</Tip>
+
+## Cloud Fallback
+
+When a local API handler fails or is missing:
+
+```typescript
+// Transparent fallback to cloud deployment
+// Origin headers stripped
+// Falls through to worldmonitor.app
+// Seamless hybrid operation
+```
+
+**Use Cases:**
+- New features not yet in local sidecar
+- Experimental endpoints
+- High-bandwidth data sources
+- Distributed processing
+
+## Auto-Update Checker
+
+Polls cloud API for new versions every 6 hours:
+
+```typescript
+// Displays non-intrusive update badge
+// Direct download link to GitHub Release
+// Per-version dismiss
+// Variant-aware (Tech Monitor links to Tech release)
+```
+
+**Update Flow:**
+1. Notification appears
+2. Click to view release notes
+3. Download new version
+4. Install over existing
+5. Settings and cache preserved
+
+## Bundle Contents
+
+What's included in the desktop app:
+
+```json
+// From src-tauri/tauri.conf.json
+"resources": [
+  "../api",                    // Vercel API handlers
+  "sidecar/local-api-server.mjs", // Node.js server
+  "sidecar/package.json",
+  "sidecar/node",              // Bundled Node.js runtime
+  "../data",                   // Static datasets (bases, cables, etc.)
+  "../src/config"              // Configuration files
+]
+```
+
+**Total Size:**
+- macOS ARM: ~180MB
+- macOS Intel: ~200MB
+- Windows EXE: ~150MB
+- Linux AppImage: ~170MB
+
+## Build Variants
+
+Building desktop apps for different variants:
+
+```bash
+# Full variant (geopolitical)
+npm run desktop:build:full
+
+# Tech variant
+npm run desktop:build:tech
+
+# Finance variant
+npm run desktop:build:finance
+```
+
+Each variant:
+- Different branding
+- Variant-specific datasets
+- Optimized feed selection
+- Tailored color schemes
+
+## CSP (Content Security Policy)
+
+Desktop app has relaxed CSP for localhost:
+
+```javascript
+// From tauri.conf.json
+"csp": "connect-src 'self' https: http://127.0.0.1:* ws: wss:; frame-src 'self' http://127.0.0.1:* https://www.youtube.com;"
+```
+
+**Allows:**
+- Sidecar communication (random port)
+- YouTube embeds
+- WebSocket connections
+- HTTPS APIs
+
+## Development Mode
+
+Run desktop app in dev mode:
+
+```bash
+npm run desktop:dev
+```
+
+**Features:**
+- Hot reload
+- DevTools open by default
+- Verbose logging
+- Sidecar rebuilds on change
+
+**Uses:**
+```json
+{
+  "beforeDevCommand": "npm run build:sidecar-sebuf && npm run dev"
+}
+```
+
+## Code Signing & Notarization
+
+<Tabs>
+  <Tab title="macOS">
+    **Hardened Runtime**
+    
+    ```json
+    {
+      "macOS": {
+        "hardenedRuntime": true
+      }
+    }
+    ```
+    
+    **Signing:**
+    - Developer ID certificate required
+    - Gatekeeper bypass on first launch
+    - Notarization for distribution
+    
+    **Build Script:**
+    ```bash
+    npm run desktop:package:macos:full:sign
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    **Authenticode Signing**
+    
+    ```json
+    {
+      "windows": {
+        "digestAlgorithm": "sha256",
+        "timestampUrl": "https://timestamp.digicert.com"
+      }
+    }
+    ```
+    
+    **Build Script:**
+    ```bash
+    npm run desktop:package:windows:full:sign
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    **AppImage**
+    
+    No code signing required.
+    
+    **Media Framework:**
+    ```json
+    {
+      "linux": {
+        "appimage": {
+          "bundleMediaFramework": true
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Advantages Over Web Version
+
+| Feature | Desktop | Web |
+|---------|---------|-----|
+| **Local API processing** | ✅ All endpoints | ❌ Cloud only |
+| **Offline operation** | ✅ Full functionality | ⚠️ Limited (PWA cache) |
+| **API key storage** | ✅ OS keychain | ⚠️ Session only |
+| **Native shortcuts** | ✅ Cmd+, Cmd+K, etc. | ⚠️ Browser-dependent |
+| **Update notifications** | ✅ Automatic | ❌ None |
+| **Performance** | ✅ Native optimizations | ⚠️ Browser overhead |
+| **YouTube playback** | ✅ Embed bridge | ⚠️ Iframe restrictions |
+| **Multi-window** | ✅ Settings window | ❌ Single tab |
+
+## System Requirements
+
+**Minimum:**
+- **CPU**: Dual-core 2.0GHz
+- **RAM**: 4GB
+- **GPU**: WebGL 2.0 support
+- **Storage**: 500MB free
+- **OS**: macOS 10.13+, Windows 10+, Ubuntu 18.04+
+
+**Recommended:**
+- **CPU**: Quad-core 3.0GHz+
+- **RAM**: 8GB+
+- **GPU**: Dedicated graphics
+- **Storage**: 1GB free (for caching)
+- **Network**: Broadband internet
+
+## Performance Optimizations
+
+### Sidecar Caching
+
+```typescript
+// In-memory Redis-compatible cache
+// Avoids network roundtrips
+// Typical response time: <10ms
+```
+
+### Brotli Compression
+
+```typescript
+// API responses prefer Brotli
+// Gzip fallback for legacy clients
+// 50-80% wire size reduction
+// Applies to OpenSky, RSS, UCDP, AIS
+```
+
+### Request Deduplication
+
+```typescript
+// Concurrent identical requests → single upstream fetch
+// Example: 53 RSS cache misses → 1 actual fetch
+// Served with X-Cache: DEDUP header
+```
+
+## Troubleshooting
+
+**App won't launch?**
+- macOS: Right-click → Open (first time)
+- Windows: Allow in Defender
+- Linux: Check `chmod +x`
+- Verify system requirements
+
+**Sidecar not starting?**
+- Check port isn't blocked by firewall
+- Look for error logs in app data folder
+- Try restarting app
+- Desktop: Settings → Debug & Logs
+
+**Slow performance?**
+- Close unused panels
+- Reduce active map layers
+- Disable browser ML if low RAM
+- Check for background processes
+
+**Settings not saving?**
+- Grant keychain/credential manager access
+- Check file permissions
+- Verify OS security settings
+- Try running as administrator (Windows)
+
+**YouTube videos not playing?**
+- Embed bridge handles restrictions automatically
+- Check internet connection
+- Try HLS native channels instead
+- Restart app if bridge fails
+
+## Related Features
+
+- [AI Intelligence](/features/ai-intelligence) - Local Ollama integration
+- [Live News](/features/live-news) - Local RSS proxy
+- Interactive Globe - Native WebGL performance
+
+## Privacy & Security
+
+<Info>
+  **Privacy Guarantees**
+  
+  - API keys encrypted in OS keychain
+  - No telemetry in desktop builds (opt-in analytics disabled)
+  - Local processing for sensitive data
+  - Network requests only to configured APIs
+  - No advertising or tracking
+</Info>
+
+<Note>
+  **Source Code**: Desktop app built from same open-source codebase as web version. [View on GitHub](https://github.com/koala73/worldmonitor)
+</Note>
+
+## Advanced Configuration
+
+### Custom Sidecar Port
+
+By default, sidecar chooses random available port. To force specific port:
+
+```bash
+# Set environment variable before launch
+export WM_SIDECAR_PORT=3001
+./World\ Monitor.app
+```
+
+### Disable Cloud Fallback
+
+```typescript
+// In settings-manager.ts
+const DISABLE_CLOUD_FALLBACK = true;
+
+// Forces 100% local operation
+// APIs fail if sidecar handler missing
+```
+
+### Custom Data Directory
+
+```bash
+# Override default app data location
+export WM_DATA_DIR=/custom/path
+```
+
+## Contributing to Desktop
+
+See [CONTRIBUTING.md](https://github.com/koala73/worldmonitor/blob/main/CONTRIBUTING.md) for:
+- Building from source
+- Adding sidecar endpoints
+- Testing desktop-specific features
+- Packaging workflow
+- Code signing setup

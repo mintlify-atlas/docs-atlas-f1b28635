@@ -1,0 +1,628 @@
+---
+title: "Installation"
+description: "Detailed installation instructions for World Monitor web and desktop applications"
+---
+
+## Installation Overview
+
+World Monitor can be deployed in three ways:
+
+<CardGroup cols={3}>
+  <Card title="Hosted Web App" icon="cloud">
+    Use the production deployment at worldmonitor.app — no setup required
+  </Card>
+  
+  <Card title="Desktop Application" icon="desktop">
+    Native app for macOS, Windows, and Linux with local API sidecar
+  </Card>
+  
+  <Card title="Self-Hosted" icon="server">
+    Deploy your own instance on Vercel, Railway, or custom infrastructure
+  </Card>
+</CardGroup>
+
+## Desktop Installation
+
+The desktop app provides the best experience with OS integration, local AI, and offline capabilities.
+
+### System Requirements
+
+<Tabs>
+  <Tab title="macOS">
+    - **macOS 11.0** (Big Sur) or later
+    - **Apple Silicon** (M1/M2/M3) or **Intel x64**
+    - **200 MB** disk space
+    - **4 GB RAM** minimum (8 GB recommended for local AI)
+  </Tab>
+  
+  <Tab title="Windows">
+    - **Windows 10** (build 1809+) or **Windows 11**
+    - **x64** processor
+    - **200 MB** disk space
+    - **4 GB RAM** minimum (8 GB recommended for local AI)
+  </Tab>
+  
+  <Tab title="Linux">
+    - **glibc 2.31+** (Ubuntu 20.04+, Fedora 32+, Debian 11+)
+    - **x64** processor
+    - **200 MB** disk space
+    - **4 GB RAM** minimum (8 GB recommended for local AI)
+    - **WebKit2GTK 4.0** (for AppImage)
+  </Tab>
+</Tabs>
+
+### Download and Install
+
+<Steps>
+  <Step title="Download Installer">
+    Download the installer for your platform:
+    
+    <Tabs>
+      <Tab title="macOS">
+        **Apple Silicon (M1/M2/M3)**
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=macos-arm64" -o WorldMonitor.dmg
+        ```
+        
+        **Intel**
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=macos-x64" -o WorldMonitor.dmg
+        ```
+        
+        Or visit [GitHub Releases](https://github.com/koala73/worldmonitor/releases/latest) and download:
+        - `World.Monitor_<version>_aarch64.dmg` (Apple Silicon)
+        - `World.Monitor_<version>_x64.dmg` (Intel)
+      </Tab>
+      
+      <Tab title="Windows">
+        **.exe installer (recommended)**
+        ```powershell
+        Invoke-WebRequest "https://worldmonitor.app/api/download?platform=windows-exe" -OutFile WorldMonitor-Setup.exe
+        ```
+        
+        **.msi installer**
+        ```powershell
+        Invoke-WebRequest "https://worldmonitor.app/api/download?platform=windows-msi" -OutFile WorldMonitor-Setup.msi
+        ```
+        
+        Or download from [GitHub Releases](https://github.com/koala73/worldmonitor/releases/latest):
+        - `World.Monitor_<version>_x64-setup.exe`
+        - `World.Monitor_<version>_x64_en-US.msi`
+      </Tab>
+      
+      <Tab title="Linux">
+        **AppImage (universal)**
+        ```bash
+        curl -L "https://worldmonitor.app/api/download?platform=linux-appimage" -o WorldMonitor.AppImage
+        chmod +x WorldMonitor.AppImage
+        ```
+        
+        Or download from [GitHub Releases](https://github.com/koala73/worldmonitor/releases/latest):
+        - `world-monitor_<version>_amd64.AppImage`
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Install Application">
+    <Tabs>
+      <Tab title="macOS">
+        1. Open the downloaded `.dmg` file
+        2. Drag **World Monitor** to the **Applications** folder
+        3. Eject the DMG
+        4. Open **Applications** and launch **World Monitor**
+        
+        <Warning>
+          On first launch, macOS may show a security warning:
+          
+          "World Monitor cannot be opened because it is from an unidentified developer."
+          
+          **Solution**: Go to **System Settings → Privacy & Security** and click **Open Anyway**
+        </Warning>
+      </Tab>
+      
+      <Tab title="Windows">
+        **Using .exe installer:**
+        1. Double-click `WorldMonitor-Setup.exe`
+        2. Follow the installation wizard
+        3. Choose installation directory (default: `C:\Program Files\World Monitor`)
+        4. Launch from Start Menu or Desktop shortcut
+        
+        **Using .msi installer:**
+        1. Double-click the `.msi` file
+        2. Follow the MSI installation wizard
+        3. Launch from Start Menu
+        
+        <Warning>
+          Windows Defender may show a SmartScreen warning:
+          
+          "Windows protected your PC"
+          
+          **Solution**: Click **More info** → **Run anyway**
+        </Warning>
+      </Tab>
+      
+      <Tab title="Linux">
+        **AppImage (no installation required):**
+        ```bash
+        chmod +x WorldMonitor.AppImage
+        ./WorldMonitor.AppImage
+        ```
+        
+        **Optional: Integrate with desktop environment**
+        ```bash
+        # Move to /opt
+        sudo mv WorldMonitor.AppImage /opt/worldmonitor.appimage
+        
+        # Create desktop entry
+        cat > ~/.local/share/applications/worldmonitor.desktop <<EOF
+        [Desktop Entry]
+        Name=World Monitor
+        Exec=/opt/worldmonitor.appimage
+        Icon=worldmonitor
+        Type=Application
+        Categories=Network;News;
+        EOF
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="First Launch">
+    On first launch, World Monitor:
+    
+    1. **Starts the Node.js sidecar** on a random port (e.g., `http://127.0.0.1:54321`)
+    2. **Generates a unique session token** for localhost security
+    3. **Loads the dashboard** with cloud fallback enabled
+    
+    The sidecar logs are written to:
+    - **macOS/Linux**: `~/Library/Logs/WorldMonitor/sidecar.log`
+    - **Windows**: `%APPDATA%\WorldMonitor\logs\sidecar.log`
+    
+    <Info>
+      The app works immediately without configuration. API keys are optional for enhanced features.
+    </Info>
+  </Step>
+</Steps>
+
+### Download Variants
+
+Desktop installers are available for all four variants:
+
+<Tabs>
+  <Tab title="World Monitor">
+    Default geopolitical variant:
+    ```bash
+    # macOS ARM64
+    curl -L "https://worldmonitor.app/api/download?platform=macos-arm64&variant=full" -o WorldMonitor.dmg
+    
+    # Windows
+    curl -L "https://worldmonitor.app/api/download?platform=windows-exe&variant=full" -o WorldMonitor.exe
+    ```
+  </Tab>
+  
+  <Tab title="Tech Monitor">
+    Tech industry variant:
+    ```bash
+    # macOS ARM64
+    curl -L "https://worldmonitor.app/api/download?platform=macos-arm64&variant=tech" -o TechMonitor.dmg
+    
+    # Windows
+    curl -L "https://worldmonitor.app/api/download?platform=windows-exe&variant=tech" -o TechMonitor.exe
+    ```
+  </Tab>
+  
+  <Tab title="Finance Monitor">
+    Finance and markets variant:
+    ```bash
+    # macOS ARM64
+    curl -L "https://worldmonitor.app/api/download?platform=macos-arm64&variant=finance" -o FinanceMonitor.dmg
+    
+    # Windows
+    curl -L "https://worldmonitor.app/api/download?platform=windows-exe&variant=finance" -o FinanceMonitor.exe
+    ```
+  </Tab>
+</Tabs>
+
+## Web App Installation (PWA)
+
+Install World Monitor as a Progressive Web App for an app-like experience.
+
+### Install on Desktop
+
+<Tabs>
+  <Tab title="Chrome/Edge">
+    1. Visit [worldmonitor.app](https://worldmonitor.app)
+    2. Click the **install icon** in the address bar (puzzle piece or plus sign)
+    3. Click **Install** in the prompt
+    4. Launch from Chrome Apps or Start Menu
+    
+    **Manual installation:**
+    1. Click **⋮** (three dots) → **Install World Monitor**
+    2. Confirm installation
+  </Tab>
+  
+  <Tab title="Safari (macOS)">
+    Safari does not support PWA installation on macOS.
+    
+    **Workaround**: Use Chrome, Edge, or Firefox for PWA installation, or download the native desktop app.
+  </Tab>
+  
+  <Tab title="Firefox">
+    Firefox does not support PWA installation on desktop.
+    
+    **Workaround**: Use Chrome or Edge for PWA, or download the native desktop app.
+  </Tab>
+</Tabs>
+
+### Install on Mobile
+
+<Tabs>
+  <Tab title="iOS (Safari)">
+    1. Visit [worldmonitor.app](https://worldmonitor.app) in Safari
+    2. Tap the **Share** button (square with arrow)
+    3. Scroll down and tap **Add to Home Screen**
+    4. Tap **Add**
+    5. Launch from Home Screen
+  </Tab>
+  
+  <Tab title="Android (Chrome)">
+    1. Visit [worldmonitor.app](https://worldmonitor.app) in Chrome
+    2. Tap **⋮** (three dots) → **Install app**
+    3. Tap **Install** in the prompt
+    4. Launch from Home Screen or App Drawer
+  </Tab>
+</Tabs>
+
+### PWA Features
+
+The PWA provides:
+
+- **Full-screen standalone mode** (no browser UI)
+- **Offline map support** (500 tiles cached, 30-day TTL)
+- **Faster startup** with aggressive asset caching
+- **Auto-updating** service worker (checks every 60 minutes)
+- **Offline fallback page** with retry button
+
+<Warning>
+  The PWA **does not** support:
+  - Local AI models (Ollama/LM Studio)
+  - OS keychain integration
+  - Local API sidecar
+  
+  For these features, use the native desktop app.
+</Warning>
+
+## Self-Hosted Deployment
+
+Deploy your own instance of World Monitor for full control.
+
+### Prerequisites
+
+<CodeGroup>
+```bash npm
+node --version  # v18.0.0 or later
+npm --version   # v9.0.0 or later
+```
+
+```bash Clone Repository
+git clone https://github.com/koala73/worldmonitor.git
+cd worldmonitor
+npm install
+```
+</CodeGroup>
+
+### Local Development
+
+<Steps>
+  <Step title="Install Dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+  
+  <Step title="Configure Environment">
+    Copy the example environment file:
+    ```bash
+    cp .env.example .env.local
+    ```
+    
+    Edit `.env.local` and add optional API keys:
+    ```bash
+    # AI Summarization
+    GROQ_API_KEY=your_groq_key_here
+    OPENROUTER_API_KEY=your_openrouter_key_here
+    
+    # Caching (Redis)
+    UPSTASH_REDIS_REST_URL=your_redis_url
+    UPSTASH_REDIS_REST_TOKEN=your_redis_token
+    
+    # Conflict Data
+    ACLED_ACCESS_TOKEN=your_acled_token
+    
+    # Satellite Fires
+    NASA_FIRMS_API_KEY=your_firms_key
+    ```
+    
+    See [Environment Variables](/configuration/environment-variables) for full list.
+  </Step>
+  
+  <Step title="Start Development Server">
+    **Default variant (World Monitor):**
+    ```bash
+    npm run dev
+    ```
+    
+    **Tech variant:**
+    ```bash
+    npm run dev:tech
+    ```
+    
+    **Finance variant:**
+    ```bash
+    npm run dev:finance
+    ```
+    
+    Open [http://localhost:3000](http://localhost:3000) in your browser.
+  </Step>
+</Steps>
+
+### Production Build
+
+<Steps>
+  <Step title="Build Static Assets">
+    ```bash
+    # Default variant
+    npm run build
+    
+    # Tech variant
+    npm run build:tech
+    
+    # Finance variant
+    npm run build:finance
+    ```
+    
+    Output: `dist/` directory with static HTML, CSS, JS, and assets.
+  </Step>
+  
+  <Step title="Preview Build">
+    ```bash
+    npm run preview
+    ```
+    
+    Open [http://localhost:4173](http://localhost:4173) to test the production build.
+  </Step>
+</Steps>
+
+### Deploy to Vercel
+
+<Steps>
+  <Step title="Install Vercel CLI">
+    ```bash
+    npm install -g vercel
+    ```
+  </Step>
+  
+  <Step title="Deploy">
+    ```bash
+    vercel
+    ```
+    
+    Follow the prompts:
+    - Link to existing project or create new
+    - Select deployment region
+    - Configure environment variables
+  </Step>
+  
+  <Step title="Configure Environment Variables">
+    Add secrets via Vercel dashboard or CLI:
+    ```bash
+    vercel env add GROQ_API_KEY
+    vercel env add UPSTASH_REDIS_REST_URL
+    vercel env add UPSTASH_REDIS_REST_TOKEN
+    ```
+    
+    See [Vercel Deployment](/deployment/vercel) for detailed configuration.
+  </Step>
+</Steps>
+
+### Deploy Railway Relay (Optional)
+
+For AIS vessel tracking, OpenSky aircraft data, and Telegram OSINT:
+
+<Steps>
+  <Step title="Create Railway Project">
+    1. Sign up at [railway.app](https://railway.app)
+    2. Create new project
+    3. Deploy from GitHub repository
+  </Step>
+  
+  <Step title="Configure Environment Variables">
+    Add to Railway dashboard:
+    ```bash
+    AISSTREAM_API_KEY=your_ais_key
+    OPENSKY_CLIENT_ID=your_opensky_id
+    OPENSKY_CLIENT_SECRET=your_opensky_secret
+    TELEGRAM_API_ID=your_telegram_id
+    TELEGRAM_API_HASH=your_telegram_hash
+    TELEGRAM_SESSION=your_session_string
+    RELAY_SHARED_SECRET=random_secret_here
+    ```
+  </Step>
+  
+  <Step title="Update Vercel Environment">
+    Add relay connection in Vercel:
+    ```bash
+    WS_RELAY_URL=https://your-railway-app.railway.app
+    RELAY_SHARED_SECRET=same_secret_as_railway
+    ```
+  </Step>
+</Steps>
+
+## Desktop App Development
+
+Build the desktop app from source:
+
+### Prerequisites
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    # Install Xcode Command Line Tools
+    xcode-select --install
+    
+    # Install Rust
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    
+    # Install Node.js
+    brew install node
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    ```powershell
+    # Install Rust
+    winget install Rustlang.Rust.GNU
+    
+    # Install Node.js
+    winget install OpenJS.NodeJS
+    
+    # Install Visual Studio Build Tools
+    winget install Microsoft.VisualStudio.2022.BuildTools
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    ```bash
+    # Install Rust
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    
+    # Install Node.js
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    
+    # Install dependencies
+    sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+    ```
+  </Tab>
+</Tabs>
+
+### Build Commands
+
+<CodeGroup>
+```bash Development
+# Run in dev mode with DevTools
+npm run desktop:dev
+```
+
+```bash Build (default variant)
+# Build for production
+npm run desktop:build:full
+
+# Output:
+# src-tauri/target/release/bundle/
+```
+
+```bash Build (tech variant)
+npm run desktop:build:tech
+```
+
+```bash Build (finance variant)
+npm run desktop:build:finance
+```
+</CodeGroup>
+
+### Package Desktop App
+
+<CodeGroup>
+```bash macOS
+# Build and package for macOS
+npm run desktop:package:macos:full
+
+# With code signing
+npm run desktop:package:macos:full:sign
+```
+
+```bash Windows
+# Build and package for Windows
+npm run desktop:package:windows:full
+
+# With code signing
+npm run desktop:package:windows:full:sign
+```
+</CodeGroup>
+
+## Verification
+
+### Test Installation
+
+<AccordionGroup>
+  <Accordion title="Desktop App" icon="desktop">
+    Verify the desktop app is working:
+    
+    1. **Launch app** — Should open without errors
+    2. **Check sidecar** — Look for "Sidecar running on port..." in logs
+    3. **Test API** — News feeds and map layers should load
+    4. **Open Settings** — Press Cmd+, (macOS) or Ctrl+, (Windows/Linux)
+    5. **Check DevTools** — Press Cmd+Alt+I (macOS) or Ctrl+Alt+I (Windows/Linux)
+    
+    If the sidecar fails to start, check logs:
+    ```bash
+    # macOS/Linux
+    tail -f ~/Library/Logs/WorldMonitor/sidecar.log
+    
+    # Windows
+    type %APPDATA%\WorldMonitor\logs\sidecar.log
+    ```
+  </Accordion>
+  
+  <Accordion title="Web Deployment" icon="cloud">
+    Verify your web deployment:
+    
+    1. **Visit URL** — Dashboard should load
+    2. **Check console** — No errors in browser DevTools (F12)
+    3. **Test API endpoints** — `/api/earthquake/fdsnws/event/1/query?format=geojson&limit=100`
+    4. **Load news feeds** — News panels should populate
+    5. **Test AI brief** — Click "World Brief" badge
+    
+    Common issues:
+    - **CORS errors** — Check Vercel environment variables
+    - **API timeouts** — Increase serverless function timeout
+    - **Missing secrets** — Add environment variables in Vercel dashboard
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Configure API Keys"
+    icon="key"
+    href="/configuration/api-keys"
+  >
+    Enable enhanced features with optional API keys
+  </Card>
+  
+  <Card
+    title="Local LLM Setup"
+    icon="brain"
+    href="/configuration/local-llm"
+  >
+    Run AI models locally with Ollama or LM Studio
+  </Card>
+  
+  <Card
+    title="Interactive Globe"
+    icon="globe"
+    href="/features/interactive-globe"
+  >
+    Learn about 40+ data layers and map controls
+  </Card>
+  
+  <Card
+    title="Desktop App Features"
+    icon="desktop"
+    href="/features/desktop-app"
+  >
+    Explore OS integration and local API sidecar
+  </Card>
+</CardGroup>

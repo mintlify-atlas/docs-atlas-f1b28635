@@ -1,0 +1,311 @@
+---
+title: Environment Variables
+description: Complete reference for all World Monitor environment variables
+icon: code
+---
+
+World Monitor uses environment variables for configuration. Copy `.env.example` to `.env.local` and configure only the features you need.
+
+```bash
+cp .env.example .env.local
+```
+
+<Warning>
+All API keys are **optional**. The dashboard works without them, but corresponding features will be disabled.
+</Warning>
+
+## AI Summarization
+
+AI-powered news briefs use a 4-tier fallback chain: Ollama (local) → Groq → OpenRouter → Browser (Transformers.js).
+
+<ParamField path="GROQ_API_KEY" type="string" required={false}>
+  Groq API key for fast LLM inference (Llama 3.1 8B). Primary cloud provider.
+  
+  **Free tier**: 14,400 requests/day  
+  **Get yours at**: https://console.groq.com/
+</ParamField>
+
+<ParamField path="OPENROUTER_API_KEY" type="string" required={false}>
+  OpenRouter API key for multi-model fallback.
+  
+  **Free tier**: 50 requests/day  
+  **Get yours at**: https://openrouter.ai/
+</ParamField>
+
+<ParamField path="OLLAMA_API_URL" type="string" required={false} default="http://localhost:11434">
+  Ollama or LM Studio server URL for local AI inference. No data leaves your machine.
+  
+  **Example**: `http://localhost:11434` (Ollama default)  
+  **Example**: `http://localhost:1234` (LM Studio default)
+</ParamField>
+
+<ParamField path="OLLAMA_MODEL" type="string" required={false} default="llama3.1:8b">
+  Model name for local Ollama inference. Auto-discovered in desktop settings.
+  
+  **Default**: `llama3.1:8b`  
+  **Popular alternatives**: `mistral`, `qwen2.5:7b`, `gemma2:9b`
+</ParamField>
+
+## Cross-User Cache (Redis)
+
+Deduplicates AI calls and caches risk scores across all visitors.
+
+<ParamField path="UPSTASH_REDIS_REST_URL" type="string" required={false}>
+  Upstash Redis REST URL for global cache.
+  
+  **Get yours at**: https://upstash.com/  
+  **Example**: `https://us1-pretty-hamster-12345.upstash.io`
+</ParamField>
+
+<ParamField path="UPSTASH_REDIS_REST_TOKEN" type="string" required={false}>
+  Upstash Redis authentication token.
+</ParamField>
+
+## Market Data
+
+<ParamField path="FINNHUB_API_KEY" type="string" required={false}>
+  Finnhub API key for real-time stock quotes and market data.
+  
+  **Free tier**: 60 requests/minute  
+  **Get yours at**: https://finnhub.io/
+</ParamField>
+
+## Energy Data
+
+<ParamField path="EIA_API_KEY" type="string" required={false}>
+  U.S. Energy Information Administration API key for oil prices, production, and inventory.
+  
+  **Get yours at**: https://www.eia.gov/opendata/
+</ParamField>
+
+## Economic Data
+
+<ParamField path="FRED_API_KEY" type="string" required={false}>
+  Federal Reserve Economic Data (FRED) API key for macro indicators and economic metrics.
+  
+  **Get yours at**: https://fred.stlouisfed.org/docs/api/api_key.html
+</ParamField>
+
+## Aircraft Tracking
+
+<ParamField path="WINGBITS_API_KEY" type="string" required={false}>
+  Wingbits API key for aircraft enrichment (owner, operator, type metadata).
+  
+  **Get yours at**: https://wingbits.com/
+</ParamField>
+
+<ParamField path="OPENSKY_CLIENT_ID" type="string" required={false}>
+  OpenSky Network OAuth2 client ID for higher rate limits from cloud IPs.
+  
+  **Get yours at**: https://opensky-network.org/
+</ParamField>
+
+<ParamField path="OPENSKY_CLIENT_SECRET" type="string" required={false}>
+  OpenSky Network OAuth2 client secret.
+</ParamField>
+
+## Conflict & Protest Data
+
+<ParamField path="ACLED_ACCESS_TOKEN" type="string" required={false}>
+  Armed Conflict Location & Event Data (ACLED) API token for conflict and protest events.
+  
+  **Free tier**: Available for researchers  
+  **Get yours at**: https://acleddata.com/
+</ParamField>
+
+## Internet Outages
+
+<ParamField path="CLOUDFLARE_API_TOKEN" type="string" required={false}>
+  Cloudflare Radar API token for internet outage detection.
+  
+  **Requires**: Free Cloudflare account with Radar access  
+  **Get yours at**: https://dash.cloudflare.com/profile/api-tokens
+</ParamField>
+
+## Satellite Fire Detection
+
+<ParamField path="NASA_FIRMS_API_KEY" type="string" required={false}>
+  NASA Fire Information for Resource Management System (FIRMS) API key.
+  
+  **Get yours at**: https://firms.modaps.eosdis.nasa.gov/
+</ParamField>
+
+## Railway Relay Server
+
+The relay server handles AIS vessel tracking, OpenSky aircraft data, RSS proxy, and Telegram OSINT polling.
+
+<ParamField path="AISSTREAM_API_KEY" type="string" required={false}>
+  AISStream API key for live vessel positions via WebSocket.
+  
+  **Get yours at**: https://aisstream.io/
+</ParamField>
+
+<ParamField path="WS_RELAY_URL" type="string" required={false}>
+  Server-side relay URL (https://) used by Vercel edge functions.
+  
+  **Example**: `https://relay.yourapp.com`
+</ParamField>
+
+<ParamField path="VITE_WS_RELAY_URL" type="string" required={false}>
+  Client-side relay URL (wss://) for local/dev fallback only.
+  
+  **Example**: `wss://relay.yourapp.com`
+</ParamField>
+
+<ParamField path="RELAY_SHARED_SECRET" type="string" required={false}>
+  Shared secret between Vercel and Railway relay. **Must be identical on both platforms.**
+  
+  **Generate with**: `openssl rand -hex 32`
+</ParamField>
+
+<ParamField path="RELAY_AUTH_HEADER" type="string" required={false} default="x-relay-key">
+  Header name used to send the relay secret.
+</ParamField>
+
+<ParamField path="ALLOW_UNAUTHENTICATED_RELAY" type="boolean" required={false} default={false}>
+  Emergency production override to allow unauthenticated relay traffic.
+  
+  <Warning>
+  Leave unset/false in production.
+  </Warning>
+</ParamField>
+
+<ParamField path="RELAY_METRICS_WINDOW_SECONDS" type="number" required={false} default={60}>
+  Rolling window size (seconds) used by relay `/metrics` endpoint.
+</ParamField>
+
+## Telegram OSINT
+
+Runs on Railway relay for MTProto stateful polling.
+
+<ParamField path="TELEGRAM_API_ID" type="string" required={false}>
+  Telegram MTProto API ID.
+  
+  **Get yours at**: https://my.telegram.org/apps
+</ParamField>
+
+<ParamField path="TELEGRAM_API_HASH" type="string" required={false}>
+  Telegram MTProto API hash.
+</ParamField>
+
+<ParamField path="TELEGRAM_SESSION" type="string" required={false}>
+  GramJS StringSession generated locally.
+  
+  **Generate with**: `scripts/telegram/session-auth.mjs`
+</ParamField>
+
+<ParamField path="TELEGRAM_CHANNEL_SET" type="string" required={false} default="full">
+  Which curated channel list to ingest.
+  
+  **Options**: `full`, `tech`, `finance`
+</ParamField>
+
+## Threat Intelligence
+
+<ParamField path="URLHAUS_AUTH_KEY" type="string" required={false}>
+  URLhaus API key for malicious URL IOCs.
+  
+  **Get yours at**: https://auth.abuse.ch/
+</ParamField>
+
+<ParamField path="OTX_API_KEY" type="string" required={false}>
+  AlienVault Open Threat Exchange (OTX) API key for cyber threat enrichment.
+  
+  **Get yours at**: https://otx.alienvault.com/
+</ParamField>
+
+<ParamField path="ABUSEIPDB_API_KEY" type="string" required={false}>
+  AbuseIPDB API key for IP reputation enrichment.
+  
+  **Get yours at**: https://www.abuseipdb.com/
+</ParamField>
+
+## Trade Data
+
+<ParamField path="WTO_API_KEY" type="string" required={false}>
+  World Trade Organization API key for trade restrictions, tariff trends, and barriers.
+  
+  **Get yours at**: https://apiportal.wto.org/
+</ParamField>
+
+## Aviation Data
+
+<ParamField path="AVIATIONSTACK_API" type="string" required={false}>
+  AviationStack API key for international airport delay data.
+  
+  **Get yours at**: https://aviationstack.com/signup/free
+</ParamField>
+
+<ParamField path="ICAO_API_KEY" type="string" required={false}>
+  ICAO NOTAM API key for airport closure detection (Middle East focus).
+  
+  **Get yours at**: https://dataservices.icao.int/
+</ParamField>
+
+## Site Configuration
+
+<ParamField path="VITE_VARIANT" type="string" required={false} default="full">
+  Dashboard variant.
+  
+  **Options**: `full` (worldmonitor.app), `tech` (tech.worldmonitor.app), `finance`, `happy`
+</ParamField>
+
+<ParamField path="VITE_WS_API_URL" type="string" required={false}>
+  API base URL for web redirect. When set, browser fetch calls to `/api/*` redirect to this URL.
+  
+  **Leave empty** for same-domain API (local installs)  
+  **Production**: `https://api.worldmonitor.app`
+</ParamField>
+
+<ParamField path="VITE_MAP_INTERACTION_MODE" type="string" required={false} default="3d">
+  Map interaction mode.
+  
+  **Options**:
+  - `3d` — enables pitch/rotation interactions (default)
+  - `flat` — keeps pitch/rotation disabled (2D interaction)
+</ParamField>
+
+<ParamField path="VITE_SENTRY_DSN" type="string" required={false}>
+  Client-side Sentry DSN for error reporting.
+  
+  **Leave empty** to disable error reporting.
+</ParamField>
+
+<ParamField path="VITE_POSTHOG_KEY" type="string" required={false}>
+  PostHog product analytics key.
+  
+  **Leave empty** to disable analytics.
+</ParamField>
+
+<ParamField path="VITE_POSTHOG_HOST" type="string" required={false}>
+  PostHog instance host URL.
+</ParamField>
+
+## Desktop Cloud Fallback
+
+<ParamField path="WORLDMONITOR_VALID_KEYS" type="string" required={false}>
+  Comma-separated list of valid API keys for desktop cloud fallback.
+  
+  **Generate with**: `openssl rand -hex 24 | sed 's/^/wm_/'`
+</ParamField>
+
+## Registration Database
+
+<ParamField path="CONVEX_URL" type="string" required={false}>
+  Convex deployment URL for email registration storage.
+  
+  **Set up at**: https://dashboard.convex.dev/
+</ParamField>
+
+## Public Data Sources
+
+These services require **no API keys** and work out of the box:
+
+- **UCDP** (Uppsala Conflict Data Program) — conflict data
+- **UNHCR** (UN Refugee Agency) — refugee statistics (CC BY 4.0)
+- **Open-Meteo** — weather data (Copernicus ERA5)
+- **WorldPop** — population density
+
+<Note>
+  **Rate Limits**: Public APIs may have undocumented rate limits. The dashboard includes automatic circuit breakers and retry logic.
+</Note>

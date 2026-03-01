@@ -1,0 +1,363 @@
+---
+title: Vercel Deployment
+description: Deploy World Monitor to Vercel with serverless functions and edge configuration
+---
+
+World Monitor is designed for seamless deployment to Vercel, leveraging serverless functions, edge configuration, and optimized caching strategies.
+
+## Deployment Configuration
+
+The `vercel.json` file in the project root configures deployment behavior, security headers, caching policies, and rewrites.
+
+### Ignore Command
+
+World Monitor uses an intelligent ignore command to skip deployments when only documentation or non-production files change:
+
+```json vercel.json
+{
+  "ignoreCommand": "if [ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ]; then exit 1; fi; git cat-file -e $VERCEL_GIT_PREVIOUS_SHA 2>/dev/null || exit 1; git diff --quiet $VERCEL_GIT_PREVIOUS_SHA HEAD -- ':!*.md' ':!.planning' ':!docs/' ':!e2e/' ':!scripts/' ':!.github/'"
+}
+```
+
+This command:
+- Skips deployment if only Markdown files changed
+- Ignores changes to `docs/`, `e2e/`, `scripts/`, and `.github/` directories
+- Allows full deployment for code changes
+
+## Security Headers
+
+### Content Security Policy (CSP)
+
+World Monitor implements a strict Content Security Policy that allows necessary external resources while maintaining security:
+
+```json vercel.json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; connect-src 'self' https: http://localhost:5173 ws: wss: blob: data:; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.youtube.com https://static.cloudflareinsights.com https://vercel.live https://us-assets.i.posthog.com; worker-src 'self' blob:; font-src 'self' data: https:; media-src 'self' data: blob: https:; frame-src 'self' https://worldmonitor.app https://tech.worldmonitor.app https://happy.worldmonitor.app https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Key security features:
+- **X-Content-Type-Options**: Prevents MIME-type sniffing
+- **X-Frame-Options**: Prevents clickjacking (SAMEORIGIN only)
+- **HSTS**: Forces HTTPS with 2-year max age and preload
+- **Permissions-Policy**: Blocks camera, microphone, and geolocation access
+- **CSP**: Strict policy allowing only trusted sources
+
+## Caching Strategy
+
+### HTML Pages - No Cache
+
+```json vercel.json
+{
+  "source": "/",
+  "headers": [
+    { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+  ]
+}
+```
+
+### Static Assets - Immutable
+
+```json vercel.json
+{
+  "source": "/assets/(.*)",
+  "headers": [
+    { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+  ]
+}
+```
+
+### Service Worker - Revalidate
+
+```json vercel.json
+{
+  "source": "/sw.js",
+  "headers": [
+    { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+  ]
+}
+```
+
+### Other Resources
+
+- **Favicons**: `max-age=604800` (7 days)
+- **Manifest**: `max-age=86400` (1 day)
+- **Offline page**: `max-age=86400` (1 day)
+
+## Rewrites
+
+### PostHog Analytics Proxy
+
+Proxy PostHog requests through your domain to avoid ad blockers:
+
+```json vercel.json
+{
+  "rewrites": [
+    {
+      "source": "/ingest/static/:path(.*)",
+      "destination": "https://us-assets.i.posthog.com/static/:path"
+    },
+    {
+      "source": "/ingest/:path(.*)",
+      "destination": "https://us.i.posthog.com/:path"
+    }
+  ]
+}
+```
+
+This rewrites `/ingest/*` requests to PostHog's US servers while keeping them on your domain.
+
+## Build Configuration
+
+<Steps>
+
+### Install Dependencies
+
+```bash
+npm ci
+```
+
+### Run Type Checking
+
+```bash
+npm run typecheck:all
+```
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+For variant-specific builds:
+
+```bash
+# Tech variant
+npm run build:tech
+
+# Finance variant
+npm run build:finance
+
+# Happy variant
+npm run build:happy
+```
+
+### Deploy to Vercel
+
+```bash
+vercel deploy --prod
+```
+
+</Steps>
+
+## Environment Variables
+
+Configure these environment variables in your Vercel project settings:
+
+### Required
+
+- `FRED_API_KEY` - Federal Reserve Economic Data API key
+- `CONVEX_DEPLOYMENT` - Convex deployment URL
+- `CONVEX_DEPLOY_KEY` - Convex deployment key
+
+### Optional
+
+- `VITE_VARIANT` - Set to `tech`, `finance`, or `happy` for variant builds
+- `SENTRY_DSN` - Sentry error tracking DSN
+- `POSTHOG_API_KEY` - PostHog analytics key
+
+### Rate Limiting
+
+- `UPSTASH_REDIS_REST_URL` - Upstash Redis URL for rate limiting
+- `UPSTASH_REDIS_REST_TOKEN` - Upstash Redis token
+
+## Vercel CLI Commands
+
+### Preview Deployment
+
+```bash
+vercel
+```
+
+### Production Deployment
+
+```bash
+vercel --prod
+```
+
+### Environment Variables
+
+```bash
+# Add environment variable
+vercel env add FRED_API_KEY
+
+# Pull environment variables locally
+vercel env pull .env.local
+```
+
+### Logs
+
+```bash
+# View recent logs
+vercel logs
+
+# Follow logs in real-time
+vercel logs --follow
+```
+
+## Serverless Functions
+
+World Monitor uses Vercel Serverless Functions in the `api/` directory:
+
+- `api/[domain]/v1/[rpc].ts` - Sebuf RPC gateway for data APIs
+- `api/rss-proxy.js` - RSS feed proxy with allowlist
+- `api/fred-data.js` - Federal Reserve economic data proxy
+
+### API Routes
+
+All API routes are automatically deployed as serverless functions:
+
+```
+/api/seismology/v1/ListEarthquakes
+/api/wildfire/v1/ListWildfires
+/api/climate/v1/GetClimateData
+/api/rss-proxy?url=...
+/api/fred-data?series_id=...
+```
+
+## Performance Optimization
+
+### Brotli Compression
+
+World Monitor pre-compresses assets with Brotli during build:
+
+```typescript vite.config.ts
+function brotliPrecompressPlugin(): Plugin {
+  return {
+    name: 'brotli-precompress',
+    apply: 'build',
+    async writeBundle(outputOptions, bundle) {
+      // Compress .js, .css, .html, .svg, .json, .wasm files
+      // Skip files smaller than 1KB
+    },
+  };
+}
+```
+
+### Code Splitting
+
+Large dependencies are split into separate chunks:
+
+```typescript vite.config.ts
+output: {
+  manualChunks(id) {
+    if (id.includes('/@xenova/transformers/')) return 'transformers';
+    if (id.includes('/onnxruntime-web/')) return 'onnxruntime';
+    if (id.includes('/maplibre-gl/')) return 'maplibre';
+    if (id.includes('/@deck.gl/')) return 'deck-stack';
+    if (id.includes('/d3/')) return 'd3';
+  }
+}
+```
+
+## Multi-Variant Deployment
+
+Deploy different variants to separate Vercel projects:
+
+<CodeGroup>
+
+```bash World Monitor (Full)
+VITE_VARIANT=full vercel --prod
+```
+
+```bash Tech Monitor
+VITE_VARIANT=tech vercel --prod
+```
+
+```bash Finance Monitor
+VITE_VARIANT=finance vercel --prod
+```
+
+```bash Happy Monitor
+VITE_VARIANT=happy vercel --prod
+```
+
+</CodeGroup>
+
+Each variant:
+- Uses different branding and metadata
+- Loads variant-specific datasets
+- Applies custom theme colors
+- Serves from dedicated domains
+
+## Monitoring
+
+### Vercel Analytics
+
+World Monitor integrates with Vercel Analytics:
+
+```typescript
+import { inject } from '@vercel/analytics';
+
+inject();
+```
+
+### Sentry Error Tracking
+
+```typescript
+import * as Sentry from '@sentry/browser';
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+});
+```
+
+## Troubleshooting
+
+### Build Failures
+
+If the build fails:
+
+1. Check TypeScript errors: `npm run typecheck:all`
+2. Verify environment variables are set
+3. Clear Vercel cache: `vercel build --force`
+
+### Function Timeouts
+
+Serverless functions have a 10-second timeout on Hobby plan, 60 seconds on Pro:
+
+- Optimize API calls with caching
+- Use edge functions for faster cold starts
+- Consider upgrading to Pro for longer timeouts
+
+### Large Bundle Size
+
+If bundle size exceeds limits:
+
+1. Review chunk sizes: `npm run build` shows warnings
+2. Lazy-load large dependencies
+3. Exclude heavy ML models from main bundle
+
+### CSP Violations
+
+If resources are blocked by CSP:
+
+1. Check browser console for CSP violations
+2. Add trusted domains to `vercel.json` CSP header
+3. Test locally with production build: `npm run preview`

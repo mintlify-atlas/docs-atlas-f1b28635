@@ -1,0 +1,293 @@
+---
+title: Themes
+description: Dark and light themes with persistent preferences and dynamic switching
+---
+
+World Monitor supports **dark and light themes** with instant switching, no flash of unstyled content, and persistent preferences across sessions.
+
+## Default Theme
+
+<Tabs>
+  <Tab title="World/Tech/Finance Monitor">
+    **Default**: Dark theme
+    
+    Optimized for:
+    - Reduced eye strain during extended monitoring
+    - Better contrast for map overlays
+    - Professional operations center aesthetic
+  </Tab>
+  
+  <Tab title="Happy Monitor">
+    **Default**: Light theme
+    
+    Optimized for:
+    - Positive, uplifting visual tone
+    - Bright, cheerful color palette
+    - Daytime reading comfort
+  </Tab>
+</Tabs>
+
+<Info>
+The default theme applies **only if you haven't explicitly chosen a theme**. Once you select dark or light, your preference overrides the variant default.
+</Info>
+
+## Switching Themes
+
+The theme toggle is located in the **header bar** (top-right corner):
+
+<Steps>
+  <Step title="Click the theme toggle button">
+    Icon: 🌙 (dark mode) or ☀️ (light mode)
+  </Step>
+  
+  <Step title="Theme switches instantly">
+    All panels, map overlays, and UI elements update in under 50ms with no page reload.
+  </Step>
+  
+  <Step title="Preference is saved">
+    Your choice is stored in `localStorage` and persists across:
+    - Page reloads
+    - Browser restarts
+    - Variant switches (World → Tech → Finance)
+  </Step>
+</Steps>
+
+<Tip>
+Keyboard shortcut: Press **Cmd+Shift+T** (Mac) or **Ctrl+Shift+T** (Windows/Linux) to toggle themes quickly.
+</Tip>
+
+## Theme Customization
+
+World Monitor uses **20+ semantic CSS variables** that adapt to the active theme:
+
+### Color Variables
+
+<Tabs>
+  <Tab title="Dark Theme">
+    ```css
+    :root[data-theme="dark"] {
+      --bg-primary: #0a0f0a;       /* Main background */
+      --bg-secondary: #1a1f1a;     /* Panel backgrounds */
+      --bg-tertiary: #2a2f2a;      /* Elevated surfaces */
+      
+      --text-primary: #e8eae8;     /* Main text */
+      --text-secondary: #b8bab8;   /* Secondary text */
+      --text-tertiary: #888a88;    /* Muted text */
+      
+      --border-primary: #3a3f3a;   /* Panel borders */
+      --border-secondary: #2a2f2a; /* Dividers */
+      
+      --accent-primary: #4a9eff;   /* Links, buttons */
+      --accent-success: #4ade80;   /* Success states */
+      --accent-warning: #fbbf24;   /* Warning states */
+      --accent-danger: #f87171;    /* Error states */
+    }
+    ```
+    
+    **Map theme**: Dark base tiles (dark-v11)
+  </Tab>
+  
+  <Tab title="Light Theme">
+    ```css
+    :root[data-theme="light"] {
+      --bg-primary: #f8f9fa;       /* Main background */
+      --bg-secondary: #ffffff;     /* Panel backgrounds */
+      --bg-tertiary: #e9ecef;      /* Elevated surfaces */
+      
+      --text-primary: #1a1f1a;     /* Main text */
+      --text-secondary: #4a4f4a;   /* Secondary text */
+      --text-tertiary: #6a6f6a;    /* Muted text */
+      
+      --border-primary: #dee2e6;   /* Panel borders */
+      --border-secondary: #e9ecef; /* Dividers */
+      
+      --accent-primary: #0066cc;   /* Links, buttons */
+      --accent-success: #16a34a;   /* Success states */
+      --accent-warning: #ca8a04;   /* Warning states */
+      --accent-danger: #dc2626;    /* Error states */
+    }
+    ```
+    
+    **Map theme**: Light base tiles (light-v11)
+  </Tab>
+</Tabs>
+
+### Customizing Your Own Theme
+
+If you're running World Monitor locally, you can customize theme colors:
+
+1. Open `source/src/styles/variables.css`
+2. Edit the CSS variables under `[data-theme="dark"]` or `[data-theme="light"]`
+3. Save and reload — changes apply instantly in dev mode
+
+**Example**: Change the dark theme accent color to purple:
+
+```css
+:root[data-theme="dark"] {
+  --accent-primary: #a855f7; /* Changed from blue to purple */
+}
+```
+
+<Warning>
+Custom theme changes require rebuilding the app (`npm run build`). They won't persist if you update to a new World Monitor version — reapply your changes after updates.
+</Warning>
+
+## Theme-Aware Components
+
+All UI elements adapt to the active theme:
+
+<CardGroup cols={2}>
+  <Card title="Map Overlays" icon="map">
+    - Cluster circles: opacity adapts
+    - Labels: inverted text color
+    - Markers: border contrast
+    - Heatmaps: palette shifts
+  </Card>
+  
+  <Card title="Charts & Graphs" icon="chart-line">
+    - D3.js timelines
+    - SVG sparklines
+    - Donut gauges
+    - CII score rings
+    
+    All use theme-aware colors.
+  </Card>
+  
+  <Card title="News Panels" icon="newspaper">
+    - Background cards
+    - Threat-level borders
+    - Keyword highlights
+    - Hover states
+  </Card>
+  
+  <Card title="Video Players" icon="video">
+    - Control bar backgrounds
+    - Progress bars
+    - Volume sliders
+    - Quality selectors
+  </Card>
+</CardGroup>
+
+## Browser Theme Color
+
+The `<meta name="theme-color">` tag syncs with your active theme, changing the **browser chrome color** on mobile and PWA installs:
+
+<Tabs>
+  <Tab title="Dark Theme">
+    ```html
+    <meta name="theme-color" content="#0a0f0a">
+    ```
+    
+    Mobile browser bars and PWA title bars use dark green.
+  </Tab>
+  
+  <Tab title="Light Theme">
+    ```html
+    <meta name="theme-color" content="#f8f9fa">
+    ```
+    
+    Mobile browser bars and PWA title bars use light gray.
+  </Tab>
+</Tabs>
+
+This provides a **seamless experience** where the app's theme extends to the OS-level UI.
+
+## Theme Changed Event
+
+When the theme switches, World Monitor dispatches a **custom event** that panels can listen to:
+
+```javascript
+window.addEventListener('theme-changed', (event) => {
+  const newTheme = event.detail.theme; // 'dark' or 'light'
+  console.log(`Theme switched to: ${newTheme}`);
+  
+  // Redraw chart with new colors
+  updateChartColors(newTheme);
+});
+```
+
+**Use cases**:
+- Redrawing D3.js charts with new color palettes
+- Updating map marker styles
+- Refreshing video player controls
+- Invalidating cached color computations
+
+<Tip>
+The event is fired **after** the DOM attribute (`data-theme`) is updated, so you can immediately read CSS variables.
+</Tip>
+
+## No Flash of Unstyled Content (FOUC)
+
+World Monitor applies your theme preference **before the first paint** to prevent a flash of the wrong theme:
+
+<Steps>
+  <Step title="Inline script runs in <head>">
+    Before any stylesheets or components load, an inline `<script>` in `index.html` reads `localStorage` and sets `document.documentElement.dataset.theme`.
+  </Step>
+  
+  <Step title="CSS variables are available immediately">
+    Because the `data-theme` attribute is set, theme-specific CSS variables apply during initial render.
+  </Step>
+  
+  <Step title="React components mount with correct theme">
+    No re-render needed — components see the correct theme on first mount.
+  </Step>
+</Steps>
+
+**Result**: Users never see a white flash when loading the app in dark mode.
+
+## Accessibility
+
+Both themes are designed for **WCAG AA contrast compliance**:
+
+- **Dark theme**: 4.5:1 contrast ratio for text on backgrounds
+- **Light theme**: 4.5:1 contrast ratio for text on backgrounds
+- **Accent colors**: Tested against both themes for readability
+
+**Additional features**:
+- Focus indicators are theme-aware (visible in both dark and light)
+- Keyboard navigation works identically in both themes
+- Screen readers announce theme changes via `aria-live` regions
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Theme resets to default on reload">
+    This means `localStorage` is being cleared. Possible causes:
+    
+    - **Private browsing mode** — localStorage doesn't persist
+    - **Cache clearing extension** — blocks localStorage writes
+    - **Browser security settings** — some ad blockers prevent localStorage
+    
+    **Solution**: Disable private mode or check browser extensions.
+  </Accordion>
+  
+  <Accordion title="Theme toggle button missing">
+    The toggle only appears on screens ≥768px wide. On mobile, World Monitor respects your device's system theme preference.
+    
+    **Workaround**: Switch to landscape mode or use a desktop browser.
+  </Accordion>
+  
+  <Accordion title="Map tiles don't match theme">
+    Map tiles are fetched from MapTiler and cached by the service worker. If you switch themes:
+    
+    - Wait 5–10 seconds for new tiles to load
+    - Or force-reload the page (Cmd+Shift+R / Ctrl+Shift+R)
+    - Or clear browser cache and reload
+  </Accordion>
+  
+  <Accordion title="Some panels are still dark/light after switching">
+    This indicates a panel isn't using theme CSS variables. Check if:
+    
+    - The panel has hardcoded colors (e.g., `background: #000000`)
+    - The panel hasn't subscribed to the `theme-changed` event
+    - The panel uses external iframes (YouTube embeds don't inherit theme)
+    
+    **Workaround**: Reload the page to force re-render.
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Layouts](/guide/layouts) — Panel arrangement and ultra-wide mode
+- [Localization](/guide/localization) — Language preferences and RTL support

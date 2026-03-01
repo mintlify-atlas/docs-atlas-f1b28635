@@ -1,0 +1,360 @@
+---
+title: ConflictService
+description: Armed conflict data from ACLED, UCDP, and HAPI/HDX
+---
+
+The ConflictService provides APIs for accessing armed conflict event data from multiple authoritative sources including ACLED (Armed Conflict Location & Event Data Project), UCDP (Uppsala Conflict Data Program), and HAPI/HDX (Humanitarian API) for humanitarian summaries.
+
+## Base Path
+
+```
+/api/conflict/v1
+```
+
+## ListAcledEvents
+
+Retrieves armed conflict events from the ACLED dataset with filtering by time range and country.
+
+**Endpoint:** `GET /api/conflict/v1/list-acled-events`
+
+### Request Parameters
+
+<ParamField query="start" type="int64">
+  Start of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="end" type="int64">
+  End of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="country" type="string">
+  Optional country filter (ISO 3166-1 alpha-2)
+</ParamField>
+
+### Response
+
+<ResponseField name="events" type="AcledConflictEvent[]">
+  The list of ACLED conflict events
+  
+  <Expandable title="AcledConflictEvent">
+    <ResponseField name="id" type="string" required>
+      Unique ACLED event identifier
+    </ResponseField>
+    
+    <ResponseField name="event_type" type="string">
+      ACLED event type classification (e.g., "Battles", "Explosions/Remote violence")
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country where the event occurred
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Geographic location of the event
+    </ResponseField>
+    
+    <ResponseField name="occurred_at" type="int64">
+      Time the event occurred, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="fatalities" type="int32">
+      Reported fatalities from this event
+    </ResponseField>
+    
+    <ResponseField name="actors" type="string[]">
+      Named actors involved in the event
+    </ResponseField>
+    
+    <ResponseField name="source" type="string">
+      Source article or report
+    </ResponseField>
+    
+    <ResponseField name="admin1" type="string">
+      Administrative region within the country
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/conflict/v1/list-acled-events?start=1704067200000&end=1706745600000&country=UA&page_size=50"
+```
+
+### Example Response
+
+```json
+{
+  "events": [
+    {
+      "id": "12345678",
+      "event_type": "Battles",
+      "country": "Ukraine",
+      "location": {
+        "latitude": 48.379433,
+        "longitude": 31.16558
+      },
+      "occurred_at": 1704153600000,
+      "fatalities": 12,
+      "actors": ["Military Forces of Ukraine", "Military Forces of Russia"],
+      "source": "Reuters",
+      "admin1": "Dnipropetrovska"
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjUwfQ==",
+    "has_more": true
+  }
+}
+```
+
+---
+
+## ListUcdpEvents
+
+Retrieves georeferenced violence events from the UCDP (Uppsala Conflict Data Program) dataset.
+
+**Endpoint:** `GET /api/conflict/v1/list-ucdp-events`
+
+### Request Parameters
+
+<ParamField query="start" type="int64">
+  Start of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="end" type="int64">
+  End of time range (inclusive), Unix epoch milliseconds
+</ParamField>
+
+<ParamField query="page_size" type="int32">
+  Maximum items per page (1-100)
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page
+</ParamField>
+
+<ParamField query="country" type="string">
+  Optional country filter (ISO 3166-1 alpha-2)
+</ParamField>
+
+### Response
+
+<ResponseField name="events" type="UcdpViolenceEvent[]">
+  The list of UCDP violence events
+  
+  <Expandable title="UcdpViolenceEvent">
+    <ResponseField name="id" type="string" required>
+      Unique UCDP event identifier
+    </ResponseField>
+    
+    <ResponseField name="date_start" type="int64">
+      Start date of the event, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="date_end" type="int64">
+      End date of the event, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="location" type="GeoCoordinates">
+      Geographic location of the event
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country where the event occurred
+    </ResponseField>
+    
+    <ResponseField name="side_a" type="string">
+      Primary party in the conflict (Side A)
+    </ResponseField>
+    
+    <ResponseField name="side_b" type="string">
+      Secondary party in the conflict (Side B)
+    </ResponseField>
+    
+    <ResponseField name="deaths_best" type="int32">
+      Best estimate of deaths
+    </ResponseField>
+    
+    <ResponseField name="deaths_low" type="int32">
+      Low estimate of deaths
+    </ResponseField>
+    
+    <ResponseField name="deaths_high" type="int32">
+      High estimate of deaths
+    </ResponseField>
+    
+    <ResponseField name="violence_type" type="UcdpViolenceType">
+      Type of violence: `UCDP_VIOLENCE_TYPE_STATE_BASED`, `UCDP_VIOLENCE_TYPE_NON_STATE`, or `UCDP_VIOLENCE_TYPE_ONE_SIDED`
+    </ResponseField>
+    
+    <ResponseField name="source_original" type="string">
+      Original source of the event report
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="PaginationResponse">
+  Pagination metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/conflict/v1/list-ucdp-events?start=1704067200000&end=1706745600000&page_size=25"
+```
+
+---
+
+## GetHumanitarianSummary
+
+Retrieves a humanitarian overview for a country from HAPI/HDX, including conflict event counts and fatality statistics.
+
+**Endpoint:** `GET /api/conflict/v1/get-humanitarian-summary`
+
+### Request Parameters
+
+<ParamField query="country_code" type="string" required>
+  ISO 3166-1 alpha-2 country code (e.g., "YE", "SD", "SO")
+</ParamField>
+
+### Response
+
+<ResponseField name="summary" type="HumanitarianCountrySummary">
+  The humanitarian summary for the country
+  
+  <Expandable title="HumanitarianCountrySummary">
+    <ResponseField name="country_code" type="string">
+      ISO 3166-1 alpha-2 country code
+    </ResponseField>
+    
+    <ResponseField name="country_name" type="string">
+      Country name
+    </ResponseField>
+    
+    <ResponseField name="conflict_events_total" type="int32">
+      Total conflict events in the reference period
+    </ResponseField>
+    
+    <ResponseField name="conflict_political_violence_events" type="int32">
+      Political violence + civilian targeting event count
+    </ResponseField>
+    
+    <ResponseField name="conflict_fatalities" type="int32">
+      Total fatalities from political violence and civilian targeting
+    </ResponseField>
+    
+    <ResponseField name="reference_period" type="string">
+      Reference period start date (YYYY-MM-DD)
+    </ResponseField>
+    
+    <ResponseField name="conflict_demonstrations" type="int32">
+      Number of demonstration events
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="int64">
+      Last data update time, as Unix epoch milliseconds
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/conflict/v1/get-humanitarian-summary?country_code=YE"
+```
+
+### Example Response
+
+```json
+{
+  "summary": {
+    "country_code": "YE",
+    "country_name": "Yemen",
+    "conflict_events_total": 1247,
+    "conflict_political_violence_events": 892,
+    "conflict_fatalities": 3421,
+    "reference_period": "2024-01-01",
+    "conflict_demonstrations": 143,
+    "updated_at": 1709251200000
+  }
+}
+```
+
+---
+
+## ListIranEvents
+
+Retrieves scraped conflict events from LiveUAMap Iran for real-time situational awareness.
+
+**Endpoint:** `GET /api/conflict/v1/list-iran-events`
+
+### Request Parameters
+
+No parameters required.
+
+### Response
+
+<ResponseField name="events" type="IranEvent[]">
+  The list of Iran conflict events
+  
+  <Expandable title="IranEvent">
+    <ResponseField name="id" type="string">
+      Unique event identifier
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Event title
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Event category
+    </ResponseField>
+    
+    <ResponseField name="source_url" type="string">
+      URL to the source article
+    </ResponseField>
+    
+    <ResponseField name="latitude" type="double">
+      Event latitude
+    </ResponseField>
+    
+    <ResponseField name="longitude" type="double">
+      Event longitude
+    </ResponseField>
+    
+    <ResponseField name="location_name" type="string">
+      Human-readable location name
+    </ResponseField>
+    
+    <ResponseField name="timestamp" type="int64">
+      Event timestamp, as Unix epoch milliseconds
+    </ResponseField>
+    
+    <ResponseField name="severity" type="string">
+      Event severity level
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="scraped_at" type="int64">
+  Timestamp when the data was scraped, as Unix epoch milliseconds
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/conflict/v1/list-iran-events"
+```

@@ -1,0 +1,382 @@
+---
+title: Interactive 3D Globe
+description: WebGL-accelerated map visualization with 40+ data layers and real-time rendering
+---
+
+## Overview
+
+World Monitor's interactive globe uses **deck.gl** and **MapLibre GL JS** to deliver a high-performance, WebGL-accelerated 3D map visualization. The system renders thousands of concurrent markers at 60fps while supporting seamless switching between 3D globe and flat map modes.
+
+<Info>
+  **Performance**: The map can handle 10,000+ simultaneous data points without dropping below 60fps on modern hardware, thanks to WebGL hardware acceleration.
+</Info>
+
+## Map Modes
+
+The globe supports two rendering modes configurable via `VITE_MAP_INTERACTION_MODE`:
+
+<Tabs>
+  <Tab title="3D Globe Mode">
+    **Features:**
+    - Full 3D spherical projection
+    - Pitch and rotation controls
+    - Realistic perspective rendering
+    - Great circle arcs for routes
+    
+    **Best for:** Global situational awareness, understanding geographic relationships, visualizing long-distance connections (undersea cables, trade routes, flight paths)
+  </Tab>
+  
+  <Tab title="Flat Map Mode">
+    **Features:**
+    - Traditional 2D Mercator projection
+    - Faster rendering for dense datasets
+    - Precise distance measurements
+    - Better for regional analysis
+    
+    **Best for:** Detailed regional monitoring, tactical analysis, areas with high marker density
+  </Tab>
+</Tabs>
+
+## WebGL Rendering Pipeline
+
+### Architecture
+
+The map uses a layered rendering approach:
+
+```typescript
+// From src/components/DeckGLMap.ts
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { GeoJsonLayer, ScatterplotLayer, PathLayer, IconLayer } from '@deck.gl/layers';
+import { HeatmapLayer } from '@deck.gl/aggregation-layers';
+import maplibregl from 'maplibre-gl';
+```
+
+The rendering stack consists of:
+
+1. **MapLibre GL JS** - Base map tiles and terrain
+2. **deck.gl MapboxOverlay** - High-performance data layer rendering
+3. **Supercluster** - Intelligent marker clustering at low zoom levels
+
+### Performance Optimizations
+
+<Note>
+  The map includes several performance optimizations that are automatically applied based on zoom level and viewport size.
+</Note>
+
+**Progressive Disclosure**
+```typescript
+// Detail layers only appear when zoomed in
+// Military bases, nuclear facilities, datacenters activate at specific zoom thresholds
+if (zoom >= 4) {
+  layers.push(militaryBasesLayer);
+}
+if (zoom >= 5) {
+  layers.push(nuclearFacilitiesLayer);
+}
+```
+
+**Zoom-Adaptive Opacity**
+- Markers fade from 0.2 opacity at world view
+- Gradually increase to 1.0 at street level
+- Prevents visual clutter at low zoom
+
+**Label Deconfliction**
+```typescript
+// Overlapping labels are automatically suppressed by priority
+// Highest-severity events (BREAKING badges) render first
+// Lower-priority labels hidden when overlapping
+```
+
+**Smart Clustering**
+- Supercluster groups markers at low zoom
+- Cluster sizes adapt to zoom level
+- Expands to individual markers on zoom in
+- Threshold calculation: `Math.max(60, Math.min(150, 200 - zoom * 20))`
+
+## Map Controls
+
+### Navigation Controls
+
+| Control | Action |
+|---------|--------|
+| **Mouse drag** | Pan the map |
+| **Scroll wheel** | Zoom in/out |
+| **Right-click + drag** | Rotate (3D mode only) |
+| **Ctrl + drag** | Adjust pitch (3D mode only) |
+| **Double-click** | Zoom to location |
+
+### Regional Presets
+
+Quickly jump to predefined regional views:
+
+<Tabs>
+  <Tab title="Global Regions">
+    - **Global** - Full world view
+    - **Americas** - North and South America
+    - **Europe** - European continent
+    - **MENA** - Middle East & North Africa
+    - **Asia** - Asia-Pacific region
+  </Tab>
+  
+  <Tab title="Specialized Views">
+    - **Africa** - African continent
+    - **Oceania** - Australia & Pacific Islands
+    - **Latin America** - Central & South America
+  </Tab>
+</Tabs>
+
+Regional views automatically adjust:
+- Center coordinates
+- Zoom level
+- Active data layers (region-specific)
+
+### Time Filtering
+
+Filter events by recency:
+
+- **1h** - Last hour (breaking events)
+- **6h** - Last 6 hours (recent developments)
+- **24h** - Last day (default)
+- **48h** - Last 2 days
+- **7d** - Last week
+- **all** - All historical data
+
+<Tip>
+  Time filters apply to dynamic layers only (news, protests, earthquakes). Static infrastructure layers (cables, bases) are always visible.
+</Tip>
+
+## URL State Sharing
+
+Map state is encoded in the URL for shareable views:
+
+```
+https://worldmonitor.app/?view=mena&zoom=4&layers=conflicts,bases&time=24h
+```
+
+**URL Parameters:**
+- `view` - Regional preset (global, mena, eu, asia, etc.)
+- `zoom` - Zoom level (0-20)
+- `lat` / `lng` - Center coordinates
+- `layers` - Comma-separated active layers
+- `time` - Time range filter
+
+<Info>
+  Share links with colleagues to highlight specific geographic areas and active intelligence layers.
+</Info>
+
+## Layer System
+
+See [Data Layers](/features/data-layers) for complete layer documentation.
+
+The map supports **40+ toggleable data layers** organized by category:
+
+- **Geopolitical** - Conflicts, protests, disasters
+- **Military & Strategic** - Bases, flights, vessels
+- **Infrastructure** - Cables, pipelines, datacenters
+- **Market & Crypto** - Exchanges, financial centers
+- **Tech Ecosystem** - HQs, cloud regions, accelerators (Tech variant)
+- **Finance & Markets** - Stock exchanges, central banks (Finance variant)
+
+## Mobile Graceful Degradation
+
+On devices below 768px width, the system automatically degrades to a lighter-weight renderer:
+
+```typescript
+// From src/components/MapContainer.ts
+this.useDeckGL = !this.isMobile && this.hasWebGLSupport();
+
+if (!this.useDeckGL) {
+  // Fall back to D3/SVG-based rendering
+  // Preserves core functionality without WebGL overhead
+}
+```
+
+<Note>
+  Mobile users receive a warning modal since the dashboard is optimized for multi-panel desktop use. Core map functionality remains available.
+</Note>
+
+## WebGL Support Detection
+
+```typescript
+// From src/components/MapContainer.ts
+private hasWebGLSupport(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2');
+    return gl !== null;
+  } catch {
+    return false;
+  }
+}
+```
+
+The system requires **WebGL2** for deck.gl rendering. If WebGL2 is unavailable:
+- Automatic fallback to SVG renderer
+- Reduced layer complexity
+- Preserved core map functionality
+
+## Map Styling
+
+The map supports multiple base styles:
+
+<Tabs>
+  <Tab title="Dark Theme (Default)">
+    - Low-contrast base map
+    - Optimized for data layer visibility
+    - Reduces eye strain during extended monitoring
+    - Theme color: `#0a0f0a`
+  </Tab>
+  
+  <Tab title="Light Theme">
+    - High-contrast cartography
+    - Better for presentations and reports
+    - Automatically adjusts layer colors
+    - Theme color: `#ffffff`
+  </Tab>
+</Tabs>
+
+Theme switching:
+```typescript
+// From src/utils/theme-manager.ts
+applyStoredTheme();
+// Automatically applies user preference
+// Syncs with system dark mode
+```
+
+## Pin Mode
+
+Click the 📌 button to enable **Pin Mode**:
+
+- Map remains fixed in position during scroll
+- Allows panel browsing without losing map context
+- State persisted to localStorage
+- Ideal for dual-monitor setups
+
+## Ultra-Wide Monitor Layout
+
+On screens **≥2000px wide**, the layout automatically switches to an L-shaped arrangement:
+
+```css
+/* Automatic layout adaptation */
+@media (min-width: 2000px) {
+  /* Map floats left at 60% width */
+  /* Panels tile to right and below */
+  /* Uses CSS display: contents and float-based wrapping */
+}
+```
+
+<Tip>
+  No JavaScript layout engine required - pure CSS grid optimization for 4K and ultra-wide displays.
+</Tip>
+
+## Technical Implementation
+
+### Core Dependencies
+
+```json
+// From package.json
+{
+  "dependencies": {
+    "@deck.gl/core": "^9.2.6",
+    "@deck.gl/layers": "^9.2.6",
+    "@deck.gl/geo-layers": "^9.2.6",
+    "@deck.gl/aggregation-layers": "^9.2.6",
+    "@deck.gl/mapbox": "^9.2.6",
+    "maplibre-gl": "^5.16.0",
+    "h3-js": "^4.4.0"
+  }
+}
+```
+
+### Bundle Optimization
+
+```javascript
+// From vite.config.ts
+manualChunks(id) {
+  if (id.includes('/maplibre-gl/')) return 'maplibre';
+  if (id.includes('/@deck.gl/') || 
+      id.includes('/@luma.gl/') || 
+      id.includes('/@loaders.gl/')) {
+    return 'deck-stack';
+  }
+}
+```
+
+Chunk splitting ensures:
+- MapLibre loads independently (~500KB)
+- deck.gl stack bundles separately (~1.2MB)
+- Progressive loading for faster initial paint
+
+## Error Handling
+
+The map includes comprehensive error handling:
+
+```typescript
+// From src/main.ts - Sentry configuration
+Sentry.init({
+  ignoreErrors: [
+    'Invalid WebGL2RenderingContext',
+    'WebGL context lost',
+    /imageManager/,
+    /Program failed to link/,
+    /Could not compile fragment shader/,
+  ]
+});
+```
+
+**WebGL Context Loss Recovery:**
+```typescript
+map.on('webglcontextlost', () => {
+  console.warn('[DeckGLMap] WebGL context lost — will restore when browser recovers');
+});
+
+map.on('webglcontextrestored', () => {
+  console.info('[DeckGLMap] WebGL context restored');
+  // Automatic layer re-initialization
+});
+```
+
+## Best Practices
+
+<Tip>
+  **For Intelligence Analysis**
+  
+  1. Start with global view and time filter = 24h
+  2. Enable relevant layer categories
+  3. Use regional presets to jump to areas of interest
+  4. Zoom in for details - layers progressively reveal
+  5. Share URLs with colleagues for consistent views
+</Tip>
+
+<Note>
+  **Performance Tips**
+  
+  - Disable unused layers to improve rendering speed
+  - Use time filters to reduce active marker count
+  - On lower-end hardware, prefer flat map over 3D globe
+  - Close other browser tabs to free GPU resources
+</Note>
+
+## Related Features
+
+- [Data Layers](/features/data-layers) - Complete layer reference
+- [Live News](/features/live-news) - Map-integrated news markers
+- Desktop App - Native OS integration and performance
+
+## Troubleshooting
+
+**Map not loading?**
+- Check browser WebGL2 support: visit `https://get.webgl.org/webgl2/`
+- Try disabling browser extensions (ad blockers can interfere)
+- Clear browser cache and reload
+
+**Performance issues?**
+- Reduce active layers
+- Disable 3D globe mode
+- Lower screen resolution
+- Check GPU drivers are up to date
+
+**Markers not appearing?**
+- Verify layer is enabled in controls
+- Check time filter isn't too restrictive
+- Confirm data source is active in [Status Panel]

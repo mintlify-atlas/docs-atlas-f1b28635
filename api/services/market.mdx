@@ -1,0 +1,394 @@
+---
+title: MarketService
+description: Financial market data from Finnhub, Yahoo Finance, and CoinGecko
+---
+
+The MarketService provides APIs for accessing stock quotes, cryptocurrency prices, commodity data, sector performance, stablecoin markets, ETF flows, and country stock indices.
+
+## Base Path
+
+```
+/api/market/v1
+```
+
+## ListMarketQuotes
+
+Retrieves stock and index quotes from Finnhub and Yahoo Finance.
+
+**Endpoint:** `GET /api/market/v1/list-market-quotes`
+
+### Request Parameters
+
+<ParamField query="symbols" type="string[]">
+  Ticker symbols to retrieve (e.g., `["AAPL", "^GSPC"]`). Empty returns defaults.
+</ParamField>
+
+### Response
+
+<ResponseField name="quotes" type="MarketQuote[]">
+  The list of market quotes
+  
+  <Expandable title="MarketQuote">
+    <ResponseField name="symbol" type="string" required>
+      Ticker symbol (e.g., "AAPL", "^GSPC")
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Human-readable name
+    </ResponseField>
+    
+    <ResponseField name="display" type="string">
+      Display label
+    </ResponseField>
+    
+    <ResponseField name="price" type="double">
+      Current price
+    </ResponseField>
+    
+    <ResponseField name="change" type="double">
+      Percentage change from previous close
+    </ResponseField>
+    
+    <ResponseField name="sparkline" type="double[]">
+      Sparkline data points (recent price history)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="finnhub_skipped" type="bool">
+  True when the Finnhub API key is not configured and stock quotes were skipped
+</ResponseField>
+
+<ResponseField name="skip_reason" type="string">
+  Human-readable reason when Finnhub was skipped (e.g., "FINNHUB_API_KEY not configured")
+</ResponseField>
+
+<ResponseField name="rate_limited" type="bool">
+  True when the upstream API rate-limited the request
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/list-market-quotes?symbols=AAPL&symbols=MSFT&symbols=%5EGSPC"
+```
+
+### Example Response
+
+```json
+{
+  "quotes": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "display": "AAPL",
+      "price": 178.42,
+      "change": 1.23,
+      "sparkline": [175.2, 176.8, 177.1, 178.0, 178.42]
+    },
+    {
+      "symbol": "^GSPC",
+      "name": "S&P 500",
+      "display": "S&P 500",
+      "price": 5234.18,
+      "change": 0.67,
+      "sparkline": [5198.3, 5210.5, 5223.7, 5229.1, 5234.18]
+    }
+  ],
+  "finnhub_skipped": false,
+  "skip_reason": "",
+  "rate_limited": false
+}
+```
+
+---
+
+## ListCryptoQuotes
+
+Retrieves cryptocurrency quotes from CoinGecko.
+
+**Endpoint:** `GET /api/market/v1/list-crypto-quotes`
+
+### Request Parameters
+
+<ParamField query="ids" type="string[]">
+  Cryptocurrency IDs to retrieve (CoinGecko IDs). Empty returns defaults.
+</ParamField>
+
+### Response
+
+<ResponseField name="quotes" type="CryptoQuote[]">
+  The list of cryptocurrency quotes
+  
+  <Expandable title="CryptoQuote">
+    <ResponseField name="name" type="string">
+      Cryptocurrency name (e.g., "Bitcoin")
+    </ResponseField>
+    
+    <ResponseField name="symbol" type="string" required>
+      Ticker symbol (e.g., "BTC")
+    </ResponseField>
+    
+    <ResponseField name="price" type="double">
+      Current price in USD
+    </ResponseField>
+    
+    <ResponseField name="change" type="double">
+      24-hour percentage change
+    </ResponseField>
+    
+    <ResponseField name="sparkline" type="double[]">
+      Sparkline data points (recent price history)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/list-crypto-quotes?ids=bitcoin&ids=ethereum&ids=solana"
+```
+
+### Example Response
+
+```json
+{
+  "quotes": [
+    {
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "price": 68432.50,
+      "change": 3.42,
+      "sparkline": [66100, 66800, 67200, 67900, 68432.50]
+    },
+    {
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "price": 3842.18,
+      "change": 2.87,
+      "sparkline": [3720, 3760, 3800, 3825, 3842.18]
+    }
+  ]
+}
+```
+
+---
+
+## ListCommodityQuotes
+
+Retrieves commodity price quotes from Yahoo Finance.
+
+**Endpoint:** `GET /api/market/v1/list-commodity-quotes`
+
+### Request Parameters
+
+No parameters required. Returns default commodity set.
+
+### Response
+
+<ResponseField name="quotes" type="CommodityQuote[]">
+  The list of commodity quotes
+  
+  <Expandable title="CommodityQuote">
+    <ResponseField name="symbol" type="string" required>
+      Commodity symbol (e.g., "CL=F" for crude oil)
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Human-readable name
+    </ResponseField>
+    
+    <ResponseField name="display" type="string">
+      Display label
+    </ResponseField>
+    
+    <ResponseField name="price" type="double">
+      Current price
+    </ResponseField>
+    
+    <ResponseField name="change" type="double">
+      Percentage change from previous close
+    </ResponseField>
+    
+    <ResponseField name="sparkline" type="double[]">
+      Sparkline data points
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/list-commodity-quotes"
+```
+
+---
+
+## GetSectorSummary
+
+Retrieves market sector performance data from Finnhub.
+
+**Endpoint:** `GET /api/market/v1/get-sector-summary`
+
+### Request Parameters
+
+No parameters required.
+
+### Response
+
+<ResponseField name="sectors" type="SectorPerformance[]">
+  Sector performance data
+  
+  <Expandable title="SectorPerformance">
+    <ResponseField name="symbol" type="string" required>
+      Sector symbol
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Sector name (e.g., "Technology", "Energy")
+    </ResponseField>
+    
+    <ResponseField name="change" type="double">
+      Percentage change over the measured period
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/get-sector-summary"
+```
+
+### Example Response
+
+```json
+{
+  "sectors": [
+    {
+      "symbol": "XLK",
+      "name": "Technology",
+      "change": 2.34
+    },
+    {
+      "symbol": "XLE",
+      "name": "Energy",
+      "change": -1.12
+    },
+    {
+      "symbol": "XLF",
+      "name": "Financials",
+      "change": 0.87
+    }
+  ]
+}
+```
+
+---
+
+## ListStablecoinMarkets
+
+Retrieves stablecoin peg health and market data from CoinGecko.
+
+**Endpoint:** `GET /api/market/v1/list-stablecoin-markets`
+
+### Request Parameters
+
+No parameters required.
+
+### Response
+
+<ResponseField name="markets" type="StablecoinMarket[]">
+  Stablecoin market data including peg deviation
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/list-stablecoin-markets"
+```
+
+---
+
+## ListEtfFlows
+
+Retrieves BTC spot ETF flow estimates from Yahoo Finance.
+
+**Endpoint:** `GET /api/market/v1/list-etf-flows`
+
+### Request Parameters
+
+No parameters required.
+
+### Response
+
+<ResponseField name="flows" type="EtfFlow[]">
+  Bitcoin spot ETF flow data
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/list-etf-flows"
+```
+
+---
+
+## GetCountryStockIndex
+
+Retrieves the primary stock index for a country from Yahoo Finance.
+
+**Endpoint:** `GET /api/market/v1/get-country-stock-index`
+
+### Request Parameters
+
+<ParamField query="country_code" type="string" required>
+  ISO 3166-1 alpha-2 country code
+</ParamField>
+
+### Response
+
+<ResponseField name="quote" type="MarketQuote">
+  The primary stock index quote for the country
+</ResponseField>
+
+<ResponseField name="country_code" type="string">
+  ISO 3166-1 alpha-2 country code
+</ResponseField>
+
+<ResponseField name="country_name" type="string">
+  Country name
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://your-domain.com/api/market/v1/get-country-stock-index?country_code=JP"
+```
+
+### Example Response
+
+```json
+{
+  "quote": {
+    "symbol": "^N225",
+    "name": "Nikkei 225",
+    "display": "Nikkei 225",
+    "price": 39428.75,
+    "change": 1.23,
+    "sparkline": [38950, 39100, 39250, 39350, 39428.75]
+  },
+  "country_code": "JP",
+  "country_name": "Japan"
+}
+```
+
+## Data Sources
+
+- **Finnhub**: Real-time stock quotes and sector performance (requires API key)
+- **Yahoo Finance**: Commodity prices, ETF flows, country indices
+- **CoinGecko**: Cryptocurrency prices and stablecoin data
+
+## Rate Limiting
+
+Finnhub has rate limits on the free tier. When rate-limited, the response will include `rate_limited: true`. Consider caching responses or upgrading to a paid Finnhub plan for production use.

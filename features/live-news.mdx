@@ -1,0 +1,624 @@
+---
+title: Live News & Video
+description: 150+ RSS feeds, real-time aggregation, entity extraction, and live video streams
+---
+
+## Overview
+
+World Monitor aggregates news from **150+ curated RSS feeds** across geopolitics, defense, energy, tech, and finance. The system includes intelligent deduplication, AI classification, and real-time video streams.
+
+<Info>
+  **Variant-Specific Feeds**: Each variant loads its own curated feed set - ~25 categories for geopolitical, ~20 for tech, ~18 for finance.
+</Info>
+
+## RSS Feed Architecture
+
+### Feed Categories
+
+Feeds are organized by topic and geographic region:
+
+<Tabs>
+  <Tab title="Geopolitical (Full Variant)">
+    **News Sources**
+    - BBC World News
+    - Al Jazeera
+    - Reuters
+    - The Guardian
+    - CNN International
+    - NPR
+    
+    **Defense & Intelligence**
+    - Defense One
+    - Breaking Defense
+    - War on the Rocks
+    - Bellingcat
+    - The Drive (War Zone)
+    - USNI News
+    
+    **Think Tanks**
+    - Council on Foreign Relations (CFR)
+    - Center for Strategic & International Studies (CSIS)
+    - Brookings Institution
+    - RUSI
+    - Carnegie Endowment
+    
+    **Government**
+    - US State Department
+    - Department of Defense
+    - White House Press Releases
+    - CISA Alerts
+  </Tab>
+  
+  <Tab title="Tech (Tech Variant)">
+    **Tech News**
+    - TechCrunch
+    - The Verge
+    - Ars Technica
+    - VentureBeat
+    - TechMeme
+    
+    **AI & ML**
+    - OpenAI Blog
+    - Hugging Face
+    - MIT Technology Review
+    - arXiv (cs.AI, cs.LG)
+    
+    **Startups & VC**
+    - Y Combinator News
+    - Crunchbase News
+    - First Round Review
+    - a16z Blog
+    - Sequoia Capital
+    
+    **Developer**
+    - Hacker News
+    - GitHub Blog
+    - Dev.to
+    - InfoQ
+  </Tab>
+  
+  <Tab title="Finance (Finance Variant)">
+    **Markets**
+    - Bloomberg
+    - Financial Times
+    - MarketWatch
+    - Yahoo Finance
+    - CNBC
+    
+    **Crypto**
+    - CoinDesk
+    - Cointelegraph
+    
+    **Economic Policy**
+    - Federal Reserve
+    - SEC Filings
+    - Treasury Department
+    
+    **Analysis**
+    - Seeking Alpha
+    - The Economist
+    - Stratechery
+  </Tab>
+  
+  <Tab title="Regional & Localized">
+    **Middle East**
+    - Al Arabiya
+    - Arab News
+    - Times of Israel
+    - Haaretz
+    
+    **Asia**
+    - South China Morning Post
+    - The Diplomat
+    - Channel News Asia
+    - Bangkok Post (Thai)
+    - VnExpress (Vietnamese)
+    
+    **Europe**
+    - France24 (French)
+    - Le Monde (French)
+    - Deutsche Welle (German)
+    - Euronews
+    - Meduza (Russian)
+    
+    **Africa**
+    - Jeune Afrique (French)
+    - African News
+    
+    **Latin America**
+    - La Silla Vacía (Spanish)
+  </Tab>
+</Tabs>
+
+### Domain-Allowlisted Proxy
+
+All RSS feeds route through a CORS-safe proxy:
+
+```typescript
+// From api/rss-proxy.js and vite.config.ts
+const RSS_PROXY_ALLOWED_DOMAINS = new Set([
+  'feeds.bbci.co.uk',
+  'www.theguardian.com',
+  'rss.cnn.com',
+  'techcrunch.com',
+  // ... 100+ allowed domains
+]);
+```
+
+**Security:**
+- Only allowlisted domains can be fetched
+- Prevents SSRF attacks
+- Hides origin servers from browser
+
+**Fallback:**
+- Feeds blocked by Vercel IPs → Railway relay
+- Desktop app: Local sidecar proxy (no cloud dependency)
+
+## Feed Processing Pipeline
+
+### 1. Circuit Breaker
+
+Per-feed failure tracking:
+
+```typescript
+// From src/services/rss.ts
+const FEED_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_FAILURES = 2;
+
+// After 2 consecutive failures:
+// - Feed enters cooldown
+// - Skipped for 5 minutes
+// - Prevents cascading failures
+```
+
+### 2. Caching Strategy
+
+<Tabs>
+  <Tab title="Memory Cache">
+    **In-Memory Map**
+    
+    ```typescript
+    const feedCache = new Map<string, {
+      items: NewsItem[];
+      timestamp: number;
+    }>();
+    const CACHE_TTL = 20 * 60 * 1000; // 20 minutes
+    ```
+    
+    - Hot cache for active feeds
+    - Survives navigation
+    - Cleared on refresh
+  </Tab>
+  
+  <Tab title="Persistent Cache">
+    **IndexedDB Storage**
+    
+    ```typescript
+    // Stored per feed + language
+    const key = `feed:${feedName}::${lang}`;
+    
+    // Survives:
+    // - Page refresh
+    // - Browser restart
+    // - Network outages
+    ```
+    
+    - Used when memory cache misses
+    - Enables offline reading
+    - Auto-migrates old format
+  </Tab>
+  
+  <Tab title="Server Cache">
+    **Proxy-Level Caching**
+    
+    ```
+    Cache-Control: public, max-age=300
+    ```
+    
+    - 5-minute edge cache
+    - Reduces upstream requests
+    - Shared across users
+  </Tab>
+</Tabs>
+
+### 3. Instant Flat Render
+
+News items appear immediately:
+
+```typescript
+// Phase 1: Instant render (flat list)
+renderNewsItems(items);
+
+// Phase 2: Async ML clustering (background)
+async () => {
+  const clusters = await mlWorker.clusterByTopic(items);
+  updateUIWithClusters(clusters);
+};
+```
+
+<Note>
+  **No blank delay** - keyword classification is instant, ML refinements arrive progressively.
+</Note>
+
+### 4. Virtual Scrolling
+
+Panels with 15+ items use virtual rendering:
+
+```typescript
+// From src/services/news/index.ts
+// Only visible items + 3-item overscan buffer create DOM elements
+// Viewport spacers simulate full-list height
+// Uses requestAnimationFrame-batched scroll handling
+// DOM elements pooled and recycled
+```
+
+**Benefits:**
+- Handles 1000+ items without lag
+- Constant memory usage
+- Smooth scrolling
+
+## Entity Extraction
+
+Headlines are automatically enriched:
+
+```typescript
+// Auto-links:
+// - Countries (click to open country brief)
+// - Leaders (click to see related news)
+// - Organizations (click to filter)
+```
+
+**Example:**
+- Input: "Putin meets Xi in Moscow to discuss Ukraine"
+- Output: `[Russia]` `[China]` `[Ukraine]` `[Putin]` `[Xi Jinping]` links
+
+## Custom Keyword Monitors
+
+User-defined keyword alerts:
+
+```typescript
+// Settings → Keyword Monitors
+keywords: "AI regulation, sanctions, TSMC"
+
+// Features:
+// - Word-boundary matching ("ai" won't match "train")
+// - Automatic color-coding (10-color palette)
+// - Multi-keyword support (comma-separated)
+// - Real-time match counts
+// - Searches both title and description
+```
+
+<Tip>
+  Use keyword monitors to track:
+  - Emerging threats (CVE-2024-*, zero-day)
+  - Specific companies or people
+  - Regional keywords (Gaza, Taiwan, Arctic)
+  - Topics of interest (quantum computing, CRISPR)
+</Tip>
+
+## Localized Feeds
+
+**Region-specific RSS selection** based on UI language:
+
+| Language | Dedicated Feeds |
+|----------|----------------|
+| French (fr) | Le Monde, Jeune Afrique, France24 |
+| Arabic (ar) | Al Arabiya, Al Jazeera Arabic |
+| German (de) | Deutsche Welle (German) |
+| Spanish (es) | DW Español, Latin America sources |
+| Turkish (tr) | BBC Türkçe, Hürriyet, DW Turkish |
+| Polish (pl) | TVN24, Polsat News, Rzeczpospolita |
+| Russian (ru) | BBC Russian, Meduza, Novaya Gazeta Europe |
+| Thai (th) | Bangkok Post, Thai PBS |
+| Vietnamese (vi) | VnExpress, Tuoi Tre News |
+
+<Info>
+  Language bundles are **lazy-loaded** - only the active language is fetched, keeping initial bundle size minimal.
+</Info>
+
+## Live Video Streams
+
+### Default Streams (8+)
+
+- Bloomberg
+- Sky News
+- Al Jazeera English
+- Euronews
+- Deutsche Welle
+- France24
+- CNBC
+- Al Arabiya
+
+### HLS Native Streaming (10 channels)
+
+Channels stream via native HLS `<video>` elements instead of YouTube iframes:
+
+```typescript
+// Bypasses:
+// - YouTube cookie popups
+// - Bot detection
+// - WKWebView autoplay restrictions
+
+// Channels:
+// - Sky News
+// - Euronews
+// - DW
+// - France24
+// - Al Arabiya
+// - CBS News
+// - TRT World
+// - Sky News Arabia
+// - Al Hadath
+// - RT (banned from YouTube, HLS only)
+```
+
+**Fallback:**
+```typescript
+// HLS failure triggers 5-minute cooldown
+// Automatically falls back to YouTube iframe
+```
+
+### Live Detection
+
+Automatic live stream discovery:
+
+```typescript
+// Scrapes YouTube channel pages every 5 minutes
+// Finds active streams via:
+const detailsIdx = html.indexOf('"videoDetails"');
+const block = html.substring(detailsIdx, detailsIdx + 5000);
+const vidMatch = block.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+const liveMatch = block.match(/"isLive"\s*:\s*true/);
+```
+
+**30+ Additional Channels Available:**
+- Fox News
+- BBC News
+- CNN Türk
+- TRT
+- Russia Today
+- CBS News
+- NBC News
+- CNN Brasil
+
+### Desktop Embed Bridge
+
+YouTube's IFrame API restricts playback in native webviews (error 153):
+
+```typescript
+// Desktop app solution:
+// - Transparently routes through cloud-hosted embed proxy
+// - Bidirectional message passing (play/pause/mute/unmute)
+// - Detects Tauri environment automatically
+```
+
+### Idle-Aware Playback
+
+Video players optimize battery life:
+
+```typescript
+// After 5 minutes of inactivity:
+// - Players pause
+// - Removed from DOM
+// - Resume when user returns
+
+// Tab visibility changes:
+// - Hidden tab: Suspend streams
+// - Visible tab: Resume streams
+```
+
+### Global Quality Control
+
+User-selectable quality applies to all streams:
+
+```typescript
+// Settings: auto, 360p, 480p, 720p
+// Preference persists in localStorage
+// Propagates via CustomEvent (no reload required)
+
+window.dispatchEvent(new CustomEvent('stream-quality-changed', {
+  detail: { quality: '720p' }
+}));
+```
+
+## Live Webcams (22 feeds)
+
+Real-time YouTube streams from geopolitical hotspots:
+
+**Regions:**
+- Iran/Attacks (Tehran, Tel Aviv, Jerusalem)
+- Middle East
+- Europe
+- Americas
+- Asia-Pacific
+
+**Features:**
+- Grid view (4 simultaneous feeds)
+- Single-feed view
+- Region filtering
+- Idle-aware playback (pauses after 5 min)
+- Intersection Observer lazy loading
+
+<Note>
+  The **Iran/Attacks tab** provides a dedicated 2×2 grid for real-time visual monitoring during escalation events.
+</Note>
+
+## Telegram Intelligence Feed
+
+27 OSINT and breaking news channels:
+
+- Aurora Intel
+- BNO News
+- OSINTdefender
+- DeepState
+- LiveUAMap
+- War Monitor
+- Intel Crab
+- Conflict News
+- And more...
+
+**Architecture:**
+```typescript
+// MTProto client on Railway relay
+// Messages deduplicated
+// Topic-classified: breaking, conflict, alerts, osint, politics
+// Served through Vercel edge proxy
+// 30-second client caching
+```
+
+## Source Tier System
+
+Every RSS feed has an assigned reliability tier:
+
+| Tier | Description | Examples |
+|------|-------------|----------|
+| **Tier 1** | Authoritative government, international orgs | US State Dept, UN, IAEA |
+| **Tier 2** | Established media, fact-checked | BBC, Reuters, NYT |
+| **Tier 3** | Specialist publications | Defense News, Jane's |
+| **Tier 4** | Regional outlets, think tanks | Local newspapers, CSIS |
+| **Tier 5** | Blogs, aggregators | Individual analysts |
+
+```typescript
+// From src/config/feeds.ts
+export const SOURCE_TIERS = {
+  'US State Department': 1,
+  'BBC News': 2,
+  'Defense One': 3,
+  'Hacker News': 5,
+};
+```
+
+Tier influences:
+- Credibility scoring
+- Prominence in UI
+- CII weight
+
+## Propaganda Risk Profiles
+
+Sources tagged with editorial bias assessment:
+
+```typescript
+type SourceRiskProfile = {
+  bias: 'low' | 'medium' | 'high';
+  type: 'state-funded' | 'independent' | 'corporate';
+  transparency: 'high' | 'medium' | 'low';
+};
+
+// Examples:
+RT: { bias: 'high', type: 'state-funded', transparency: 'low' }
+BBC: { bias: 'low', type: 'independent', transparency: 'high' }
+```
+
+## Geographic Hub Inference
+
+A 74-hub strategic location database infers geography from headlines:
+
+```typescript
+// From src/services/geo-hub-index.ts
+// Hubs span:
+// - Capitals
+// - Conflict zones
+// - Strategic chokepoints (Strait of Hormuz, Suez, Malacca)
+// - International organizations
+
+// Confidence boosted for:
+// - Critical-tier hubs
+// - Active conflict zones
+```
+
+Enables **map-driven news placement** without requiring explicit location metadata from RSS feeds.
+
+## Performance Optimizations
+
+### Concurrent Fetching
+
+```typescript
+// Finance variant: 5 concurrent requests
+// Other variants: 3 concurrent requests
+// ~10-15 second faster cold starts
+```
+
+### Deduplication Cache
+
+```typescript
+// Prevents duplicate AI classifications
+const AI_CLASSIFY_DEDUP_MS = 30 * 60 * 1000; // 30 minutes
+const aiRecentlyQueued = new Map<string, number>();
+```
+
+### Rate Limiting
+
+```typescript
+// Max LLM classifications per minute
+const AI_CLASSIFY_MAX_PER_WINDOW = 
+  SITE_VARIANT === 'finance' ? 40 :
+  SITE_VARIANT === 'tech' ? 60 : 80;
+
+// Max per feed
+const AI_CLASSIFY_MAX_PER_FEED = 
+  SITE_VARIANT === 'finance' ? 2 :
+  SITE_VARIANT === 'tech' ? 2 : 3;
+```
+
+## Desktop App Local Fetching
+
+The sidecar includes built-in RSS proxy:
+
+```typescript
+// Fetches feeds directly from source domains
+// Bypasses cloud RSS proxy entirely
+// Same domain allowlist enforced locally
+// Enables fully self-contained operation
+```
+
+<Info>
+  Desktop app can load all 150+ RSS feeds without any cloud dependency.
+</Info>
+
+## Best Practices
+
+<Tip>
+  **Efficient News Monitoring**
+  
+  1. Set up keyword monitors for priority topics
+  2. Use category filters to focus on relevant sections
+  3. Enable notifications for high-severity items
+  4. Check trending keywords panel for emerging stories
+  5. Pin critical feeds to top of panel
+</Tip>
+
+<Note>
+  **Managing Information Overload**
+  
+  - Start with 5-10 key feeds
+  - Use AI summaries (World Brief) for overview
+  - Filter by time range (24h recommended)
+  - Disable low-priority categories
+  - Leverage virtual scrolling (no performance hit for long lists)
+</Note>
+
+## Troubleshooting
+
+**Feeds not loading?**
+- Check internet connection
+- Verify feed source is online
+- Clear browser cache
+- Check console for CORS errors
+- Desktop: Confirm sidecar is running
+
+**Videos not playing?**
+- Disable browser extensions (ad blockers)
+- Check YouTube isn't blocked on network
+- Try HLS channels (don't require YouTube)
+- Desktop: YouTube embed bridge handles restrictions
+
+**Slow feed updates?**
+- Normal: First load is slow (network fetch)
+- Subsequent loads instant (cached)
+- Desktop: Local sidecar bypasses cloud latency
+
+## Related Features
+
+- [AI Intelligence](/features/ai-intelligence) - AI summarization and classification
+- [Data Layers](/features/data-layers) - News items appear as map markers
+- [Desktop App](/features/desktop-app) - Local RSS proxy, no cloud dependency

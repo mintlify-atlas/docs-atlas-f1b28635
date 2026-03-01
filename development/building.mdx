@@ -1,0 +1,434 @@
+---
+title: Building
+description: Build World Monitor for production, desktop platforms, and variants
+---
+
+## Build Variants
+
+World Monitor supports 4 build variants from a single codebase:
+
+| Variant | Environment Variable | Production URL | Focus |
+| --- | --- | --- | --- |
+| **Full** | `VITE_VARIANT=full` | worldmonitor.app | Geopolitics, military, conflicts |
+| **Tech** | `VITE_VARIANT=tech` | tech.worldmonitor.app | AI/ML, startups, cloud |
+| **Finance** | `VITE_VARIANT=finance` | finance.worldmonitor.app | Markets, trading, central banks |
+| **Happy** | `VITE_VARIANT=happy` | happy.worldmonitor.app | Good news, positive trends |
+
+Each variant:
+- Loads curated data layers and RSS feeds
+- Uses variant-specific branding and metadata
+- Shares the same codebase and build pipeline
+
+## Web Builds (Production)
+
+### Build All Variants
+
+<CodeGroup>
+```bash Full Variant (default)
+npm run build
+```
+
+```bash Full Variant (explicit)
+npm run build:full
+```
+
+```bash Tech Variant
+npm run build:tech
+```
+
+```bash Finance Variant
+npm run build:finance
+```
+
+```bash Happy Variant
+npm run build:happy
+```
+</CodeGroup>
+
+Each build command:
+1. Runs TypeScript type checking (`tsc`)
+2. Bundles assets with Vite
+3. Generates Brotli-compressed files (`.br`)
+4. Creates a service worker for PWA features
+5. Outputs to `dist/`
+
+### Build Output
+
+```
+dist/
+├── index.html                    # Main entry point
+├── settings.html                 # Settings window (desktop)
+├── live-channels.html            # Live video grid
+├── assets/
+│   ├── index-[hash].js          # Main bundle
+│   ├── index-[hash].css         # Styles
+│   ├── deck-stack-[hash].js     # deck.gl + luma.gl
+│   ├── maplibre-[hash].js       # MapLibre GL JS
+│   ├── transformers-[hash].js   # Transformers.js ML
+│   ├── onnxruntime-[hash].js    # ONNX Runtime Web
+│   ├── locale-fr-[hash].js      # French translations
+│   └── ...                      # Other chunks
+├── favico/                       # Favicon variants
+├── sw.js                         # Service worker
+└── manifest.webmanifest          # PWA manifest
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+Starts a local server at http://localhost:4173 serving the production build.
+
+### Build Configuration
+
+Vite configuration (`vite.config.ts`):
+
+- **Chunk splitting** — Large dependencies are split into separate chunks:
+  - `deck-stack` — deck.gl, luma.gl, loaders.gl, math.gl, h3-js
+  - `maplibre` — MapLibre GL JS
+  - `transformers` — Transformers.js
+  - `onnxruntime` — ONNX Runtime Web
+  - `d3` — D3.js
+  - `i18n` — i18next
+  - `sentry` — Error tracking
+  - `locale-{lang}` — Lazy-loaded translations
+
+- **Brotli pre-compression** — All `.js`, `.css`, `.html`, `.svg`, `.json`, `.wasm` files > 1KB are pre-compressed with Brotli (`.br` extension)
+
+- **Service worker** — PWA features with offline map tile caching
+
+## Desktop Builds (Tauri)
+
+### Prerequisites
+
+1. Install Rust toolchain:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+2. Install platform-specific dependencies:
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    xcode-select --install
+    ```
+  </Tab>
+  <Tab title="Windows">
+    Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+  </Tab>
+  <Tab title="Linux">
+    ```bash
+    sudo apt install libwebkit2gtk-4.1-dev \
+      build-essential \
+      curl \
+      wget \
+      file \
+      libssl-dev \
+      libayatana-appindicator3-dev \
+      librsvg2-dev
+    ```
+  </Tab>
+</Tabs>
+
+### Build Desktop App
+
+<CodeGroup>
+```bash Full Variant
+npm run desktop:build:full
+```
+
+```bash Tech Variant
+npm run desktop:build:tech
+```
+
+```bash Finance Variant
+npm run desktop:build:finance
+```
+</CodeGroup>
+
+Each command:
+1. Syncs version from `package.json` to Tauri config
+2. Sets `VITE_VARIANT` and `VITE_DESKTOP_RUNTIME=1`
+3. Builds the sidecar sebuf gateway
+4. Builds the Tauri app with Rust
+
+### Build Output
+
+<Tabs>
+  <Tab title="macOS">
+    ```
+    src-tauri/target/release/bundle/
+    ├── dmg/
+    │   └── World Monitor_2.5.21_aarch64.dmg    # Apple Silicon
+    │   └── World Monitor_2.5.21_x64.dmg        # Intel
+    └── macos/
+        └── World Monitor.app                    # Unsigned app bundle
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```
+    src-tauri/target/release/bundle/
+    ├── msi/
+    │   └── World Monitor_2.5.21_x64_en-US.msi  # MSI installer
+    └── nsis/
+        └── World Monitor_2.5.21_x64-setup.exe  # NSIS installer
+    ```
+  </Tab>
+  <Tab title="Linux">
+    ```
+    src-tauri/target/release/bundle/
+    ├── appimage/
+    │   └── world-monitor_2.5.21_amd64.AppImage
+    └── deb/
+        └── world-monitor_2.5.21_amd64.deb
+    ```
+  </Tab>
+</Tabs>
+
+### Package and Sign (Release)
+
+For distributable releases with code signing:
+
+<CodeGroup>
+```bash macOS (Apple Silicon)
+npm run desktop:package:macos:full:sign -- \
+  --cert "Developer ID Application: Your Name" \
+  --team-id TEAMID123
+```
+
+```bash macOS (Intel)
+npm run desktop:package:macos:full:sign -- \
+  --arch x64 \
+  --cert "Developer ID Application: Your Name" \
+  --team-id TEAMID123
+```
+
+```bash Windows
+npm run desktop:package:windows:full:sign -- \
+  --cert-file "path/to/cert.pfx" \
+  --cert-password "password"
+```
+</CodeGroup>
+
+The packaging script (`scripts/desktop-package.mjs`):
+1. Builds the Tauri app
+2. Signs the app bundle/installer
+3. Notarizes (macOS only)
+4. Creates a distributable package
+
+## Type Checking
+
+### Check Frontend
+
+```bash
+npm run typecheck
+```
+
+Runs `tsc --noEmit` on the main TypeScript configuration.
+
+### Check API Handlers
+
+```bash
+npm run typecheck:api
+```
+
+Runs `tsc --noEmit -p tsconfig.api.json` on server-side code.
+
+### Check Everything
+
+```bash
+npm run typecheck:all
+```
+
+Runs both frontend and API type checks.
+
+## Build Optimizations
+
+### Chunk Size Limits
+
+The build is configured to warn for chunks larger than **1200 KB**:
+
+```typescript
+// vite.config.ts
+build: {
+  chunkSizeWarningLimit: 1200,
+}
+```
+
+This is intentionally higher than Vite's default (500 KB) because geospatial libraries (MapLibre, deck.gl) produce large bundles even when split.
+
+### Manual Chunk Splitting
+
+```typescript
+// vite.config.ts
+output: {
+  manualChunks(id) {
+    if (id.includes('/@deck.gl/')) return 'deck-stack';
+    if (id.includes('/maplibre-gl/')) return 'maplibre';
+    // ...
+  },
+}
+```
+
+This ensures:
+- Heavy dependencies are loaded on-demand
+- Browser can cache stable libraries separately
+- Initial page load is faster
+
+### Tree Shaking
+
+Unused exports are automatically removed during build:
+
+```typescript
+// vite.config.ts
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: /* ... */,
+    },
+  },
+}
+```
+
+### Brotli Compression
+
+The `brotliPrecompressPlugin` generates `.br` files for all static assets:
+
+```
+assets/index-abc123.js       → 450 KB
+assets/index-abc123.js.br    → 120 KB (73% smaller)
+```
+
+Vercel/Cloudflare automatically serve `.br` files when the client sends `Accept-Encoding: br`.
+
+## Environment Variables
+
+### Build-Time Variables
+
+These are embedded into the JavaScript bundle at build time:
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `VITE_VARIANT` | Build variant | `full`, `tech`, `finance`, `happy` |
+| `VITE_DESKTOP_RUNTIME` | Enable desktop features | `1` |
+| `VITE_SENTRY_DSN` | Error tracking | `https://...` |
+| `VITE_POSTHOG_KEY` | Product analytics | `phc_...` |
+| `VITE_MAP_INTERACTION_MODE` | Map controls | `3d` or `flat` |
+
+### Runtime Variables (Server-Only)
+
+These are available only in Vercel/serverless functions:
+
+| Variable | Purpose |
+| --- | --- |
+| `GROQ_API_KEY` | AI summarization (Groq) |
+| `OPENROUTER_API_KEY` | AI summarization (OpenRouter) |
+| `UPSTASH_REDIS_REST_URL` | Cache backend |
+| `UPSTASH_REDIS_REST_TOKEN` | Cache authentication |
+| `FINNHUB_API_KEY` | Stock quotes |
+| `EIA_API_KEY` | Energy data |
+| `ACLED_ACCESS_TOKEN` | Conflict data |
+| `WINGBITS_API_KEY` | Aircraft enrichment |
+
+See `.env.example` for the complete list.
+
+## CI/CD Integration
+
+### Vercel Deployment
+
+Production builds are deployed automatically on push to `main`:
+
+```yaml
+# vercel.json
+{
+  "buildCommand": "npm run build:full",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
+```
+
+Variants are deployed to separate domains:
+- `worldmonitor.app` — Full variant
+- `tech.worldmonitor.app` — Tech variant
+- `finance.worldmonitor.app` — Finance variant
+- `happy.worldmonitor.app` — Happy variant
+
+### GitHub Actions
+
+Desktop builds are automated via GitHub Actions:
+
+```yaml
+# .github/workflows/release.yml
+name: Release Desktop Builds
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run desktop:build:full
+      - run: npm run desktop:package:macos:full:sign
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build fails with 'buf: command not found'">
+    Install buf CLI:
+    ```bash
+    make install-buf
+    ```
+  </Accordion>
+
+  <Accordion title="Type errors in generated code">
+    Regenerate proto code:
+    ```bash
+    make clean
+    make generate
+    ```
+  </Accordion>
+
+  <Accordion title="Desktop build fails with Rust errors">
+    Update Rust toolchain:
+    ```bash
+    rustup update stable
+    ```
+  </Accordion>
+
+  <Accordion title="Bundle size too large">
+    Check which dependencies are bloating the bundle:
+    ```bash
+    npx vite-bundle-visualizer
+    ```
+  </Accordion>
+
+  <Accordion title="Service worker not updating">
+    Clear service worker cache:
+    ```bash
+    # In DevTools Console:
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(r => r.unregister());
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Run E2E, API, and regression tests
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/deployment/overview">
+    Deploy to production
+  </Card>
+</CardGroup>

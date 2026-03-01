@@ -1,0 +1,479 @@
+---
+title: Localization
+description: Multilingual support with 16 languages, RTL layouts, and localized news feeds
+---
+
+World Monitor supports **16 languages** with fully localized UI, region-specific news feeds, and native right-to-left (RTL) layout support.
+
+## Supported Languages
+
+World Monitor is translated into:
+
+<CardGroup cols={3}>
+  <Card title="🇬🇧 English" icon="flag-usa">
+    Primary language, always loaded
+  </Card>
+  <Card title="🇫🇷 French" icon="flag">
+    Français
+  </Card>
+  <Card title="🇪🇸 Spanish" icon="flag">
+    Español
+  </Card>
+  <Card title="🇩🇪 German" icon="flag">
+    Deutsch
+  </Card>
+  <Card title="🇮🇹 Italian" icon="flag">
+    Italiano
+  </Card>
+  <Card title="🇵🇱 Polish" icon="flag">
+    Polski
+  </Card>
+  <Card title="🇵🇹 Portuguese" icon="flag">
+    Português
+  </Card>
+  <Card title="🇳🇱 Dutch" icon="flag">
+    Nederlands
+  </Card>
+  <Card title="🇸🇪 Swedish" icon="flag">
+    Svenska
+  </Card>
+  <Card title="🇷🇺 Russian" icon="flag">
+    Русский
+  </Card>
+  <Card title="🇸🇦 Arabic" icon="flag">
+    العربية (RTL)
+  </Card>
+  <Card title="🇨🇳 Chinese" icon="flag">
+    中文 (Simplified)
+  </Card>
+  <Card title="🇯🇵 Japanese" icon="flag">
+    日本語
+  </Card>
+  <Card title="🇹🇷 Turkish" icon="flag">
+    Türkçe
+  </Card>
+  <Card title="🇹🇭 Thai" icon="flag">
+    ไทย
+  </Card>
+  <Card title="🇻🇳 Vietnamese" icon="flag">
+    Tiếng Việt
+  </Card>
+</CardGroup>
+
+## Changing Language
+
+The language selector is located in the **header bar** (top-right corner):
+
+<Steps>
+  <Step title="Click the language flag icon">
+    Example: 🇬🇧 (English)
+  </Step>
+  
+  <Step title="Select a language from the dropdown">
+    Languages are listed with native names (e.g., "Français" not "French").
+  </Step>
+  
+  <Step title="Page reloads with new language">
+    The app reloads to apply the new language across all components.
+  </Step>
+  
+  <Step title="Preference is saved">
+    Your language choice is stored in `localStorage` and persists across sessions.
+  </Step>
+</Steps>
+
+<Tip>
+Language preference is detected automatically on first load from your browser's `Accept-Language` header. You can override this by manually selecting a language.
+</Tip>
+
+## Lazy Loading
+
+To minimize bundle size, World Monitor uses **lazy loading** for language files:
+
+- **English** is always bundled (fallback language)
+- **All other languages** are fetched on demand when selected
+
+This means:
+- Initial page load only downloads English (~30KB)
+- Switching to French fetches `fr.json` (~32KB) dynamically
+- Only the active language is ever loaded
+
+**Performance**:
+- Language switch: ~100–200ms (network fetch + parse)
+- Subsequent switches: instant (cached in `localStorage`)
+
+## Right-to-Left (RTL) Support
+
+World Monitor has **native RTL layout support** for:
+
+- **Arabic** (`ar`)
+- **Hebrew** (planned, not yet implemented)
+
+### What Changes in RTL Mode
+
+When you select Arabic:
+
+<CardGroup cols={2}>
+  <Card title="Text Direction" icon="align-right">
+    All text flows right-to-left:
+    - Headlines
+    - Panel content
+    - Button labels
+    - Tooltips
+  </Card>
+  
+  <Card title="Layout Mirroring" icon="left-right">
+    UI elements flip horizontally:
+    - Navigation menus
+    - Panel order
+    - Icon positions
+    - Scroll bars
+  </Card>
+  
+  <Card title="Map Controls" icon="map">
+    Globe controls mirror:
+    - Zoom buttons swap sides
+    - Layer toggles reposition
+    - Legend moves to left
+  </Card>
+  
+  <Card title="Chart Labels" icon="chart-line">
+    D3.js charts adapt:
+    - Y-axis moves to right
+    - X-axis labels flip
+    - Legends reposition
+  </Card>
+</CardGroup>
+
+### Technical Implementation
+
+RTL is applied via the HTML `dir` attribute:
+
+```html
+<!-- LTR (default) -->
+<html lang="en">
+  ...
+</html>
+
+<!-- RTL (Arabic) -->
+<html lang="ar" dir="rtl">
+  ...
+</html>
+```
+
+CSS uses **logical properties** for automatic mirroring:
+
+```css
+/* Instead of: */
+margin-left: 10px; /* Doesn't flip in RTL */
+
+/* Use: */
+margin-inline-start: 10px; /* Flips to margin-right in RTL */
+```
+
+<Info>
+All World Monitor components use logical CSS properties (`inline-start`, `inline-end`, `block-start`, `block-end`) for automatic RTL support.
+</Info>
+
+## Localized News Feeds
+
+When you change the UI language, World Monitor **automatically loads region-specific RSS feeds**:
+
+### Language-Specific Feed Sets
+
+Seven locales have **dedicated native-language news sources**:
+
+<Tabs>
+  <Tab title="🇫🇷 French">
+    - Le Monde
+    - Jeune Afrique
+    - France24
+    - RFI (Radio France Internationale)
+    - Ouest-France
+  </Tab>
+  
+  <Tab title="🇸🇦 Arabic">
+    - Al Jazeera Arabic
+    - Al Arabiya
+    - BBC Arabic
+    - Sky News Arabia
+    - Al Hadath
+  </Tab>
+  
+  <Tab title="🇩🇪 German">
+    - Deutsche Welle
+    - Der Spiegel
+    - Die Zeit
+    - Tagesschau
+  </Tab>
+  
+  <Tab title="🇪🇸 Spanish">
+    - El País
+    - BBC Mundo
+    - DW Español
+    - Infobae
+  </Tab>
+  
+  <Tab title="🇹🇷 Turkish">
+    - BBC Türkçe
+    - Hürriyet
+    - DW Turkish
+    - TRT Haber
+  </Tab>
+  
+  <Tab title="🇵🇱 Polish">
+    - TVN24
+    - Polsat News
+    - Rzeczpospolita
+    - Gazeta Wyborcza
+  </Tab>
+  
+  <Tab title="🇷🇺 Russian">
+    - BBC Russian
+    - Meduza
+    - Novaya Gazeta Europe
+    - The Moscow Times
+  </Tab>
+  
+  <Tab title="🇹🇭 Thai">
+    - Bangkok Post
+    - Thai PBS
+    - The Nation Thailand
+  </Tab>
+  
+  <Tab title="🇻🇳 Vietnamese">
+    - VnExpress
+    - Tuoi Tre News
+    - Thanh Niên
+  </Tab>
+</Tabs>
+
+**Other languages** (English, Italian, Dutch, Swedish, Chinese, Japanese) continue to load English-language international feeds (BBC, Reuters, AP, etc.).
+
+## AI Translation
+
+World Monitor includes **LLM-powered translation** for headlines and summaries:
+
+<Steps>
+  <Step title="News arrives in source language">
+    RSS feeds provide headlines in their original language (English, Arabic, French, etc.).
+  </Step>
+  
+  <Step title="User changes UI language">
+    Example: Switch from English to Spanish.
+  </Step>
+  
+  <Step title="Translation request is sent to LLM">
+    Headlines are batched and sent to your configured LLM provider (Ollama → Groq → OpenRouter).
+  </Step>
+  
+  <Step title="Translated headlines appear in UI">
+    Original: "Russia launches missile strikes"  
+    Translated: "Rusia lanza ataques con misiles"
+  </Step>
+</Steps>
+
+**Caching**: Translations are cached for 24 hours to reduce API costs.
+
+<Warning>
+AI translation requires a configured LLM provider (Ollama, Groq, or OpenRouter). Without one, headlines appear in their original source language.
+</Warning>
+
+## World Brief Localization
+
+The AI-generated **World Brief** adapts to your selected language:
+
+<Tabs>
+  <Tab title="English">
+    ```
+    WORLD BRIEF | March 1, 2026
+    
+    Russia has escalated military operations in Ukraine...
+    The Federal Reserve signaled potential rate cuts...
+    Taiwan reported increased PLAAF activity...
+    ```
+  </Tab>
+  
+  <Tab title="French">
+    ```
+    RÉSUMÉ MONDIAL | 1er mars 2026
+    
+    La Russie a intensifié les opérations militaires en Ukraine...
+    La Réserve fédérale a signalé des baisses de taux potentielles...
+    Taïwan a signalé une activité accrue de l'APLAAC...
+    ```
+  </Tab>
+  
+  <Tab title="Arabic (RTL)">
+    ```
+    الملخص العالمي | ١ مارس ٢٠٢٦
+    
+    صعدت روسيا العمليات العسكرية في أوكرانيا...
+    أشار الاحتياطي الفيدرالي إلى تخفيضات محتملة في أسعار الفائدة...
+    أبلغت تايوان عن نشاط متزايد لقوات PLAAF...
+    ```
+  </Tab>
+</Tabs>
+
+The LLM prompt instructs the model to generate summaries in the active UI language.
+
+## Date & Number Formatting
+
+World Monitor uses **`Intl` APIs** for locale-aware formatting:
+
+### Date Formatting
+
+<Tabs>
+  <Tab title="English (en-US)">
+    - `March 1, 2026`
+    - `3/1/2026 2:30 PM`
+    - `2 hours ago`
+  </Tab>
+  
+  <Tab title="French (fr-FR)">
+    - `1er mars 2026`
+    - `01/03/2026 14:30`
+    - `il y a 2 heures`
+  </Tab>
+  
+  <Tab title="Arabic (ar-SA)">
+    - `١ مارس ٢٠٢٦`
+    - `٢٠٢٦/٠٣/٠١ ٠٢:٣٠ م`
+    - `منذ ساعتين`
+  </Tab>
+  
+  <Tab title="Chinese (zh-CN)">
+    - `2026年3月1日`
+    - `2026/3/1 14:30`
+    - `2小时前`
+  </Tab>
+</Tabs>
+
+### Number Formatting
+
+<Tabs>
+  <Tab title="English (en-US)">
+    - `1,234,567.89`
+    - `$1,234.56`
+    - `73.2%`
+  </Tab>
+  
+  <Tab title="German (de-DE)">
+    - `1.234.567,89`
+    - `1.234,56 €`
+    - `73,2 %`
+  </Tab>
+  
+  <Tab title="Arabic (ar-SA)">
+    - `١٬٢٣٤٬٥٦٧٫٨٩`
+    - `١٬٢٣٤٫٥٦ ر.س`
+    - `٪٧٣٫٢`
+  </Tab>
+</Tabs>
+
+**Implementation**:
+```javascript
+// Automatic locale-aware formatting
+const formatter = new Intl.NumberFormat(locale, {
+  style: 'currency',
+  currency: 'USD'
+});
+
+formatter.format(1234.56);
+// en-US: "$1,234.56"
+// de-DE: "1.234,56 $"
+// ar-SA: "١٬٢٣٤٫٥٦ US$"
+```
+
+## Language Detection
+
+On first load, World Monitor detects your preferred language using:
+
+1. **localStorage** (if you've previously selected a language)
+2. **Browser `Accept-Language` header** (browser/OS language)
+3. **Fallback to English** (if detection fails)
+
+**Example detection**:
+- Browser reports `Accept-Language: fr-FR, fr;q=0.9, en;q=0.8`
+- World Monitor extracts `fr` and loads French
+- If French fails to load, falls back to English
+
+<Info>
+Language preference is **per-device**. If you set French on your laptop, your phone will still default to its own browser language.
+</Info>
+
+## Translation Coverage
+
+All UI text is localized, including:
+
+- ✅ Panel headers and labels
+- ✅ Button text and tooltips
+- ✅ Error messages and warnings
+- ✅ Settings dialogs
+- ✅ Command palette (Cmd+K)
+- ✅ Country names (via `Intl.DisplayNames`)
+- ✅ Time-relative labels ("2 hours ago")
+- ❌ News headlines (unless AI translation is enabled)
+- ❌ External content (YouTube captions, Polymarket contracts)
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Language selector missing">
+    The language selector only appears on screens **≥ 768px wide**. On mobile, the selector is hidden — language is auto-detected from browser settings.
+  </Accordion>
+  
+  <Accordion title="Page doesn't reload after language change">
+    World Monitor requires a full page reload to apply the new language (i18n limitation). If the reload fails:
+    
+    - Check browser console for errors
+    - Ensure JavaScript is enabled
+    - Try manually reloading (Cmd+R / Ctrl+R)
+  </Accordion>
+  
+  <Accordion title="Some text remains in English">
+    This indicates missing translation keys. Possible causes:
+    
+    - The translation file (`fr.json`, `ar.json`, etc.) is incomplete
+    - A component isn't using the `t()` translation function
+    - External content (news headlines) doesn't support translation
+    
+    **Workaround**: Report missing translations via GitHub issues.
+  </Accordion>
+  
+  <Accordion title="RTL layout is broken">
+    RTL mode requires CSS logical properties. If the layout breaks:
+    
+    - Check if your browser supports `inline-start`/`inline-end` (IE11 doesn't)
+    - Try force-reloading (Cmd+Shift+R / Ctrl+Shift+R)
+    - Check browser zoom is 100%
+    
+    **Workaround**: Use a modern browser (Chrome 89+, Firefox 68+, Safari 12.1+).
+  </Accordion>
+  
+  <Accordion title="AI translation not working">
+    Ensure:
+    
+    - You have a configured LLM provider (Ollama, Groq, or OpenRouter)
+    - Your API key is valid (check **Settings → LLMs**)
+    - The LLM provider supports your target language
+    
+    **Test**: Generate a World Brief — if it's in English regardless of UI language, translation is failing.
+  </Accordion>
+  
+  <Accordion title="Localized news feeds not loading">
+    Localized feeds require specific language codes. Check:
+    
+    - Your language is one of the 7 with native feeds (French, Arabic, German, Spanish, Turkish, Polish, Russian, Thai, Vietnamese)
+    - RSS sources are not blocked by your network/firewall
+    - Browser console for CORS or network errors
+    
+    **Workaround**: Switch to English to load international feeds.
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [World Brief](/guide/world-brief) — AI summaries in your language
+- [Country Analysis](/guide/country-analysis) — Localized country names and data
+- [Themes](/guide/themes) — Theme preferences persist across language changes

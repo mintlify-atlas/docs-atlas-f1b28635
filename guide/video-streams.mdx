@@ -1,0 +1,464 @@
+---
+title: Live Video Streams
+description: Watching live news channels, managing quality settings, and webcam feeds
+---
+
+World Monitor includes **8+ default live video streams** from global news networks, plus **30+ optional channels** and **22 live webcams** from geopolitical hotspots.
+
+## Default Channels
+
+### Full Variant (Geopolitical)
+
+<CardGroup cols={2}>
+  <Card title="Bloomberg" icon="building-columns">
+    Financial news and markets
+  </Card>
+  <Card title="Sky News" icon="newspaper">
+    UK-based international news
+  </Card>
+  <Card title="Euronews" icon="globe">
+    European perspective, 24/7
+  </Card>
+  <Card title="DW (Deutsche Welle)" icon="tv">
+    German public broadcaster
+  </Card>
+  <Card title="CNBC" icon="chart-line">
+    Business and financial news
+  </Card>
+  <Card title="France24" icon="tower-observation">
+    French international news
+  </Card>
+  <Card title="Al Arabiya" icon="crescent">
+    Middle East perspective
+  </Card>
+  <Card title="Al Jazeera" icon="building">
+    Qatar-based global news
+  </Card>
+</CardGroup>
+
+### Tech Variant
+
+<CardGroup cols={2}>
+  <Card title="Bloomberg" icon="building-columns">
+    Tech and business coverage
+  </Card>
+  <Card title="Yahoo Finance" icon="chart-mixed">
+    Markets and tech news
+  </Card>
+  <Card title="CNBC" icon="chart-line">
+    Tech sector coverage
+  </Card>
+  <Card title="Sen Space Live" icon="rocket">
+    Space and aerospace
+  </Card>
+</CardGroup>
+
+## Stream Playback
+
+### HLS Native Streaming
+
+**10 channels** use native HLS `<video>` elements instead of YouTube iframes:
+
+- Sky News
+- Euronews
+- DW (Deutsche Welle)
+- France24
+- Al Arabiya
+- CBS News
+- TRT World
+- Sky News Arabia
+- Al Hadath
+- RT (Russia Today - banned from YouTube, HLS-only)
+
+**Benefits:**
+- Bypasses YouTube cookie popups
+- No bot detection issues
+- Works in WKWebView (desktop app)
+- Native browser controls
+
+**Fallback behavior:**
+- If HLS fails, 5-minute cooldown triggers
+- Automatic switch to YouTube iframe fallback
+- Transparent to user
+
+### YouTube IFrame Embedding
+
+Channels without HLS streams use YouTube's IFrame API:
+
+- Auto-discovery of live streams
+- 5-minute channel page scraping
+- Fallback video IDs when no live stream detected
+
+### Desktop Embed Bridge
+
+YouTube restricts playback in native webviews (error 153). The desktop app:
+
+1. Detects WKWebView environment
+2. Routes streams through cloud-hosted embed proxy
+3. Bidirectional message passing for controls (play/pause/mute/unmute)
+4. Transparent to user
+
+<Info>
+  The web version uses direct YouTube iframes. The desktop app uses the embed bridge automatically when needed.
+</Info>
+
+## Quality Control
+
+Global streaming quality applies to all channels:
+
+### Quality Levels
+
+<CardGroup cols={2}>
+  <Card title="Auto" icon="wand-magic-sparkles">
+    Adaptive bitrate (default)
+  </Card>
+  <Card title="360p" icon="signal-weak">
+    Low bandwidth, mobile-friendly
+  </Card>
+  <Card title="480p" icon="signal-fair">
+    Standard definition
+  </Card>
+  <Card title="720p" icon="signal-strong">
+    High definition (requires good connection)
+  </Card>
+</CardGroup>
+
+### Changing Quality
+
+<Steps>
+  <Step title="Locate Quality Selector">
+    Find the quality dropdown in the Live Video Streams panel header.
+  </Step>
+  <Step title="Select Quality">
+    Choose: Auto (default), 360p, 480p, or 720p.
+  </Step>
+  <Step title="Instant Propagation">
+    Quality change applies to all active players immediately via `stream-quality-changed` CustomEvent.
+  </Step>
+  <Step title="Preference Saved">
+    Selection persists in localStorage across sessions.
+  </Step>
+</Steps>
+
+<Warning>
+  720p requires a stable broadband connection. If you experience buffering, switch to 480p or Auto.
+</Warning>
+
+## Optional Channels
+
+**30+ additional channels** available from the expandable library:
+
+### By Region
+
+<AccordionGroup>
+  <Accordion title="North America (7 channels)">
+    - LiveNOW from FOX
+    - Fox News
+    - Newsmax
+    - ABC News
+    - CBS News
+    - NBC News
+    - CBC News (Canada)
+  </Accordion>
+  
+  <Accordion title="Europe (11 channels)">
+    - BBC News
+    - France 24 English
+    - WELT (Germany)
+    - RTVE 24H (Spain)
+    - TRT Haber (Turkey)
+    - NTV (Turkey)
+    - CNN TURK
+    - TV Rain (Russia)
+    - RT (Russia Today)
+    - TVP Info (Poland)
+    - Telewizja Republika (Poland)
+  </Accordion>
+  
+  <Accordion title="Latin America (10 channels)">
+    - CNN Brasil
+    - Jovem Pan News (Brazil)
+    - Record News (Brazil)
+    - Band Jornalismo (Brazil)
+    - TN - Todo Noticias (Argentina)
+    - C5N (Argentina)
+    - MILENIO (Mexico)
+    - Noticias Caracol (Colombia)
+    - NTN24 (Colombia)
+    - T13 (Chile)
+  </Accordion>
+  
+  <Accordion title="Asia (7 channels)">
+    - TBS NEWS DIG (Japan)
+    - ANN News (Japan)
+    - NTV News (Japan)
+    - CTI News (Taiwan)
+    - WION (India)
+    - CNA NewsAsia (Singapore)
+    - NHK World Japan
+  </Accordion>
+  
+  <Accordion title="Middle East (5 channels)">
+    - Al Hadath (Saudi Arabia)
+    - Sky News Arabia
+    - TRT World (Turkey)
+    - Iran International
+    - CGTN Arabic (China)
+  </Accordion>
+  
+  <Accordion title="Africa (5 channels)">
+    - Africanews
+    - Channels TV (Nigeria)
+    - KTN News (Kenya)
+    - eNCA (South Africa)
+    - SABC News (South Africa)
+  </Accordion>
+</AccordionGroup>
+
+### Adding Optional Channels
+
+<Steps>
+  <Step title="Open Available Channels Tab">
+    Click the "Available Channels" tab in the Live Video Streams panel.
+  </Step>
+  <Step title="Browse by Region">
+    Channels are organized by geographic region for easy discovery.
+  </Step>
+  <Step title="Click to Add">
+    Click any channel to add it to your active channel list.
+  </Step>
+  <Step title="Preference Saved">
+    Your channel selection is saved to localStorage as `worldmonitor-live-channels`.
+  </Step>
+</Steps>
+
+### Removing Channels
+
+<Steps>
+  <Step title="Locate Active Channel">
+    Find the channel in your active channels list.
+  </Step>
+  <Step title="Click Remove Button">
+    Click the × or Remove button next to the channel.
+  </Step>
+  <Step title="Channel Hidden">
+    Channel is removed from active list (can be re-added later).
+  </Step>
+</Steps>
+
+## Live Webcams
+
+**22 live webcams** provide real-time visual monitoring from geopolitical hotspots:
+
+### Webcam Regions
+
+<CardGroup cols={2}>
+  <Card title="Iran/Attacks" icon="crosshairs">
+    Tehran, Tel Aviv, Jerusalem feeds for escalation monitoring
+  </Card>
+  <Card title="Middle East" icon="mosque">
+    Regional hotspot cameras
+  </Card>
+  <Card title="Europe" icon="landmark">
+    European city feeds
+  </Card>
+  <Card title="Americas" icon="flag-usa">
+    North and South America
+  </Card>
+  <Card title="Asia-Pacific" icon="globe-asia">
+    East Asian monitoring
+  </Card>
+</CardGroup>
+
+### Webcam Views
+
+#### Grid View
+
+Display 4 strategic feeds simultaneously:
+
+- 2×2 grid layout
+- Synchronized playback
+- Region filtering
+- Ideal for monitoring multiple locations
+
+#### Single-Feed View
+
+Focus on one webcam:
+
+- Full-size player
+- Maximum detail
+- Better for specific location monitoring
+
+### Using Webcams
+
+<Steps>
+  <Step title="Open Webcams Tab">
+    Click the "Live Webcams" tab in the panel.
+  </Step>
+  <Step title="Select Region">
+    Filter by region: Iran/Attacks, Middle East, Europe, Americas, or Asia-Pacific.
+  </Step>
+  <Step title="Choose View Mode">
+    Toggle between Grid (4 feeds) or Single-Feed view.
+  </Step>
+  <Step title="Lazy Loading">
+    Webcams use Intersection Observer for performance - only visible feeds load.
+  </Step>
+</Steps>
+
+### Iran/Attacks Tab
+
+Dedicated 2×2 grid for escalation events:
+
+- **Tehran** - Iranian capital monitoring
+- **Tel Aviv** - Israeli coastal city
+- **Jerusalem** - Strategic holy city
+- **Additional strategic feed**
+
+Provides real-time visual context during regional tensions.
+
+## Idle-Aware Playback
+
+Video streams automatically pause to conserve resources:
+
+### Idle Detection
+
+- **5-minute inactivity** - Streams pause and are removed from DOM
+- **Tab visibility changes** - Streams suspend when tab is hidden
+- **Auto-resume** - Streams resume when user returns
+
+### Why This Matters
+
+- **Battery saving** - Prevents drain on laptops and mobile devices
+- **Bandwidth conservation** - Stops streaming when not actively watching
+- **Performance** - Frees GPU resources for other tasks
+
+<Info>
+  Idle detection applies to both live news channels and webcams. Manual play overrides idle state.
+</Info>
+
+## Player Controls
+
+### Standard Controls
+
+All video players support:
+
+- **Play/Pause** - Space bar or click button
+- **Mute/Unmute** - M key or click volume icon
+- **Volume** - Arrow keys or drag slider
+- **Fullscreen** - F key or fullscreen button
+
+### Synchronized Quality
+
+Changing global quality affects all active players:
+
+1. Quality change event fired
+2. All players receive `stream-quality-changed` event
+3. Players reload with new quality setting
+4. No page reload required
+
+## Channel Management
+
+### Restoring Defaults
+
+Reset to default channel list:
+
+<Steps>
+  <Step title="Open Channel Settings">
+    Find the "Restore Defaults" option in channel management.
+  </Step>
+  <Step title="Click Restore">
+    Confirm restoration to variant-specific defaults.
+  </Step>
+  <Step title="Channels Reset">
+    Active channels revert to the 8 (or 4 for tech) default streams.
+  </Step>
+</Steps>
+
+### Storage Keys
+
+Channel preferences are stored in localStorage:
+
+- `worldmonitor-live-channels` - Selected channels
+- `worldmonitor-stream-quality` - Quality preference
+- `worldmonitor-webcam-region` - Last selected webcam region
+
+## Troubleshooting
+
+### Stream Not Playing
+
+<AccordionGroup>
+  <Accordion title="Check Live Status">
+    Some channels may not be live 24/7. The system auto-detects live streams every 5 minutes.
+    
+    **Fallback behavior**: If no live stream detected, a pre-recorded fallback video plays.
+  </Accordion>
+  
+  <Accordion title="Browser Autoplay Policies">
+    Modern browsers block autoplay with sound. 
+    
+    **Solution**: Manually click play on the first video. Subsequent streams will autoplay muted.
+  </Accordion>
+  
+  <Accordion title="HLS Failure">
+    If HLS stream fails, automatic fallback to YouTube iframe occurs after 5 minutes.
+    
+    **Check**: Look for fallback indicator in player.
+  </Accordion>
+  
+  <Accordion title="Desktop App Error 153">
+    YouTube restricts playback in native webviews.
+    
+    **Solution**: Desktop app automatically routes through embed bridge. If issue persists, try restarting the app.
+  </Accordion>
+</AccordionGroup>
+
+### Buffering Issues
+
+<Steps>
+  <Step title="Lower Quality">
+    Switch from 720p → 480p → 360p → Auto until buffering stops.
+  </Step>
+  <Step title="Check Connection">
+    Run a speed test. 720p requires ~5 Mbps, 480p ~2.5 Mbps, 360p ~1 Mbps.
+  </Step>
+  <Step title="Reduce Active Streams">
+    Limit concurrent streams to 2-3 if on slower connection.
+  </Step>
+  <Step title="Clear Browser Cache">
+    Old cache entries can cause playback issues. Clear and reload.
+  </Step>
+</Steps>
+
+### No Video Visible
+
+<AccordionGroup>
+  <Accordion title="Panel Collapsed">
+    Ensure the Live Video Streams panel is expanded (not minimized).
+  </Accordion>
+  
+  <Accordion title="Channel Not Added">
+    Verify the channel is in your active channels list, not just the available channels library.
+  </Accordion>
+  
+  <Accordion title="Ad Blocker Interference">
+    Some ad blockers block YouTube iframes. Whitelist worldmonitor.app.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="News Feeds" icon="newspaper" href="/guide/news-feeds">
+    Read and filter RSS feeds
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick search and navigation
+  </Card>
+  <Card title="Panels" icon="table-columns" href="/guide/panels">
+    Customize panel layout
+  </Card>
+  <Card title="Map Controls" icon="map" href="/guide/map-controls">
+    Visualize events on the globe
+  </Card>
+</CardGroup>

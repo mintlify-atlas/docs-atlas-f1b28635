@@ -1,0 +1,520 @@
+---
+title: Data Layers
+description: 40+ toggleable intelligence layers covering geopolitics, military, infrastructure, markets, and more
+---
+
+## Overview
+
+World Monitor provides **40+ real-time data layers** that can be toggled individually or by category. Each layer is sourced from authoritative datasets and updated continuously.
+
+<Info>
+  Layers are variant-aware: the **Tech variant** emphasizes startup ecosystems and cloud infrastructure, while the **Finance variant** highlights stock exchanges and central banks.
+</Info>
+
+## Layer Categories
+
+### Geopolitical Layers
+
+Track conflicts, protests, and global events.
+
+<Tabs>
+  <Tab title="Conflicts">
+    **Active Conflict Zones**
+    
+    - Source: UCDP (Uppsala Conflict Data Program) + ACLED
+    - Coverage: Armed conflicts worldwide
+    - Threshold: 1,000+ battle deaths/year for "war" classification
+    - Update frequency: Daily
+    
+    **Data Points:**
+    - Conflict intensity (color-coded)
+    - Casualty estimates
+    - Active factions
+    - Geographic extent
+    
+    <Note>
+      Countries with active wars receive automatic CII floor scores to prevent optimistic drift in instability calculations.
+    </Note>
+  </Tab>
+  
+  <Tab title="Protests & Unrest">
+    **Social Unrest Events**
+    
+    - **Dual-source**: ACLED protests + GDELT geo-events
+    - **Deduplication**: Haversine distance-based (merge within 50km)
+    - Coverage: Demonstrations, riots, civil disorder
+    - Update frequency: Real-time
+    
+    **Clustering:**
+    - Supercluster groups nearby protests at low zoom
+    - Cluster size indicates event count
+    - Click cluster to zoom and expand
+    
+    ```typescript
+    // Cluster threshold adapts to zoom level
+    const threshold = Math.max(60, Math.min(150, 200 - zoom * 20));
+    ```
+  </Tab>
+  
+  <Tab title="Natural Disasters">
+    **Multi-Source Disaster Tracking**
+    
+    - **USGS Earthquakes**: M4.5+ seismic events
+    - **GDACS**: Global Disaster Alert and Coordination System
+    - **NASA EONET**: Earth Observatory Natural Event Tracker
+    
+    Event types:
+    - Earthquakes
+    - Floods
+    - Wildfires
+    - Volcanic eruptions
+    - Severe storms
+    - Tsunamis
+  </Tab>
+  
+  <Tab title="Cyber Threats">
+    **Cyber Threat IOCs (Indicators of Compromise)**
+    
+    Geo-located on the globe:
+    - C2 servers (command and control)
+    - Malware hosts
+    - Phishing infrastructure
+    - Malicious URLs
+    
+    **APT Attribution:**
+    - APT groups mapped to origin countries
+    - Attack infrastructure locations
+    - Historical campaign data
+    
+    Source: Threat intelligence feeds
+  </Tab>
+</Tabs>
+
+### Military & Strategic Layers
+
+Monitor military assets, bases, and strategic facilities.
+
+<Tabs>
+  <Tab title="Military Bases">
+    **220+ Global Military Bases**
+    
+    - **9 operators tracked**:
+      - United States (largest network)
+      - Russia
+      - China
+      - France
+      - United Kingdom
+      - Germany
+      - Japan
+      - Turkey
+      - NATO (joint facilities)
+    
+    **Base Types:**
+    - Air bases
+    - Naval bases
+    - Army installations
+    - Joint facilities
+    - Forward operating bases
+    
+    <Info>
+      Click any base for details: operator, facility type, nearest conflicts, and related military activity.
+    </Info>
+  </Tab>
+  
+  <Tab title="Military Flights">
+    **Live ADS-B Military Flight Tracking**
+    
+    - Source: ADS-B transponder data
+    - Update frequency: Every 2 minutes
+    - Coverage: Aircraft broadcasting ADS-B signals
+    
+    **Aircraft Enrichment:**
+    ```typescript
+    // Via Wingbits aviation intelligence API
+    interface FlightEnrichment {
+      registration: string;
+      manufacturer: string;
+      model: string;
+      operator: string;
+      confidence: 'confirmed' | 'likely' | 'possible';
+    }
+    ```
+    
+    **Confidence Classification:**
+    - **Confirmed**: Operator matches known military branch
+    - **Likely**: Aircraft type exclusively military (tanker, AWACS)
+    - **Possible**: Government-registered in military operating area
+  </Tab>
+  
+  <Tab title="Naval Vessels">
+    **AIS Maritime Tracking**
+    
+    - Source: AIS (Automatic Identification System)
+    - Coverage: Ships broadcasting AIS
+    - Update frequency: Real-time
+    
+    **Vessel Classification:**
+    - Carrier groups
+    - Combatant vessels
+    - Support ships
+    - Submarines (when surfaced)
+    
+    **USNI Fleet Intelligence:**
+    - Weekly U.S. Naval Institute deployment reports
+    - Merged with live AIS data
+    - Strike group assignments
+    - Operational theaters
+    - Vessels running dark (AIS off) shown at last known position
+  </Tab>
+  
+  <Tab title="Nuclear Facilities">
+    **Nuclear Infrastructure**
+    
+    - Nuclear power plants
+    - Research reactors
+    - Fuel cycle facilities
+    - Weapons facilities (publicly known)
+    - Gamma irradiators
+    
+    <Note>
+      Only appears when zoomed in (detail layer). Sensitive locations from open-source intelligence.
+    </Note>
+  </Tab>
+</Tabs>
+
+### Infrastructure Layers
+
+Critical global infrastructure and chokepoints.
+
+<Tabs>
+  <Tab title="Undersea Cables">
+    **Global Submarine Cable Network**
+    
+    - Landing points
+    - Cable routes
+    - Capacity and operators
+    
+    **Cable Health Monitoring:**
+    - NGA navigational warnings (cable damage alerts)
+    - Repair ship tracking
+    - Advisory severity classification
+    
+    ```typescript
+    // Signal types
+    type CableSignal = 
+      | 'operator_fault'    // Confirmed damage (severity 1.0)
+      | 'cable_advisory';  // Repair ops, warnings (severity 0.6)
+    ```
+    
+    Geographic matching:
+    - 50km radius around cable coordinates
+    - Cosine-latitude-corrected equirectangular distance
+    - Results cached in Redis (6h TTL)
+  </Tab>
+  
+  <Tab title="Oil & Gas Pipelines">
+    **Major Pipeline Networks**
+    
+    Color-coded by content:
+    - Oil pipelines (red)
+    - Natural gas (blue)
+    - LNG routes (cyan)
+    
+    Notable pipelines:
+    - Nord Stream
+    - Druzhba Pipeline
+    - Trans-Alaska Pipeline
+    - Keystone Pipeline
+    - Eastern Siberia–Pacific Ocean
+  </Tab>
+  
+  <Tab title="AI Datacenters">
+    **111 Major AI/ML Compute Clusters**
+    
+    Mapped locations:
+    - Hyperscale datacenters
+    - AI training facilities
+    - Edge computing hubs
+    
+    Metadata:
+    - Operator (Google, Microsoft, Meta, etc.)
+    - Estimated compute capacity
+    - Power consumption
+    - Cooling infrastructure
+    
+    <Tip>
+      Combine with **Internet Outages** layer to monitor datacenter connectivity.
+    </Tip>
+  </Tab>
+  
+  <Tab title="Ports">
+    **83 Strategic Ports**
+    
+    Six port types:
+    - Container ports
+    - Oil terminals
+    - LNG terminals
+    - Naval ports
+    - Mixed-use
+    - Bulk cargo
+    
+    **Throughput Rankings:**
+    - TEU capacity (container ports)
+    - Barrel/day capacity (oil ports)
+    - Strategic importance scoring
+  </Tab>
+  
+  <Tab title="Trade Routes">
+    **19 Global Trade Routes**
+    
+    Route categories:
+    - Container shipping lanes
+    - Energy corridors
+    - Bulk commodity routes
+    
+    **Multi-segment arcs:**
+    - Routes pass through strategic chokepoints
+    - Rendered as great circle paths (3D globe)
+    - Bézier curves (flat map)
+    
+    Key chokepoints:
+    - Strait of Hormuz
+    - Suez Canal
+    - Malacca Strait
+    - Panama Canal
+    - Bab el-Mandeb
+    - Taiwan Strait
+    - Turkish Straits
+  </Tab>
+  
+  <Tab title="Satellite Fire Detection">
+    **NASA FIRMS Thermal Hotspots**
+    
+    - Source: VIIRS (Visible Infrared Imaging Radiometer Suite)
+    - Coverage: Global
+    - Detection: Thermal anomalies from space
+    
+    Use cases:
+    - Wildfire monitoring
+    - Industrial fires
+    - Conflict-related fires
+    - Gas flaring detection
+  </Tab>
+  
+  <Tab title="GPS Jamming">
+    **GPS/GNSS Interference Zones**
+    
+    - Source: ADS-B transponder analysis (gpsjam.org)
+    - Method: Aircraft report GPS anomalies
+    - Visualization: H3 hex grid
+    
+    **Interference Classification:**
+    - **Medium** (amber): >2% aircraft affected
+    - **High** (red): >10% aircraft affected
+    
+    **CII Impact:**
+    - Up to +35 points per country in security scoring
+    - Region-tagged across 12 conflict zones
+  </Tab>
+</Tabs>
+
+### Market & Crypto Layers
+
+<Tabs>
+  <Tab title="Stock Exchanges">
+    **92 Global Stock Exchanges (Finance Variant)**
+    
+    **Tiers:**
+    - **Mega**: NYSE, NASDAQ, Shanghai, Euronext, Tokyo
+    - **Major**: Hong Kong, London, NSE/BSE, Toronto, Korea, Saudi Tadawul
+    - **Emerging**: Regional exchanges
+    
+    Metadata:
+    - Market capitalization
+    - Trading hours
+    - Primary indices
+    - Currency
+  </Tab>
+  
+  <Tab title="Financial Centers">
+    **19 Financial Centers (Finance Variant)**
+    
+    Ranked by Global Financial Centres Index:
+    1. New York
+    2. London
+    3. Singapore
+    4. Hong Kong
+    5. San Francisco
+    ...
+    - Offshore centers: Cayman Islands, Luxembourg, Bermuda, Channel Islands
+  </Tab>
+  
+  <Tab title="Central Banks">
+    **13 Central Banks (Finance Variant)**
+    
+    - Federal Reserve (US)
+    - European Central Bank
+    - Bank of Japan
+    - Bank of England
+    - People's Bank of China
+    - Swiss National Bank
+    - Reserve Bank of Australia
+    - Bank of Canada
+    - Reserve Bank of India
+    - Bank of Korea
+    - Central Bank of Brazil
+    - Saudi Arabian Monetary Authority
+    - Bank for International Settlements (BIS)
+    - International Monetary Fund
+  </Tab>
+  
+  <Tab title="Gulf FDI">
+    **64 Saudi/UAE Foreign Direct Investments**
+    
+    - Color-coded by status:
+      - Operational (green)
+      - Under construction (yellow)
+      - Announced (blue)
+    
+    - Sized by investment amount
+    - Global distribution tracking
+  </Tab>
+</Tabs>
+
+### Tech Ecosystem Layers (Tech Variant)
+
+<Tabs>
+  <Tab title="Tech HQs">
+    **Major Tech Company Headquarters**
+    
+    Categories:
+    - Big Tech (FAANG+)
+    - Unicorns ($1B+ valuation)
+    - Public tech companies
+    
+    Metadata:
+    - Founding year
+    - Employee count
+    - Market cap / valuation
+  </Tab>
+  
+  <Tab title="Cloud Regions">
+    **Cloud Provider Infrastructure**
+    
+    Mapped regions:
+    - AWS (50+ regions)
+    - Azure (60+ regions)
+    - Google Cloud (30+ regions)
+    
+    <Info>
+      Overlay with **Internet Outages** to monitor cloud availability zones.
+    </Info>
+  </Tab>
+  
+  <Tab title="Startup Hubs">
+    **Global Startup Ecosystems**
+    
+    - Funding data integration
+    - Ecosystem maturity scores
+    - Notable exits
+    
+    Top hubs:
+    - Silicon Valley
+    - London Tech City
+    - Tel Aviv
+    - Bangalore
+    - Singapore
+  </Tab>
+  
+  <Tab title="Accelerators">
+    **Startup Accelerators**
+    
+    Notable programs:
+    - Y Combinator (Mountain View)
+    - Techstars (global network)
+    - 500 Startups
+    - Plug and Play
+  </Tab>
+</Tabs>
+
+## Layer Management
+
+### Toggle Controls
+
+Layers can be toggled:
+- **Individually** - Click layer name
+- **By category** - Toggle all geopolitical, military, etc.
+- **Via URL** - `?layers=conflicts,bases,cables`
+- **Command palette** - Press Cmd+K, type layer name
+
+### Layer Presets
+
+Quick combinations via Command Palette:
+
+```
+layers:military    → Bases + flights + vessels
+layers:finance     → Exchanges + banks + markets  
+layers:conflict    → Conflicts + protests + alerts
+layers:infrastructure → Cables + pipelines + ports
+```
+
+## Data Freshness
+
+Each layer has different update frequencies:
+
+| Layer | Update Frequency | Source |
+|-------|-----------------|--------|
+| Military flights | 2 minutes | ADS-B live |
+| Naval vessels | Real-time | AIS live |
+| Earthquakes | 5 minutes | USGS |
+| Protests | 1 hour | ACLED |
+| Conflicts | Daily | UCDP |
+| Bases | Static | Curated database |
+| Cables | Static (health: 6h) | TeleGeography + NGA |
+
+<Note>
+  The **Data Freshness Panel** shows status for all 28+ data sources with explicit intelligence gap reporting.
+</Note>
+
+## Mobile Rendering
+
+On mobile devices (screens under 768px), layers degrade gracefully:
+
+- Reduced marker count (top 100 per layer)
+- Simplified clustering
+- SVG rendering instead of WebGL
+- Essential layers only by default
+
+## Layer Persistence
+
+Active layers are saved:
+- **localStorage** - Per-device preferences
+- **URL state** - Shareable configurations
+- **Session memory** - Survives navigation
+
+## Related Features
+
+- [Interactive Globe](/features/interactive-globe) - Map controls and navigation
+- [Live News](/features/live-news) - News items appear as map markers
+- Desktop App - Native performance for dense layers
+
+## Best Practices
+
+<Tip>
+  **Layer Selection Strategy**
+  
+  1. Start with 3-5 relevant layers
+  2. Add more as needed for analysis
+  3. Use time filters to reduce clutter
+  4. Disable layers when not in use (improves performance)
+  5. Save useful combinations via URL bookmarks
+</Tip>
+
+<Note>
+  **Performance Considerations**
+  
+  Each active layer consumes GPU memory and rendering resources. On lower-end hardware:
+  - Limit to 5-7 active layers
+  - Prefer static layers (cables, bases) over dynamic (flights)
+  - Use regional presets to reduce viewport coverage
+</Note>

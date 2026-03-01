@@ -1,0 +1,303 @@
+---
+title: 'Rate Limits'
+description: 'API rate limiting, quotas, and Upstash Redis implementation'
+---
+
+## Overview
+
+World Monitor implements IP-based rate limiting to ensure fair usage and protect against abuse. Rate limits are enforced using Upstash Redis with a sliding window algorithm.
+
+## Rate Limit Details
+
+### Global Rate Limit
+
+All API endpoints share a single global rate limit:
+
+<ParamField body="limit" type="number" default="300">
+  Maximum requests per window
+</ParamField>
+
+<ParamField body="window" type="string" default="60 s">
+  Sliding window duration (60 seconds)
+</ParamField>
+
+**Default**: **300 requests per 60 seconds** (5 requests/second average)
+
+### Rate Limit Algorithm
+
+Upstash Ratelimit uses a **sliding window** algorithm:
+
+```typescript
+new Ratelimit({
+  redis: new Redis({ url, token }),
+  limiter: Ratelimit.slidingWindow(300, '60 s'),
+  prefix: 'rl',
+  analytics: false,
+});
+```
+
+**Sliding Window Benefits**:
+- Smooth rate limiting (no burst at window boundaries)
+- More accurate than fixed windows
+- Prevents "thundering herd" at window reset
+
+## IP Address Detection
+
+Rate limits are applied per client IP address. The API uses the following priority:
+
+1. **`x-real-ip`** - Vercel/Cloudflare TCP connection IP (cannot be spoofed)
+2. **`cf-connecting-ip`** - Cloudflare connecting IP
+3. **`x-forwarded-for`** - First IP in chain (less trusted)
+4. **Fallback**: `0.0.0.0`
+
+<Warning>
+  The `x-forwarded-for` header can be client-settable. The API prioritizes `x-real-ip` from trusted infrastructure to prevent spoofing.
+</Warning>
+
+```typescript
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    '0.0.0.0'
+  );
+}
+```
+
+## Rate Limit Headers
+
+All API responses include rate limit information in headers:
+
+<ResponseField name="X-RateLimit-Limit" type="string">
+  Maximum requests allowed in the window (e.g., "300")
+</ResponseField>
+
+<ResponseField name="X-RateLimit-Remaining" type="string">
+  Requests remaining in current window
+</ResponseField>
+
+<ResponseField name="X-RateLimit-Reset" type="string">
+  Unix timestamp (milliseconds) when the window resets
+</ResponseField>
+
+<ResponseField name="Retry-After" type="string">
+  Seconds to wait before retrying (only on 429 responses)
+</ResponseField>
+
+### Example Response Headers
+
+```
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 287
+X-RateLimit-Reset: 1709654432000
+```
+
+## Rate Limit Exceeded
+
+When the rate limit is exceeded, the API returns:
+
+**Status Code**: `429 Too Many Requests`
+
+**Response Body**:
+```json
+{
+  "error": "Too many requests"
+}
+```
+
+**Response Headers**:
+```
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1709654432000
+Retry-After: 42
+Content-Type: application/json
+```
+
+### Handling 429 Responses
+
+```javascript
+const response = await fetch('https://worldmonitor.app/api/market/v1/list-market-quotes');
+
+if (response.status === 429) {
+  const retryAfter = parseInt(response.headers.get('Retry-After'));
+  console.log(`Rate limited. Retry after ${retryAfter} seconds`);
+  
+  // Wait and retry
+  await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+  // ... retry request
+}
+```
+
+## Upstash Integration
+
+Rate limiting is powered by **Upstash Redis**, a serverless Redis service optimized for edge functions.
+
+### Configuration
+
+Rate limiting requires two environment variables:
+
+```bash
+UPSTASH_REDIS_REST_URL=https://your-redis-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token-here
+```
+
+<Info>
+  If Upstash credentials are not configured, rate limiting is **disabled** and all requests are allowed.
+</Info>
+
+### Implementation
+
+```typescript
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const ratelimit = new Ratelimit({
+  redis: new Redis({ 
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN 
+  }),
+  limiter: Ratelimit.slidingWindow(300, '60 s'),
+  prefix: 'rl',
+  analytics: false,
+});
+
+const { success, limit, reset } = await ratelimit.limit(clientIp);
+```
+
+### Rate Limit Storage
+
+Upstash stores rate limit counters with:
+
+- **Key prefix**: `rl` (configurable)
+- **Key format**: `rl:{ip-address}`
+- **TTL**: Automatically managed by sliding window
+- **Analytics**: Disabled for performance
+
+## Best Practices
+
+### 1. Implement Exponential Backoff
+
+```javascript
+async function fetchWithBackoff(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await fetch(url);
+    
+    if (response.status !== 429) {
+      return response;
+    }
+    
+    const retryAfter = parseInt(response.headers.get('Retry-After')) || 1;
+    const backoff = retryAfter * Math.pow(2, i);
+    
+    await new Promise(resolve => setTimeout(resolve, backoff * 1000));
+  }
+  
+  throw new Error('Max retries exceeded');
+}
+```
+
+### 2. Monitor Rate Limit Headers
+
+```javascript
+const remaining = parseInt(response.headers.get('X-RateLimit-Remaining'));
+const limit = parseInt(response.headers.get('X-RateLimit-Limit'));
+
+if (remaining < limit * 0.1) {
+  console.warn(`Approaching rate limit: ${remaining}/${limit} remaining`);
+}
+```
+
+### 3. Batch Requests
+
+Use batch endpoints when available:
+
+```javascript
+// ❌ Multiple requests
+for (const icao of icaos) {
+  await fetch(`/api/military/v1/get-aircraft-details?icao24=${icao}`);
+}
+
+// ✅ Single batch request
+await fetch('/api/military/v1/get-aircraft-details-batch', {
+  method: 'POST',
+  body: JSON.stringify({ icao24s: icaos })
+});
+```
+
+### 4. Use Edge Caching
+
+Leverage built-in edge caching for cacheable endpoints:
+
+```javascript
+// Cached at edge (fast tier: 2 min)
+fetch('/api/market/v1/list-market-quotes')
+
+// Static data (1 hour cache)
+fetch('/api/wildfire/v1/list-fire-detections')
+```
+
+Cached responses don't count against your rate limit after the first request in the cache window.
+
+## Rate Limit Exemptions
+
+The following scenarios are **exempt** from rate limiting:
+
+1. **Failed authentication** (401/403) - Returns before rate limit check
+2. **OPTIONS preflight requests** - CORS preflight doesn't consume quota
+3. **Upstash unavailable** - Rate limiting is disabled if Redis is unreachable
+
+## Error Handling
+
+If Upstash Redis is unavailable:
+
+```typescript
+try {
+  const { success, limit, reset } = await ratelimit.limit(ip);
+  // ... handle rate limit
+} catch (error) {
+  // Redis error - allow request through
+  console.error('Rate limit check failed:', error);
+  return null; // No rate limit response
+}
+```
+
+<Info>
+  Rate limiting gracefully degrades. If Upstash is unavailable, requests are allowed through to prevent service disruption.
+</Info>
+
+## Increasing Rate Limits
+
+The default rate limit (300 req/min) is designed for typical usage. If you need higher limits:
+
+1. **Contact Support**: Reach out to the World Monitor team
+2. **Provide Justification**: Explain your use case and expected load
+3. **Custom Configuration**: Receive dedicated rate limit tier
+
+Enterprise users can receive custom rate limits configured per API key.
+
+## Monitoring and Analytics
+
+Rate limit metrics are available:
+
+- **Response Headers**: Real-time limit/remaining/reset info
+- **429 Responses**: Track rate limit exceeded events
+- **Upstash Dashboard**: View Redis usage and performance (if enabled)
+
+<Note>
+  Analytics are currently disabled (`analytics: false`) for performance. This may be enabled in future versions.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn about API keys and CORS
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/introduction">
+    Explore available endpoints
+  </Card>
+</CardGroup>

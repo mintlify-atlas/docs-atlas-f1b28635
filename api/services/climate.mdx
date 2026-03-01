@@ -1,0 +1,185 @@
+---
+title: "Climate Service"
+description: "Monitor climate anomalies and weather alerts from Open-Meteo"
+---
+
+## Overview
+
+The Climate Service provides APIs for climate anomaly data sourced from Open-Meteo and ERA5 reanalysis. Track temperature and precipitation deviations from historical norms across global climate zones.
+
+**Base Path:** `/api/climate/v1`
+
+---
+
+## ListClimateAnomalies
+
+Retrieves temperature and precipitation anomalies from ERA5 data.
+
+**Endpoint:** `GET /api/climate/v1/list-climate-anomalies`
+
+### Request Parameters
+
+<ParamField query="page_size" type="integer">
+  Maximum items per page (1-100).
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for next page.
+</ParamField>
+
+<ParamField query="min_severity" type="enum">
+  Optional filter by anomaly severity.
+  
+  Values: `NORMAL`, `MODERATE`, `EXTREME`
+</ParamField>
+
+### Response
+
+<ResponseField name="anomalies" type="array">
+  The list of climate anomalies.
+  
+  <Expandable title="ClimateAnomaly">
+    <ResponseField name="zone" type="string" required>
+      Climate zone name (e.g., "Northern Europe", "Sahel").
+    </ResponseField>
+    
+    <ResponseField name="location" type="object">
+      Representative location for the anomaly zone.
+      
+      <Expandable title="GeoCoordinates">
+        <ResponseField name="latitude" type="number">
+          Latitude coordinate.
+        </ResponseField>
+        
+        <ResponseField name="longitude" type="number">
+          Longitude coordinate.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="temp_delta" type="number">
+      Temperature deviation from normal in degrees Celsius.
+    </ResponseField>
+    
+    <ResponseField name="precip_delta" type="number">
+      Precipitation deviation from normal as a percentage.
+    </ResponseField>
+    
+    <ResponseField name="severity" type="enum">
+      Severity classification: `NORMAL`, `MODERATE`, or `EXTREME`.
+    </ResponseField>
+    
+    <ResponseField name="type" type="enum">
+      Type of climate anomaly: `WARM`, `COLD`, `WET`, `DRY`, or `MIXED`.
+    </ResponseField>
+    
+    <ResponseField name="period" type="string" required>
+      Time period covered (e.g., "2024-W03", "2024-01").
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination metadata with cursor for next page.
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/climate/v1/list-climate-anomalies?min_severity=EXTREME&page_size=20"
+```
+
+### Example Response
+
+```json
+{
+  "anomalies": [
+    {
+      "zone": "Sahel",
+      "location": {
+        "latitude": 15.5,
+        "longitude": -4.5
+      },
+      "temp_delta": 3.8,
+      "precip_delta": -45.2,
+      "severity": "EXTREME",
+      "type": "DRY",
+      "period": "2024-W03"
+    },
+    {
+      "zone": "Northern Europe",
+      "location": {
+        "latitude": 60.5,
+        "longitude": 10.5
+      },
+      "temp_delta": 5.2,
+      "precip_delta": 85.3,
+      "severity": "EXTREME",
+      "type": "MIXED",
+      "period": "2024-W03"
+    },
+    {
+      "zone": "Amazon Basin",
+      "location": {
+        "latitude": -3.4,
+        "longitude": -62.8
+      },
+      "temp_delta": 2.1,
+      "precip_delta": -62.5,
+      "severity": "EXTREME",
+      "type": "DRY",
+      "period": "2024-01"
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJvZmZzZXQiOjIwfQ==",
+    "has_more": true
+  }
+}
+```
+
+---
+
+## Anomaly Severity Levels
+
+<CardGroup cols={3}>
+  <Card title="Normal" icon="circle-check">
+    Within expected variation from historical norms.
+  </Card>
+  <Card title="Moderate" icon="triangle-exclamation">
+    Notable deviation requiring monitoring.
+  </Card>
+  <Card title="Extreme" icon="circle-exclamation">
+    Severe deviation requiring immediate attention.
+  </Card>
+</CardGroup>
+
+## Anomaly Types
+
+<CardGroup cols={2}>
+  <Card title="WARM" icon="temperature-high">
+    Above-normal temperatures
+  </Card>
+  <Card title="COLD" icon="temperature-low">
+    Below-normal temperatures
+  </Card>
+  <Card title="WET" icon="cloud-rain">
+    Above-normal precipitation
+  </Card>
+  <Card title="DRY" icon="sun">
+    Below-normal precipitation
+  </Card>
+  <Card title="MIXED" icon="cloud-sun">
+    Combination of temperature and precipitation anomalies
+  </Card>
+</CardGroup>
+
+---
+
+## Data Source
+
+Climate anomaly data is sourced from:
+- **Open-Meteo**: High-resolution climate data API
+- **ERA5 Reanalysis**: ECMWF's fifth generation reanalysis dataset
+- Updates hourly with new observations
+- Historical baseline computed from 1991-2020 normals

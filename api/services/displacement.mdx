@@ -1,0 +1,381 @@
+---
+title: "Displacement Service"
+description: "Monitor refugee flows, IDPs, and population exposure from UNHCR"
+---
+
+## Overview
+
+The Displacement Service provides APIs for global displacement and refugee data from the United Nations High Commissioner for Refugees (UNHCR). Track refugee flows, internally displaced persons (IDPs), asylum seekers, and population exposure estimates.
+
+**Base Path:** `/api/displacement/v1`
+
+---
+
+## GetDisplacementSummary
+
+Retrieves global refugee and IDP statistics from UNHCR.
+
+**Endpoint:** `GET /api/displacement/v1/get-displacement-summary`
+
+### Request Parameters
+
+<ParamField query="year" type="integer">
+  Data year to retrieve (e.g., 2023). Uses latest available if zero or omitted.
+</ParamField>
+
+<ParamField query="country_limit" type="integer">
+  Maximum number of country entries to return.
+</ParamField>
+
+<ParamField query="flow_limit" type="integer">
+  Maximum number of displacement flows to return.
+</ParamField>
+
+### Response
+
+<ResponseField name="summary" type="object">
+  The displacement summary.
+  
+  <Expandable title="DisplacementSummary">
+    <ResponseField name="year" type="integer">
+      Data year.
+    </ResponseField>
+    
+    <ResponseField name="global_totals" type="object">
+      Global totals across all categories.
+      
+      <Expandable title="GlobalDisplacementTotals">
+        <ResponseField name="refugees" type="integer">
+          Total recognized refugees worldwide.
+        </ResponseField>
+        
+        <ResponseField name="asylum_seekers" type="integer">
+          Total asylum seekers worldwide.
+        </ResponseField>
+        
+        <ResponseField name="idps" type="integer">
+          Total internally displaced persons worldwide.
+        </ResponseField>
+        
+        <ResponseField name="stateless" type="integer">
+          Total stateless persons worldwide.
+        </ResponseField>
+        
+        <ResponseField name="total" type="integer">
+          Grand total of displaced persons.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="countries" type="array">
+      Per-country displacement breakdowns.
+      
+      <Expandable title="CountryDisplacement">
+        <ResponseField name="code" type="string" required>
+          ISO 3166-1 alpha-2 country code.
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Country name.
+        </ResponseField>
+        
+        <ResponseField name="refugees" type="integer">
+          Refugees originating from this country.
+        </ResponseField>
+        
+        <ResponseField name="asylum_seekers" type="integer">
+          Asylum seekers from this country.
+        </ResponseField>
+        
+        <ResponseField name="idps" type="integer">
+          Internally displaced persons within this country.
+        </ResponseField>
+        
+        <ResponseField name="stateless" type="integer">
+          Stateless persons associated with this country.
+        </ResponseField>
+        
+        <ResponseField name="total_displaced" type="integer">
+          Total displaced from this country.
+        </ResponseField>
+        
+        <ResponseField name="host_refugees" type="integer">
+          Refugees hosted by this country.
+        </ResponseField>
+        
+        <ResponseField name="host_asylum_seekers" type="integer">
+          Asylum seekers hosted by this country.
+        </ResponseField>
+        
+        <ResponseField name="host_total" type="integer">
+          Total persons hosted by this country.
+        </ResponseField>
+        
+        <ResponseField name="location" type="object">
+          Representative location for mapping.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="top_flows" type="array">
+      Top displacement flows between countries.
+      
+      <Expandable title="DisplacementFlow">
+        <ResponseField name="origin_code" type="string" required>
+          ISO 3166-1 alpha-2 code of the origin country.
+        </ResponseField>
+        
+        <ResponseField name="origin_name" type="string">
+          Origin country name.
+        </ResponseField>
+        
+        <ResponseField name="asylum_code" type="string" required>
+          ISO 3166-1 alpha-2 code of the asylum country.
+        </ResponseField>
+        
+        <ResponseField name="asylum_name" type="string">
+          Asylum country name.
+        </ResponseField>
+        
+        <ResponseField name="refugees" type="integer">
+          Number of refugees in this flow.
+        </ResponseField>
+        
+        <ResponseField name="origin_location" type="object">
+          Origin country representative location.
+        </ResponseField>
+        
+        <ResponseField name="asylum_location" type="object">
+          Asylum country representative location.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/displacement/v1/get-displacement-summary?year=2023&country_limit=10&flow_limit=20"
+```
+
+### Example Response
+
+```json
+{
+  "summary": {
+    "year": 2023,
+    "global_totals": {
+      "refugees": 35800000,
+      "asylum_seekers": 6400000,
+      "idps": 62500000,
+      "stateless": 4900000,
+      "total": 109600000
+    },
+    "countries": [
+      {
+        "code": "SY",
+        "name": "Syria",
+        "refugees": 6800000,
+        "asylum_seekers": 120000,
+        "idps": 6900000,
+        "stateless": 0,
+        "total_displaced": 13820000,
+        "host_refugees": 0,
+        "host_asylum_seekers": 0,
+        "host_total": 0,
+        "location": {
+          "latitude": 34.8021,
+          "longitude": 38.9968
+        }
+      },
+      {
+        "code": "TR",
+        "name": "Turkey",
+        "refugees": 0,
+        "asylum_seekers": 0,
+        "idps": 0,
+        "stateless": 0,
+        "total_displaced": 0,
+        "host_refugees": 3600000,
+        "host_asylum_seekers": 125000,
+        "host_total": 3725000,
+        "location": {
+          "latitude": 38.9637,
+          "longitude": 35.2433
+        }
+      }
+    ],
+    "top_flows": [
+      {
+        "origin_code": "SY",
+        "origin_name": "Syria",
+        "asylum_code": "TR",
+        "asylum_name": "Turkey",
+        "refugees": 3600000,
+        "origin_location": {
+          "latitude": 34.8021,
+          "longitude": 38.9968
+        },
+        "asylum_location": {
+          "latitude": 38.9637,
+          "longitude": 35.2433
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+## GetPopulationExposure
+
+Returns country population data or estimates population within a radius.
+
+**Endpoint:** `GET /api/displacement/v1/get-population-exposure`
+
+### Request Parameters
+
+<ParamField query="mode" type="string">
+  Mode: `countries` (default) or `exposure`.
+</ParamField>
+
+<ParamField query="lat" type="number">
+  Latitude (required for exposure mode). Range: -90 to 90.
+</ParamField>
+
+<ParamField query="lon" type="number">
+  Longitude (required for exposure mode). Range: -180 to 180.
+</ParamField>
+
+<ParamField query="radius" type="number">
+  Radius in km (required for exposure mode, defaults to 50).
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  True if the request succeeded.
+</ResponseField>
+
+<ResponseField name="countries" type="array">
+  Countries list (populated in countries mode).
+  
+  <Expandable title="CountryPopulationEntry">
+    <ResponseField name="code" type="string">
+      ISO 3166-1 alpha-3 country code.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Country name.
+    </ResponseField>
+    
+    <ResponseField name="population" type="integer">
+      Total population.
+    </ResponseField>
+    
+    <ResponseField name="density_per_km2" type="integer">
+      Population density per square kilometer.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="exposure" type="object">
+  Exposure result (populated in exposure mode).
+  
+  <Expandable title="ExposureResult">
+    <ResponseField name="exposed_population" type="integer">
+      Estimated exposed population.
+    </ResponseField>
+    
+    <ResponseField name="exposure_radius_km" type="number">
+      Radius used for the estimate in km.
+    </ResponseField>
+    
+    <ResponseField name="nearest_country" type="string">
+      ISO3 code of nearest priority country.
+    </ResponseField>
+    
+    <ResponseField name="density_per_km2" type="integer">
+      Population density used for the estimate.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Request (Countries Mode)
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/displacement/v1/get-population-exposure?mode=countries"
+```
+
+### Example Response (Countries Mode)
+
+```json
+{
+  "success": true,
+  "countries": [
+    {
+      "code": "CHN",
+      "name": "China",
+      "population": 1425671352,
+      "density_per_km2": 153
+    },
+    {
+      "code": "IND",
+      "name": "India",
+      "population": 1428627663,
+      "density_per_km2": 464
+    }
+  ]
+}
+```
+
+### Example Request (Exposure Mode)
+
+```bash
+curl -X GET "https://api.worldmonitor.com/api/displacement/v1/get-population-exposure?mode=exposure&lat=33.5138&lon=36.2765&radius=100"
+```
+
+### Example Response (Exposure Mode)
+
+```json
+{
+  "success": true,
+  "exposure": {
+    "exposed_population": 2850000,
+    "exposure_radius_km": 100,
+    "nearest_country": "SYR",
+    "density_per_km2": 91
+  }
+}
+```
+
+---
+
+## Displacement Categories
+
+<CardGroup cols={2}>
+  <Card title="Refugees" icon="people-group">
+    People who have fled their country due to persecution, war, or violence.
+  </Card>
+  <Card title="Asylum Seekers" icon="hand-holding-hand">
+    People who have applied for international protection but whose claims are pending.
+  </Card>
+  <Card title="IDPs" icon="house-crack">
+    Internally Displaced Persons who have fled their homes but remain within their country.
+  </Card>
+  <Card title="Stateless" icon="passport">
+    People who are not recognized as citizens by any country.
+  </Card>
+</CardGroup>
+
+---
+
+## Data Source
+
+Displacement data is sourced from:
+- **UNHCR**: United Nations High Commissioner for Refugees
+- **Global Trends Report**: Annual statistical yearbook
+- **Population Data**: World Bank and national statistics
+- Updated annually with mid-year estimates available

@@ -1,0 +1,995 @@
+---
+title: 'External API Integrations'
+description: 'Detailed specifications for ACLED, USGS, NASA FIRMS, Polymarket, and 34+ other external APIs'
+icon: 'plug'
+---
+
+## Overview
+
+World Monitor integrates **38 external APIs** across 8 domains. This page documents the key API integrations, endpoints, authentication, and rate limits.
+
+## Geopolitical Data APIs
+
+### ACLED (Armed Conflict Location & Event Data)
+
+**Purpose**: Conflict events, protests, violence against civilians
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.acleddata.com/acled/read` |
+| **Authentication** | Query params: `key` + `email` |
+| **Env Vars** | `ACLED_ACCESS_TOKEN`, `ACLED_EMAIL` |
+| **Rate Limits** | Generous (researcher tier) |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/acled`, `/api/acled-conflict` |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | Free (researcher account) |
+
+**Frontend Integration**:
+- `ConflictService` → ConflictPanel, MapLayer
+- Dual-source deduplication with GDELT (ACLED takes precedence)
+- 0.5° spatial grid matching
+
+**Quirks**:
+- Requires both `key` and `email` as separate query parameters
+- Data lags 1-2 weeks behind real-time events
+- Pagination via `page` param
+
+**Degradation**: Returns empty `data` array; conflict panels display "no data available"
+
+<Info>
+  Sign up at [developer.acleddata.com](https://developer.acleddata.com/) for a free researcher account.
+</Info>
+
+---
+
+### UCDP (Uppsala Conflict Data Program)
+
+**Purpose**: Armed conflict data, battle deaths, conflict classification
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://ucdpapi.pcr.uu.se/api/` |
+| **Authentication** | None |
+| **Rate Limits** | No documented limit |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/ucdp`, `/api/ucdp-events` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `ConflictService` → ConflictPanel
+- Country Brief CII floor scores (countries with 1,000+ battle deaths/year)
+
+**Quirks**:
+- Academic data source; updates less frequently than ACLED
+- Supports versioned datasets
+- Automatic version discovery (probes multiple year-based API versions)
+- Negative caching (5-min backoff after failures)
+- Stale-on-error fallback
+
+---
+
+### GDELT (Global Database of Events, Language, and Tone)
+
+**Purpose**: Global event database, geopolitical tension metrics, news analysis
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.gdeltproject.org/api/v2/` |
+| **Authentication** | None |
+| **Rate Limits** | Public; aggressive scraping will trigger 429 |
+| **Data Format** | JSON, GeoJSON, CSV |
+| **WM Endpoints** | `/api/gdelt-doc`, `/api/gdelt-geo` |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `NewsService` → GdeltPanel, GeoHeatmap
+- Protest event deduplication with ACLED (Haversine distance)
+- Geopolitical tension pairs
+
+**Endpoints**:
+- **DOC 2.0 API**: Full-text search across global news
+- **GEO 2.0 API**: Geographic heat-mapping
+
+**Quirks**:
+- Large result sets can be slow
+- No explicit rate limit documentation
+- Upstream 502 passed through; panel shows error state
+
+---
+
+### NGA MSI (Maritime Safety Information)
+
+**Purpose**: NAVAREA warnings, HYDROLANT/HYDROPAC notices, cable advisories
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://msi.gs.mil/api/publications/broadcast-warn` |
+| **Authentication** | None |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/nga-warnings` |
+| **Tier** | Public (U.S. DoD) |
+
+**Frontend Integration**:
+- `MilitaryService` → MaritimeWarningsPanel, MapLayer
+- Undersea cable health advisories
+
+**Quirks**:
+- U.S. DoD-hosted; occasionally slow
+- Passthrough 502 error on outage
+
+---
+
+## Markets & Finance APIs
+
+### Finnhub
+
+**Purpose**: Stock market data, ETF flows, real-time quotes
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://finnhub.io/api/v1/` |
+| **Authentication** | Query param `token` or header `X-Finnhub-Token` |
+| **Env Vars** | `FINNHUB_API_KEY` |
+| **Rate Limits** | Free: 60 calls/min, 30 API calls/sec |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/finnhub`, `/api/etf-flows` |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `MarketService` → MarketPanel, ETFFlowsPanel
+- BTC spot ETF flow tracker (IBIT, FBTC, GBTC, + 7 more)
+
+**Quirks**:
+- WebSocket endpoint available but WM uses REST polling
+- ETF data requires specific symbol lookups
+- Free tier lacks institutional data
+
+**Degradation**: Returns `unavailable` flag; panels show stale cached data with timestamp
+
+---
+
+### CoinGecko
+
+**Purpose**: Cryptocurrency prices, market data, stablecoin monitoring
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.coingecko.com/api/v3/` |
+| **Authentication** | None (free tier) |
+| **Rate Limits** | Free: 10-30 calls/min (fluctuates) |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/coingecko`, `/api/stablecoin-markets`, `/api/macro-signals` |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `CryptoService` → CryptoPanel, StablecoinPanel
+- `MacroService` → MacroSignals (composite input)
+- Stablecoin peg health (USDT, USDC, DAI, FDUSD, USDe)
+
+**Quirks**:
+- Rate limits fluctuate and are not well-documented
+- Stablecoin market-cap queries can be slow
+
+**Degradation**: Returns `unavailable` flag; panels show last-known values
+
+---
+
+### Polymarket (Gamma API)
+
+**Purpose**: Prediction markets, event probabilities, geopolitical forecasting
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://gamma-api.polymarket.com/` |
+| **Authentication** | None |
+| **Rate Limits** | Public; no documented limit |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/polymarket` (proxied via Railway relay) |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | Public |
+
+**API Handler**: `api/polymarket.js:62`
+
+**Frontend Integration**:
+- `PredictionService` → PolymarketPanel
+- Country Brief pages (top 3 markets by volume)
+- 3-tier JA3 bypass: browser-direct → Tauri native TLS → cloud proxy
+
+**Quirks**:
+- Gamma is the off-chain API for Polymarket
+- Market slugs/IDs can change
+- Filterable by tag for geopolitical/election markets
+
+**Degradation**: CDN cache serves stale prediction data
+
+---
+
+### FRED (Federal Reserve Economic Data)
+
+**Purpose**: Economic indicators, interest rates, inflation metrics
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.stlouisfed.org/fred/` |
+| **Authentication** | Query param `api_key` |
+| **Env Vars** | `FRED_API_KEY` |
+| **Rate Limits** | 120 requests/min (free tier) |
+| **Data Format** | JSON (via `file_type=json`) |
+| **WM Endpoints** | `/api/fred-data`, `/api/macro-signals` |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `MacroService` → MacroSignals, EconIndicatorsPanel
+- 7-signal macro radar (JPY liquidity, QQQ/XLP regime)
+
+**Quirks**:
+- Series IDs must be known in advance (e.g., `DGS10`, `T10Y2Y`)
+- Data updates on Fed schedule (not real-time)
+
+**Degradation**: Cached data served from Upstash; stale indicator shown
+
+<Note>
+  Sign up at [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) for a free API key.
+</Note>
+
+---
+
+## Natural Events APIs
+
+### USGS Earthquake Hazards
+
+**Purpose**: Real-time earthquake data, seismic activity monitoring
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://earthquake.usgs.gov/earthquakes/feed/v1.0/` |
+| **Authentication** | None |
+| **Rate Limits** | Public; updated every 5 min by USGS |
+| **Data Format** | GeoJSON |
+| **WM Endpoints** | `/api/earthquakes` |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `SeismicService` → EarthquakePanel, MapLayer
+- Natural disaster aggregation (M4.5+ earthquakes)
+- Country Brief CII scoring
+
+**Pre-built Feeds**:
+- `all_day.geojson` - All earthquakes, past 24 hours
+- `significant_month.geojson` - Significant quakes, past 30 days
+- `4.5_week.geojson` - M4.5+ earthquakes, past 7 days
+
+**Quirks**:
+- No query API — just static feed URLs regenerated by USGS
+- Pre-filtered by magnitude/time range
+
+**Degradation**: CDN cache serves stale GeoJSON; map shows last-known quakes
+
+---
+
+### NASA FIRMS (Fire Information for Resource Management System)
+
+**Purpose**: Satellite fire detection, wildfire monitoring, thermal hotspots
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://firms.modaps.eosdis.nasa.gov/api/` |
+| **Authentication** | Query param `MAP_KEY` |
+| **Env Vars** | `NASA_FIRMS_API_KEY` |
+| **Rate Limits** | Free tier; transaction-based limits |
+| **Data Format** | CSV (parsed server-side to JSON) |
+| **WM Endpoints** | `/api/firms-fires` |
+| **Tier** | Free (EOSDIS Earthdata account) |
+
+**Frontend Integration**:
+- `FireService` → WildfiresPanel, MapLayer
+- Satellite fire detection layer
+
+**Satellites**:
+- **VIIRS** (Visible Infrared Imaging Radiometer Suite) - 375m resolution
+- **MODIS** (Moderate Resolution Imaging Spectroradiometer) - 1km resolution
+
+**Quirks**:
+- CSV rows can be very large for global queries
+- WM limits to specific regions or short time windows
+- Area/country queries supported
+
+**Degradation**: Cached data served; empty array on sustained outage
+
+<Info>
+  Sign up for a free EOSDIS Earthdata account at [firms.modaps.eosdis.nasa.gov](https://firms.modaps.eosdis.nasa.gov/api/area/).
+</Info>
+
+---
+
+### NOAA Climate Monitoring
+
+**Purpose**: Global temperature anomalies, climate trends
+
+| Property | Value |
+|---|---|
+| **Base URL** | Various NOAA endpoints |
+| **Authentication** | None |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/climate-anomalies` |
+| **Tier** | Public (U.S. government) |
+
+**Frontend Integration**:
+- `ClimateService` → ClimateAnomaliesPanel
+- 15 conflict-prone zones monitored
+- Temperature/precipitation deviations vs 30-day ERA5 baselines
+
+**Quirks**:
+- Monthly/annual resolution — not real-time
+- Multiple NOAA sub-endpoints aggregated
+
+**Degradation**: Cached data served with 6h TTL
+
+---
+
+## Military & Security APIs
+
+### OpenSky Network
+
+**Purpose**: ADS-B aircraft tracking, military flight monitoring
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://opensky-network.org/api/` |
+| **Authentication** | None (optional Basic auth for higher limits) |
+| **Rate Limits** | Anonymous: 100 requests/day; Authenticated: 4000/day |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/opensky`, `/api/theater-posture` |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `AviationService` → FlightTracker
+- `TheaterService` → TheaterPosture (9 operational theaters)
+- Military surge detection
+
+**Quirks**:
+- State vectors update every ~10 seconds (WM polls less frequently)
+- Returns all aircraft in bounding box
+- Anonymous rate limit is tight — caching critical
+
+**Degradation**: CDN cache serves stale snapshot; theater posture uses last-known positions
+
+---
+
+### GPS Jamming (gpsjam.org)
+
+**Purpose**: GNSS interference detection, H3 hex grid classification
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://gpsjam.org/data` |
+| **Authentication** | None |
+| **Data Format** | CSV |
+| **WM Endpoints** | `/api/gpsjam` |
+| **Tier** | Public |
+
+**API Handler**: `api/gpsjam.js:5-14`
+
+**Frontend Integration**:
+- GPS/GNSS jamming zones layer
+- Country Brief CII Security scoring (up to +35 points)
+- 12 conflict zone regions tagged
+
+**Processing**:
+1. Fetch latest date from `manifest.csv`
+2. Download H3 resolution 4 hex data
+3. Filter cells with ≥3 aircraft
+4. Classify: >10% interference = high (red), ≥2% = medium (amber)
+
+**Data Structure**:
+```json
+{
+  "date": "2026-02-28",
+  "stats": {
+    "highCount": 42,
+    "mediumCount": 187
+  },
+  "hexes": [
+    {
+      "h3": "842b90fffffffff",
+      "pct": 15.3,
+      "good": 220,
+      "bad": 40,
+      "total": 260,
+      "level": "high"
+    }
+  ]
+}
+```
+
+**Quirks**:
+- 1-hour in-memory cache (per-isolate)
+- H3 hex resolution 4 (average area ~1,770 km²)
+- Minimum 3 aircraft per cell required
+
+---
+
+### OREF (Israeli Home Front Command)
+
+**Purpose**: Rocket/missile alert system, siren data
+
+| Property | Value |
+|---|---|
+| **Base URL** | `oref.org.il` (via Railway relay) |
+| **Authentication** | Residential proxy (Akamai WAF blocks datacenter IPs) |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/oref-alerts` |
+| **Tier** | Public (via relay) |
+
+**API Handler**: `api/oref-alerts.js:60`
+
+**Frontend Integration**:
+- Near-real-time Israeli rocket alerts
+- 24-hour rolling history with wave detection
+- Country Brief CII Conflict component (up to +50 score boost for Israel)
+
+**Relay Endpoints**:
+- `/oref/alerts` - Current active alerts
+- `/oref/history` - Rolling 24h history count
+
+**Quirks**:
+- Requires Railway relay with residential proxy
+- Akamai WAF blocks direct datacenter connections
+- 5-second cache for live alerts, 30-second for history
+
+---
+
+### Custom AIS Relay
+
+**Purpose**: Ship tracking via AIS, naval vessel monitoring
+
+| Property | Value |
+|---|---|
+| **Base URL** | Configurable via `WS_RELAY_URL` |
+| **Authentication** | URL-based credentials |
+| **Env Vars** | `WS_RELAY_URL`, `RELAY_SHARED_SECRET` |
+| **Data Format** | JSON over WebSocket |
+| **WM Endpoints** | `/api/ais-snapshot` |
+| **Tier** | Self-hosted |
+
+**Frontend Integration**:
+- `MaritimeService` → VesselTracker, MapLayer
+- Chokepoint detection (8 strategic straits)
+- Naval vessel classification (MMSI prefixes, ship types)
+- AIS density grid (2°×2° cells, 30-min windows)
+
+**WebSocket Relay**:
+- Decodes AIS NMEA sentences into JSON
+- Persistent connection maintained by `scripts/ais-relay.cjs`
+- Snapshot endpoint aggregates latest positions
+- See `deploy/` for systemd service config
+
+**Degradation**: Returns empty vessel array; maritime layer shows no ship positions
+
+---
+
+### Cyber Threat Intelligence (5 Sources)
+
+**Purpose**: C2 servers, malware hosts, phishing, IoCs
+
+<Tabs>
+  <Tab title="Feodo Tracker">
+    | Property | Value |
+    |---|---|
+    | **URL** | `https://feodotracker.abuse.ch/` |
+    | **Auth** | None |
+    | **Format** | CSV |
+    | **Focus** | C2 botnet infrastructure |
+  </Tab>
+
+  <Tab title="URLhaus">
+    | Property | Value |
+    |---|---|
+    | **URL** | `https://urlhaus.abuse.ch/` |
+    | **Auth** | None |
+    | **Format** | CSV |
+    | **Focus** | Malicious URL database |
+  </Tab>
+
+  <Tab title="C2IntelFeeds">
+    | Property | Value |
+    |---|---|
+    | **URL** | GitHub repository (CSV) |
+    | **Auth** | None |
+    | **Format** | CSV |
+    | **Focus** | Community C2 feeds |
+  </Tab>
+
+  <Tab title="AlienVault OTX">
+    | Property | Value |
+    |---|---|
+    | **URL** | `https://otx.alienvault.com/` |
+    | **Auth** | None |
+    | **Format** | JSON |
+    | **Focus** | Open Threat Exchange pulses |
+  </Tab>
+
+  <Tab title="AbuseIPDB">
+    | Property | Value |
+    |---|---|
+    | **URL** | `https://api.abuseipdb.com/api/v2/` |
+    | **Auth** | Header: `Key` |
+    | **Env Var** | `ABUSEIPDB_API_KEY` |
+    | **Limits** | Free: 1000 checks/day |
+    | **Format** | JSON |
+    | **Focus** | IP reputation scoring |
+  </Tab>
+</Tabs>
+
+**Aggregation**: `/api/cyber-threats`
+
+**Frontend Integration**:
+- `CyberService` → CyberThreatsPanel
+- Cyber threat IOCs geo-located on globe
+- APT threat actor attribution
+
+**Degradation**: Source omitted from aggregation; other sources continue
+
+---
+
+## AI / ML APIs
+
+### Groq
+
+**Purpose**: Primary LLM provider for summarization and classification
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.groq.com/openai/v1/` |
+| **Authentication** | Bearer token in `Authorization` header |
+| **Env Vars** | `GROQ_API_KEY` |
+| **Rate Limits** | Free: ~30 req/min (varies by model); Paid: higher |
+| **Data Format** | JSON (OpenAI-compatible) |
+| **WM Endpoints** | `/api/groq-summarize`, `/api/classify-batch`, `/api/classify-event`, `/api/country-intel` |
+| **Tier** | Free / Paid |
+
+**Frontend Integration**:
+- `SummaryService` - World Brief generation
+- `ClassificationService` - Event threat classification
+- `CountryIntelService` - Country brief AI analysis
+
+**Models Used**:
+- Llama 3.1 8B (default)
+- Temperature 0.3 for summaries, 0 for classification
+
+**Fallback Chain**:
+```
+Groq → OpenRouter → Transformers.js (browser)
+```
+
+**Quirks**:
+- Ultra-fast inference via custom LPU hardware
+- OpenAI-compatible API
+- Results cached in Redis (24h TTL) by content hash
+
+---
+
+### OpenRouter
+
+**Purpose**: Multi-model LLM aggregator (fallback from Groq)
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://openrouter.ai/api/v1/` |
+| **Authentication** | Bearer token in `Authorization` header |
+| **Env Vars** | `OPENROUTER_API_KEY` |
+| **Rate Limits** | Varies by model |
+| **Data Format** | JSON (OpenAI-compatible) |
+| **WM Endpoints** | `/api/openrouter-summarize` |
+| **Tier** | Free (select models only) |
+
+**Free Models Used**:
+- `mistralai/mistral-7b-instruct:free`
+
+**Quirks**:
+- Supports `HTTP-Referer` and `X-Title` headers for attribution
+- Routes to multiple LLM providers
+- Final fallback before browser-based Transformers.js
+
+---
+
+## Infrastructure & Status APIs
+
+### Cloudflare Radar
+
+**Purpose**: Internet outage detection, network anomalies
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.cloudflare.com/client/v4/radar/` |
+| **Authentication** | Bearer token in `Authorization` header |
+| **Env Vars** | `CLOUDFLARE_API_TOKEN` |
+| **Rate Limits** | Enterprise API; generous limits |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/cloudflare-outages` |
+| **Update Frequency** | 5 min polling, 10 min cooldown |
+| **Tier** | **Enterprise** (Radar API token required) |
+
+**Frontend Integration**:
+- `InfraService` → CloudflareOutagesPanel
+- Internet outages layer on map
+- Country Brief infrastructure signals
+
+**Required Permissions**:
+- Token needs `radar:read` permission
+
+**Degradation**: Returns empty outage list; panel shows "no active outages" (may be false negative)
+
+<Warning>
+  Requires Cloudflare Enterprise plan or standalone Radar API access.
+</Warning>
+
+---
+
+### FAA ASWS (Airport Status Web Service)
+
+**Purpose**: Airport delays, ground stops, closures
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://soa.smext.faa.gov/asws/api/` |
+| **Authentication** | None |
+| **Data Format** | XML (parsed server-side) |
+| **WM Endpoints** | `/api/faa-status` |
+| **Update Frequency** | 5 min polling, 5 min cooldown |
+| **Tier** | Public (U.S. government) |
+
+**Frontend Integration**:
+- `AviationService` → FAAStatusPanel
+- Airport delays layer (128 monitored airports)
+
+**Quirks**:
+- XML response parsed to JSON
+- U.S. airports only
+- Returns ground delays, ground stops, closures
+
+**Degradation**: CDN cache serves stale data; panel shows last-known status
+
+---
+
+### Service Status Pages (33 Services)
+
+**Purpose**: Status monitoring for cloud providers, AI services, dev tools
+
+| Property | Value |
+|---|---|
+| **Base URL** | Various: `*.statuspage.io`, `status.*` domains |
+| **Authentication** | None |
+| **Data Format** | JSON (Atlassian Statuspage API) |
+| **WM Endpoints** | `/api/service-status` |
+| **Tier** | Public |
+
+**Monitored Services**:
+- **Cloud**: AWS, Azure, GCP, Cloudflare, Vercel, Netlify, Fastly, DigitalOcean, Heroku
+- **DevOps**: GitHub, GitLab, Datadog, PagerDuty, HashiCorp
+- **SaaS**: Slack, Discord, Zoom, Atlassian, Stripe, Twilio
+- **Databases**: MongoDB Atlas, Redis Cloud, Supabase
+- **AI**: OpenAI, Anthropic
+
+**Frontend Integration**:
+- `InfraService` → ServiceStatusPanel
+- Per-service circuit breakers
+
+**Quirks**:
+- Atlassian Statuspage JSON format is standard
+- Each service polled independently
+- Individual failures don't affect other services
+
+**Degradation**: Individual services shown as "unknown" status; others continue
+
+---
+
+## Humanitarian APIs
+
+### UNHCR Population API
+
+**Purpose**: Refugee and displaced population statistics
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.unhcr.org/population/v1/` |
+| **Authentication** | None |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/unhcr-population` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `HumanitarianService` → RefugeePanel
+- Displacement flows layer
+
+**Quirks**:
+- Annual data granularity
+- Large datasets; WM queries specific country/year combos
+
+**Degradation**: Cached data served with 24h TTL
+
+---
+
+### HDX HAPI (Humanitarian API)
+
+**Purpose**: OCHA humanitarian data - food security, operational presence
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://hapi.humdata.org/api/v2/` |
+| **Authentication** | Optional `app_identifier` query param |
+| **Env Vars** | `HDX_APP_IDENTIFIER` (optional) |
+| **Rate Limits** | Higher limits with identifier |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/hapi` |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `HumanitarianService` → HAPIPanel
+- Country Brief humanitarian signals
+
+**Quirks**:
+- Without `app_identifier`, lower rate limits apply
+- Covers food security, population, operational presence
+
+**Degradation**: Cached data served with 6h TTL
+
+---
+
+### WorldPop
+
+**Purpose**: Population density for exposure analysis
+
+| Property | Value |
+|---|---|
+| **Base URL** | WorldPop raster/API endpoints |
+| **Authentication** | None |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/worldpop-exposure` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `HumanitarianService` → ExposureAnalysis
+- Estimates civilian population within event radii (50-100km)
+
+**Use Cases**:
+- Earthquake exposure estimates
+- Conflict zone population
+- Flood impact assessment
+- Wildfire proximity
+
+**Quirks**:
+- 7-day cache TTL (population changes slowly)
+
+**Degradation**: Cached data served with 7-day TTL
+
+---
+
+### World Bank
+
+**Purpose**: Development indicators (GDP, population, etc.)
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.worldbank.org/v2/` |
+| **Authentication** | None |
+| **Data Format** | JSON (via `format=json` param) |
+| **WM Endpoints** | `/api/worldbank` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `EconService` → WorldBankPanel, CountryProfile
+
+**Quirks**:
+- Default format is XML — must specify `format=json`
+- Pagination via `page`/`per_page`
+- Annual data; not real-time
+
+**Degradation**: Cached data served with 24h TTL
+
+---
+
+## Content & Research APIs
+
+### Hacker News (Firebase API)
+
+**Purpose**: Tech community news and discussion
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://hacker-news.firebaseio.com/v0/` |
+| **Authentication** | None |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/hackernews` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `TechService` → HackerNewsPanel (Tech variant)
+
+**Quirks**:
+- Official HN API via Firebase
+- Each story requires separate fetch by ID
+- WM fetches top N story IDs then batch-fetches details
+
+**Degradation**: CDN cache serves stale stories
+
+---
+
+### GitHub API
+
+**Purpose**: Trending repositories, release tracking, version checks
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.github.com/` |
+| **Authentication** | Optional Bearer token |
+| **Env Vars** | `GITHUB_TOKEN` (optional) |
+| **Rate Limits** | Unauthenticated: 60/hour; Authenticated: 5000/hour |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/github-trending`, `/api/version`, `/api/download` |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- `TechService` → GitHubTrendingPanel
+- `AppService` → VersionCheck (desktop app updates)
+
+**Quirks**:
+- **No official trending API** - WM uses search API with date filters
+- Fallback to HTML scraping `github.com/trending`
+- Version endpoint checks latest release tag
+- Without token, 60 req/h exhausted quickly in dev
+
+**Degradation**: HTML scrape fallback for trending; version check fails gracefully
+
+---
+
+### ArXiv
+
+**Purpose**: Academic paper search and discovery
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://export.arxiv.org/api/` |
+| **Authentication** | None |
+| **Rate Limits** | Requests should be spaced ≥3 seconds apart |
+| **Data Format** | XML (Atom feed) |
+| **WM Endpoints** | `/api/arxiv` |
+| **Tier** | Public |
+
+**Frontend Integration**:
+- `ResearchService` → ArXivPanel (Tech variant)
+
+**Search Syntax**:
+- `ti:` - Title
+- `au:` - Author
+- `cat:` - Category
+
+**Quirks**:
+- ArXiv requests polite rate limiting (≥3s between requests)
+- Atom XML parsed server-side
+
+**Degradation**: CDN cache serves stale results
+
+---
+
+### EIA (Energy Information Administration)
+
+**Purpose**: U.S. energy production, oil inventory, natural gas pricing
+
+| Property | Value |
+|---|---|
+| **Base URL** | `https://api.eia.gov/v2/` |
+| **Authentication** | Query param `api_key` |
+| **Env Vars** | `EIA_API_KEY` |
+| **Rate Limits** | Unspecified |
+| **Data Format** | JSON |
+| **WM Endpoints** | `/api/eia/[[...path]]` (catch-all proxy) |
+| **Tier** | Free |
+
+**Frontend Integration**:
+- Oil & energy analytics panel
+- WTI/Brent crude prices
+- U.S. production (Mbbl/d)
+- Weekly inventory levels
+
+**Quirks**:
+- Catch-all proxy forwards all sub-paths
+- Weekly trend detection
+
+<Info>
+  Sign up at [eia.gov/opendata](https://www.eia.gov/opendata/register.php) for a free API key.
+</Info>
+
+---
+
+## API Key Environment Variables
+
+### Required Keys (Minimum Viable Setup)
+
+```bash
+ACLED_ACCESS_TOKEN=           # ACLED conflict data
+ACLED_EMAIL=                  # ACLED registered email
+FINNHUB_API_KEY=              # Stock market data
+FRED_API_KEY=                 # Federal Reserve economic data
+GROQ_API_KEY=                 # Groq LLM (primary AI)
+```
+
+### Optional Keys (Enhanced Features)
+
+```bash
+# AI Providers
+OPENROUTER_API_KEY=           # LLM fallback
+
+# Data Sources
+NASA_FIRMS_API_KEY=           # Satellite fire detection
+CLOUDFLARE_API_TOKEN=         # Internet outages (Enterprise)
+ABUSEIPDB_API_KEY=            # IP reputation
+WINGBITS_API_KEY=             # Premium aircraft data (commercial)
+EIA_API_KEY=                  # U.S. energy data
+
+# Humanitarian
+HDX_APP_IDENTIFIER=           # OCHA HAPI (higher rate limits)
+
+# Development
+GITHUB_TOKEN=                 # 5000 req/h vs 60 unauthenticated
+
+# Self-Hosted Services
+WS_RELAY_URL=                 # AIS relay WebSocket URL
+RELAY_SHARED_SECRET=          # Relay authentication
+```
+
+### Enterprise/Commercial Tier Required
+
+<Warning>
+  These services require paid plans:
+</Warning>
+
+- **Cloudflare Radar** - Enterprise plan or standalone Radar API
+- **Wingbits** - Commercial agreement (premium ADS-B data)
+
+---
+
+## Degradation Matrix
+
+When external APIs fail, World Monitor degrades gracefully:
+
+| API | Fallback Strategy | User Impact |
+|---|---|---|
+| ACLED | Empty data array | Conflict panels blank |
+| UCDP | 24h cached data | Stale conflict classification |
+| GDELT | 502 passthrough | Panel error state |
+| Finnhub | Stale cached data | Market data delayed |
+| CoinGecko | Last-known values | Crypto prices outdated |
+| Polymarket | CDN cache | Stale predictions |
+| FRED | Upstash cache | Economic data delayed |
+| USGS | CDN GeoJSON | Earthquake data delayed |
+| NASA FIRMS | Cached/empty | Fire data missing |
+| OpenSky | CDN snapshot | Aircraft positions stale |
+| Cloudflare Radar | Empty outage list | May miss outages |
+| Groq | OpenRouter fallback | Slower LLM responses |
+| OpenRouter | Transformers.js | Browser-side inference |
+| AIS Relay | Empty vessel array | No ship positions |
+| Cyber Threat Sources | Source omitted | Other sources continue |
+
+---
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Data Sources Overview" icon="database" href="/api/data-sources/overview">
+    Source types and update frequencies
+  </Card>
+  <Card title="RSS Feeds" icon="rss" href="/api/data-sources/rss-feeds">
+    150+ feed domains and categories
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Environment variable setup guide
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Complete endpoint documentation
+  </Card>
+</CardGroup>

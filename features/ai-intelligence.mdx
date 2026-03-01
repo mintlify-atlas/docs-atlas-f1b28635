@@ -1,0 +1,498 @@
+---
+title: AI Intelligence
+description: Multi-provider LLM summarization, local inference support, and hybrid threat classification
+---
+
+## Overview
+
+World Monitor integrates AI-powered analysis throughout the platform using a **4-tier provider fallback chain** that prioritizes local compute and gracefully degrades through cloud APIs.
+
+<Info>
+  **Privacy-First Design**: Local LLM support (Ollama/LM Studio) means intelligence analysis can run entirely on your hardware with zero data leaving your machine.
+</Info>
+
+## AI Summarization Chain
+
+The World Brief and country briefs use a cascading provider system:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Summarization Request                        │
+│  (headlines deduplicated by Jaccard similarity > 0.6)          │
+└───────────────────────┬─────────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────┐    timeout/error
+│  Tier 1: Ollama / LM Studio    │──────────────┐
+│  Local endpoint, no cloud       │               │
+│  Auto-discovered model          │               │
+└─────────────────────────────────┘               │
+                                                  ▼
+                                   ┌─────────────────────────────┐    timeout/error
+                                   │  Tier 2: Groq               │──────────────┐
+                                   │  Llama 3.1 8B, temp 0.3     │               │
+                                   │  Fast cloud inference        │               │
+                                   └─────────────────────────────┘               │
+                                                                                 ▼
+                                                                  ┌─────────────────────────────┐    timeout/error
+                                                                  │  Tier 3: OpenRouter          │──────────────┐
+                                                                  │  Multi-model fallback        │               │
+                                                                  └─────────────────────────────┘               │
+                                                                                                                ▼
+                                                                                                 ┌──────────────────────────┐
+                                                                                                 │  Tier 4: Browser T5      │
+                                                                                                 │  Transformers.js (ONNX)  │
+                                                                                                 │  No network required     │
+                                                                                                 └──────────────────────────┘
+```
+
+### Fallback Behavior
+
+<Tabs>
+  <Tab title="Tier 1: Local LLM">
+    **Ollama / LM Studio**
+    
+    - Communicates via OpenAI-compatible `/v1/chat/completions`
+    - Auto-discovers available models from local instance
+    - Filters out embedding-only models
+    - Default model: `llama3.1:8b`
+    
+    **Configuration** (Desktop app):
+    ```
+    Settings → LLMs tab → Ollama endpoint
+    Default: http://localhost:11434
+    ```
+    
+    <Note>
+      Local inference is **private by default** - no API keys, no telemetry, no data leaves your machine.
+    </Note>
+  </Tab>
+  
+  <Tab title="Tier 2: Groq">
+    **Groq Cloud API**
+    
+    - Model: Llama 3.1 8B
+    - Temperature: 0.3 (factual output)
+    - Timeout: 5 seconds
+    - Fast cloud inference
+    
+    Requires API key:
+    - Web: Feature toggle in settings
+    - Desktop: Settings → API Keys tab
+  </Tab>
+  
+  <Tab title="Tier 3: OpenRouter">
+    **OpenRouter Multi-Model Gateway**
+    
+    - Fallback for Groq failures
+    - Access to multiple model providers
+    - Timeout: 5 seconds
+    
+    Requires OpenRouter API key.
+  </Tab>
+  
+  <Tab title="Tier 4: Browser T5">
+    **Transformers.js (ONNX)**
+    
+    - Runs entirely in browser via WebAssembly
+    - Model: T5-small (60M parameters)
+    - No network required after initial download
+    - Automatic fallback when all APIs fail
+    
+    ```typescript
+    // From src/services/summarization.ts
+    const combinedText = headlines.slice(0, 5).map(h => h.slice(0, 80)).join('. ');
+    const prompt = `Summarize the most important headline in 2 concise sentences`;
+    const [summary] = await mlWorker.summarize([prompt]);
+    ```
+    
+    <Info>
+      Browser T5 ensures the dashboard always produces some analysis, even without any API keys configured.
+    </Info>
+  </Tab>
+</Tabs>
+
+## Headline Deduplication
+
+Before sending to any LLM, headlines are deduplicated:
+
+```typescript
+// Word-overlap similarity (Jaccard index)
+// Near-duplicates (>60% overlap) are merged
+// Reduces prompt by 20-40%
+// Prevents LLM from wasting tokens on repeated stories
+```
+
+**Example:**
+- Input: "Russian forces advance in Bakhmut" (Source A)
+- Input: "Russian troops push forward in Bakhmut region" (Source B)
+- Output: Single deduplicated headline
+
+## Redis Caching
+
+All API-tier summaries are cached server-side:
+
+```typescript
+// Cache key structure
+const cacheKey = `summary:v3:${mode}:${variant}:${lang}:${hash}`;
+// TTL: 24 hours
+```
+
+**Benefits:**
+- Same headlines viewed by 1,000 users → **1 LLM call**
+- Instant results for cached queries
+- Reduced API costs
+- Better performance
+
+<Tip>
+  The first user to view a news configuration triggers the LLM call. All subsequent viewers get instant cached results.
+</Tip>
+
+## Variant-Aware Prompting
+
+System prompts adapt to the active dashboard variant:
+
+```typescript
+// From server/worldmonitor/news/v1/handler.ts
+switch (variant) {
+  case 'full':
+    // Emphasize conflict escalation, diplomatic shifts
+    break;
+  case 'tech':
+    // Focus on funding rounds, AI breakthroughs, product launches
+    break;
+  case 'finance':
+    // Highlight market movements, central bank signals, trading
+    break;
+}
+```
+
+## Language-Aware Output
+
+When the UI language is non-English:
+
+```typescript
+// System prompt includes:
+"Generate the summary in ${lang} language."
+
+// Supported languages:
+// French, Spanish, German, Italian, Polish, Portuguese, Dutch,
+// Swedish, Russian, Arabic, Chinese, Japanese, Turkish, Thai, Vietnamese
+```
+
+<Note>
+  LLM translation enables cross-language intelligence gathering - read sources in one language, get summaries in another.
+</Note>
+
+## Local Model Discovery
+
+The desktop app automatically discovers available Ollama/LM Studio models:
+
+```typescript
+// Settings panel queries local endpoint:
+// 1. Try Ollama native: /api/tags
+// 2. Fall back to OpenAI-compatible: /v1/models
+// 3. Filter out embedding models
+// 4. Populate dropdown
+```
+
+**Manual Fallback:**
+- If discovery fails, text input appears
+- Enter model name directly
+- Example: `llama3.1:8b`, `mistral:7b`, `codellama:13b`
+
+## Threat Classification Pipeline
+
+Every news item passes through a **3-stage hybrid classifier**:
+
+<Tabs>
+  <Tab title="Stage 1: Keyword">
+    **Instant Pattern Matching**
+    
+    - ~120 threat keywords organized by severity:
+      - Critical
+      - High
+      - Medium
+      - Low
+      - Info
+    
+    - 14 event categories:
+      - conflict, protest, disaster, diplomatic, economic,
+      - terrorism, cyber, health, environmental, military,
+      - crime, infrastructure, tech, general
+    
+    ```typescript
+    // Word-boundary regex prevents false positives
+    // "war" won't match "award"
+    // "ai" won't match "train"
+    ```
+    
+    **Output:**
+    ```typescript
+    {
+      severity: 'high',
+      category: 'conflict',
+      confidence: 0.85,
+      source: 'keyword'
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Stage 2: Browser ML">
+    **Transformers.js NER + Sentiment**
+    
+    Runs asynchronously in Web Worker:
+    - Named Entity Recognition
+    - Sentiment analysis
+    - Topic classification
+    
+    **No server dependency** - all in-browser.
+    
+    ```typescript
+    // From src/workers/ml.worker.ts
+    // Provides second opinion without API call
+    ```
+    
+    Controllable via "Browser Local Model" toggle:
+    - Disabled: No ONNX download, no WebGL memory allocation
+    - Enabled: Worker initializes immediately
+  </Tab>
+  
+  <Tab title="Stage 3: LLM Classifier">
+    **High-Confidence Override**
+    
+    - Headlines batched into queue
+    - Parallel RPC calls to configured LLM
+    - Provider: Groq Llama 3.1 8B (temp 0) or Ollama
+    - Results cached in Redis (24h TTL)
+    
+    ```typescript
+    // LLM result overrides keyword only if confidence higher
+    if (llmResult.confidence > keywordResult.confidence) {
+      return llmResult;
+    }
+    ```
+    
+    **Automatic Pause:**
+    - On 500-series errors, queue pauses
+    - Exponential backoff prevents wasting API quota
+    - Resumes when service recovers
+  </Tab>
+</Tabs>
+
+## UI Never Blocks
+
+Classification uses progressive enhancement:
+
+1. News items render **immediately** with keyword classification
+2. ML results arrive within seconds, update UI
+3. LLM results arrive, override if more confident
+4. Each item shows `source` tag: `keyword`, `ml`, or `llm`
+
+<Info>
+  Users never see a blank screen waiting for AI. Keyword results are instant, AI refinements layer on progressively.
+</Info>
+
+## Country Brief AI Analysis
+
+Clicking any country opens a full intelligence dossier with AI-generated analysis:
+
+```typescript
+// From country brief logic
+const analysis = await summarizeArticle({
+  headlines: countryNews,
+  geoContext: countryName,
+  mode: 'country_brief',
+  variant: SITE_VARIANT,
+  lang: currentLanguage
+});
+```
+
+**AI Analysis Includes:**
+- Situation summary (2-3 paragraphs)
+- Key developments
+- Risk assessment
+- Inline citation anchors `[1]`–`[8]` that scroll to sources
+
+## Focal Point Detection
+
+Correlates entities across multiple data streams:
+
+```typescript
+// From src/services/focal-point-detector.ts
+// Identifies convergence zones:
+// - News mentions
+// - Military activity
+// - Protests
+// - Outages
+// - Markets
+```
+
+When 3+ signals converge in same geographic area → **Focal Point Alert**
+
+## Trending Keyword Spike Detection
+
+```typescript
+// 2-hour rolling window vs 7-day baseline
+// Flags surging terms across RSS feeds
+// CVE/APT entity extraction
+// Auto-summarization of trending topics
+```
+
+**Spike Classification:**
+- 2x baseline: Minor spike
+- 5x baseline: Major spike
+- 10x baseline: Viral spike
+
+## Performance Optimizations
+
+### Timeout Cascade
+
+Each tier has a 5-second timeout:
+
+```typescript
+// If Ollama takes >5s, automatically try Groq
+// If Groq takes >5s, automatically try OpenRouter
+// If OpenRouter takes >5s, fall back to Browser T5
+```
+
+**Total worst-case**: 20 seconds before Browser T5 renders
+**Typical**: 0-2 seconds (cached or fast LLM)
+
+### Circuit Breaker
+
+```typescript
+// From src/services/summarization.ts
+const summaryBreaker = createCircuitBreaker({
+  name: 'News Summarization',
+  cacheTtlMs: 0
+});
+```
+
+Prevents cascading failures:
+- Tracks error rates per provider
+- Opens circuit after repeated failures
+- Skips to next tier immediately
+
+## Desktop App Settings
+
+Settings window (Cmd+,) has dedicated **LLMs tab**:
+
+```
+Settings → LLMs
+├── Ollama Endpoint (e.g., http://localhost:11434)
+├── Model Selection (auto-discovered dropdown)
+├── Groq API Key
+└── OpenRouter API Key
+```
+
+**Cross-Window Secret Sync:**
+- Saving in Settings writes to OS keychain
+- Broadcasts localStorage change event
+- Main window hot-reloads secrets
+- **No app restart required**
+
+## API Key Storage
+
+<Tabs>
+  <Tab title="Desktop App">
+    **OS Keychain Integration**
+    
+    - macOS: Keychain Access
+    - Windows: Credential Manager
+    - Linux: Secret Service API
+    
+    All secrets stored in single JSON blob:
+    ```
+    Keychain entry: secrets-vault
+    ```
+    
+    **Reduces authorization prompts:**
+    - Old: 20+ prompts (one per key)
+    - New: 1 prompt per launch
+  </Tab>
+  
+  <Tab title="Web App">
+    **Feature Toggles**
+    
+    - Stored in localStorage
+    - API keys entered per-session
+    - No persistent storage (privacy)
+    
+    Toggle providers:
+    - AI/Ollama
+    - AI/Groq
+    - AI/OpenRouter
+  </Tab>
+</Tabs>
+
+## Browser-Side ML Worker
+
+The ML worker runs in a separate Web Worker:
+
+```typescript
+// From src/workers/ml.worker.ts
+import { pipeline } from '@xenova/transformers';
+
+// Tasks:
+// - NER (Named Entity Recognition)
+// - Sentiment analysis
+// - Summarization (T5)
+```
+
+**Memory Management:**
+- Toggle in AI Flow settings
+- When disabled: Worker never initializes
+- When enabled mid-session: Initializes immediately
+- When disabled: Terminates worker
+
+<Note>
+  Disabling the browser model saves ~200MB of WebGL memory and eliminates ONNX model downloads.
+</Note>
+
+## Best Practices
+
+<Tip>
+  **For Maximum Privacy**
+  
+  1. Install Ollama on your machine
+  2. Pull a model: `ollama pull llama3.1:8b`
+  3. Configure endpoint in Settings → LLMs
+  4. Disable Groq and OpenRouter toggles
+  5. All analysis runs locally
+</Tip>
+
+<Tip>
+  **For Best Performance**
+  
+  1. Use Groq (fastest cloud API)
+  2. Keep browser ML enabled (instant NER)
+  3. Ollama as backup for when offline
+  4. OpenRouter for model variety
+</Tip>
+
+## Troubleshooting
+
+**Ollama not connecting?**
+- Verify Ollama is running: `ollama serve`
+- Check endpoint: `http://localhost:11434`
+- Test models available: `ollama list`
+- Check CORS (desktop app handles automatically)
+
+**Summaries always using Browser T5?**
+- Verify API keys are configured
+- Check provider toggles enabled
+- Look for errors in browser console
+- Confirm internet connectivity (for cloud APIs)
+
+**Slow summarization?**
+- First request triggers LLM (slow)
+- Subsequent requests instant (cached)
+- Consider local Ollama for consistent speed
+- Browser T5 is slowest but always works
+
+## Related Features
+
+- [Live News](/features/live-news) - AI classifies and summarizes news
+- [Desktop App](/features/desktop-app) - Local LLM integration
+- Data Layers - AI enhances geographic correlation

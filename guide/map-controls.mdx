@@ -1,0 +1,365 @@
+---
+title: Map Controls
+description: Layer toggles, time filtering, zoom controls, and 3D perspective
+---
+
+World Monitor provides granular control over what data appears on the map and how it's displayed. Master these controls to create custom intelligence views.
+
+## Layer Toggle System
+
+World Monitor includes **40+ toggleable data layers** organized by category.
+
+### Layer Categories
+
+<AccordionGroup>
+  <Accordion title="Geopolitical Layers">
+    - **Conflicts** - Active conflict zones (UCDP + ACLED)
+    - **Hotspots** - Intelligence hotspots with news correlation
+    - **Protests** - Social unrest events (ACLED + GDELT)
+    - **Natural Disasters** - Earthquakes, floods, storms (USGS, GDACS, NASA EONET)
+    - **Sanctions** - Sanctioned countries and regimes
+    - **Weather Alerts** - Severe weather warnings
+    - **GPS Jamming** - GNSS interference zones from ADS-B analysis
+  </Accordion>
+  
+  <Accordion title="Military & Strategic">
+    - **Military Bases** - 220+ bases from 9 operators
+    - **Military Flights** - Live ADS-B aircraft tracking
+    - **Naval Vessels** - AIS maritime tracking
+    - **Nuclear Facilities** - Nuclear power plants and reactors
+    - **Irradiators** - Gamma irradiation facilities
+    - **APT Groups** - Cyber threat actor locations
+    - **Spaceports** - Launch facilities worldwide
+  </Accordion>
+  
+  <Accordion title="Infrastructure">
+    - **Undersea Cables** - Cable routes, landing points, health status
+    - **Pipelines** - Oil and gas pipeline networks
+    - **Datacenters** - 111 major AI datacenter clusters
+    - **Ports** - 83 strategic ports (container, oil, LNG, naval)
+    - **Outages** - Internet outages (Cloudflare Radar)
+    - **Fires** - NASA FIRMS satellite thermal detection
+    - **Trade Routes** - 19 global shipping lanes
+    - **Airport Delays** - 128 monitored airports
+  </Accordion>
+  
+  <Accordion title="Market Layers (Finance Variant)">
+    - **Stock Exchanges** - 92 global exchanges with trading hours
+    - **Financial Centers** - 19 GFCI-ranked financial hubs
+    - **Central Banks** - 13 major central banks + BIS/IMF
+    - **Commodity Hubs** - 10 commodity exchanges and physical hubs
+    - **Gulf Investments** - 64 Saudi/UAE FDI projects globally
+  </Accordion>
+  
+  <Accordion title="Tech Layers (Tech Variant)">
+    - **Tech HQs** - Big Tech, unicorns, public companies
+    - **Startup Hubs** - Ecosystem activity and funding
+    - **Cloud Regions** - AWS, Azure, GCP data centers
+    - **Accelerators** - YC, Techstars, 500 Startups
+    - **Tech Events** - Upcoming conferences
+  </Accordion>
+</AccordionGroup>
+
+### Enabling/Disabling Layers
+
+<Steps>
+  <Step title="Open Layer Controls">
+    Locate the layer toggle section in the map sidebar (right side).
+  </Step>
+  <Step title="Click Layer Names">
+    Click any layer name to toggle it on (blue checkbox) or off (empty checkbox).
+  </Step>
+  <Step title="View Updates Instantly">
+    The map updates in real-time as you toggle layers.
+  </Step>
+  <Step title="Preference Saved">
+    Your layer preferences are saved to localStorage and restored on reload.
+  </Step>
+</Steps>
+
+<Tip>
+  Use the **Command Palette** (Cmd+K) for quick layer toggling. Type `layers:` to see preset combinations like `layers:military` or `layers:finance`.
+</Tip>
+
+## Layer Presets
+
+Quickly enable related layer groups:
+
+| Preset Command | Enabled Layers |
+|----------------|----------------|
+| `layers:military` | Bases, flights, vessels, nuclear |
+| `layers:finance` | Exchanges, financial centers, central banks |
+| `layers:infrastructure` | Cables, pipelines, datacenters, ports |
+| `layers:conflict` | Conflicts, protests, hotspots |
+| `layers:natural` | Earthquakes, weather, fires |
+
+Access via Command Palette (Cmd+K) or URL parameters:
+```
+?layers=conflicts,bases,nuclear,military
+```
+
+## Time Filtering
+
+Filter events by recency to focus on current developments:
+
+### Available Time Ranges
+
+<CardGroup cols={3}>
+  <Card title="1 Hour" icon="clock">
+    Breaking developments
+  </Card>
+  <Card title="6 Hours" icon="clock">
+    Recent activity
+  </Card>
+  <Card title="24 Hours" icon="clock">
+    Daily developments
+  </Card>
+  <Card title="48 Hours" icon="clock">
+    2-day window
+  </Card>
+  <Card title="7 Days" icon="clock">
+    Weekly trends
+  </Card>
+  <Card title="All" icon="clock">
+    No time filter
+  </Card>
+</CardGroup>
+
+### Using Time Filters
+
+<Steps>
+  <Step title="Locate Time Controls">
+    Find the time range buttons in the map sidebar.
+  </Step>
+  <Step title="Select a Range">
+    Click any time range button (1h, 6h, 24h, 48h, 7d, or all).
+  </Step>
+  <Step title="Map Updates">
+    Events outside the selected time window are hidden from the map.
+  </Step>
+  <Step title="URL Updates">
+    The time range is encoded in the URL: `?time=24h`
+  </Step>
+</Steps>
+
+<Info>
+  Time filtering applies to dynamic events (protests, conflicts, natural disasters, flights, vessels) but not to static infrastructure (bases, cables, datacenters).
+</Info>
+
+## Zoom Controls
+
+### Zoom Methods
+
+| Method | Action |
+|--------|--------|
+| **Mouse wheel** | Scroll up to zoom in, down to zoom out |
+| **Touch pinch** | Pinch to zoom in, spread to zoom out |
+| **+/- buttons** | Click sidebar buttons for precise control |
+| **Double-click** | Zoom in centered on click location |
+| **Cmd/Ctrl + Scroll** | Faster zoom (2x speed) |
+
+### Zoom Levels
+
+World Monitor supports zoom levels 0-20:
+
+- **0-2**: World view - shows country outlines and major events
+- **3-5**: Regional view - clusters begin separating
+- **6-10**: Country view - individual markers visible
+- **11-15**: City view - detailed infrastructure
+- **16-20**: Street level - maximum detail
+
+### Zoom-Adaptive Behavior
+
+<AccordionGroup>
+  <Accordion title="Progressive Layer Disclosure">
+    Detail layers appear only at appropriate zoom levels:
+    - **Military bases**: Visible at zoom ≥ 3, labels at zoom ≥ 5
+    - **Nuclear facilities**: Visible at zoom ≥ 2
+    - **Conflicts**: Visible at zoom ≥ 1, labels at zoom ≥ 3
+    - **Economic centers**: Visible at zoom ≥ 2
+  </Accordion>
+  
+  <Accordion title="Opacity Fading">
+    Marker opacity adjusts based on zoom:
+    - Zoom 0-2: 20% opacity (subtle presence)
+    - Zoom 3-5: 50% opacity (moderate visibility)
+    - Zoom 6+: 100% opacity (full visibility)
+    
+    This prevents information overload at world view.
+  </Accordion>
+  
+  <Accordion title="Label Deconfliction">
+    When multiple markers overlap:
+    - Highest-severity markers get priority
+    - Lower-priority labels are automatically hidden
+    - BREAKING badges always take precedence
+  </Accordion>
+</AccordionGroup>
+
+## 3D/Flat Toggle
+
+Switch between 3D globe and flat map perspectives:
+
+### 3D Globe Mode (Default)
+
+- WebGL-accelerated rendering
+- Pitch and rotation enabled
+- Realistic Earth curvature
+- Immersive visualization
+
+### Flat Map Mode
+
+- Traditional 2D Mercator projection
+- Easier distance estimation
+- Simpler navigation
+- Better for route planning
+
+<Steps>
+  <Step title="Locate Toggle Button">
+    Find the 3D/Flat toggle in the map controls sidebar.
+  </Step>
+  <Step title="Click to Switch">
+    Click the button to toggle between perspectives.
+  </Step>
+  <Step title="Preference Saved">
+    Your choice is saved and persists across sessions.
+  </Step>
+</Steps>
+
+<Info>
+  The 3D/flat preference is controlled by the `VITE_MAP_INTERACTION_MODE` environment variable in custom builds.
+</Info>
+
+## Advanced Controls
+
+### Reset View
+
+Quickly return to the default global view:
+
+1. Click the **Global** preset button
+2. Or press the **Reset** button (if available)
+3. Or reload the page without URL parameters
+
+### Lock Rotation (3D Mode)
+
+Prevent accidental rotation while panning:
+
+- Hold **Shift** while dragging to disable rotation
+- Release Shift to re-enable rotation
+
+### Tilt Control (3D Mode)
+
+Adjust the viewing angle:
+
+- **Ctrl/Cmd + Vertical drag**: Tilt the globe forward/backward
+- **Ctrl/Cmd + Horizontal drag**: Rotate the globe left/right
+
+## Performance Optimization
+
+### Reducing Visual Complexity
+
+If the map feels sluggish:
+
+<Steps>
+  <Step title="Disable Heavy Layers">
+    Turn off layers with many markers:
+    - Fires (NASA FIRMS can have 10,000+ hotspots)
+    - Protests (ACLED data is extensive)
+    - Flights (ADS-B tracking is real-time)
+  </Step>
+  <Step title="Use Time Filtering">
+    Select a shorter time range (1h or 6h) to reduce marker count.
+  </Step>
+  <Step title="Zoom In">
+    Higher zoom levels trigger clustering, reducing render load.
+  </Step>
+  <Step title="Switch to Flat Mode">
+    Flat map mode is less GPU-intensive than 3D globe.
+  </Step>
+</Steps>
+
+### WebGL Acceleration
+
+World Monitor uses deck.gl for 60fps rendering:
+
+- Hardware-accelerated via WebGL
+- Supports thousands of concurrent markers
+- Automatic LOD (level of detail) adjustment
+- Efficient cluster rendering
+
+<Warning>
+  If you see poor performance:
+  - Check browser GPU acceleration is enabled
+  - Update your graphics drivers
+  - Close other GPU-intensive tabs
+  - Consider the desktop app for better performance
+</Warning>
+
+## Layer URL Encoding
+
+Share specific layer configurations via URL:
+
+### Format
+
+```
+?layers=layer1,layer2,layer3
+```
+
+### Example URLs
+
+```bash
+# Military focus
+?view=mena&layers=bases,military,flights,nuclear
+
+# Infrastructure monitoring
+?layers=cables,pipelines,datacenters,outages
+
+# Natural disaster tracking
+?layers=natural,fires,weather,earthquakes
+
+# Finance markets
+?view=global&layers=exchanges,centralbanks,financialcenters
+```
+
+### Layer Names Reference
+
+| Layer ID | Description |
+|----------|-------------|
+| `conflicts` | Active conflicts |
+| `bases` | Military bases |
+| `hotspots` | Intelligence hotspots |
+| `nuclear` | Nuclear facilities |
+| `irradiators` | Gamma irradiators |
+| `sanctions` | Sanctioned countries |
+| `military` | Military flights |
+| `ais` | Naval vessels |
+| `protests` | Social unrest |
+| `pipelines` | Oil/gas pipelines |
+| `cables` | Undersea cables |
+| `datacenters` | AI datacenters |
+| `natural` | Natural disasters |
+| `fires` | Satellite fires |
+| `outages` | Internet outages |
+| `cyberThreats` | Cyber IOCs |
+| `weather` | Weather alerts |
+| `exchanges` | Stock exchanges (finance) |
+| `financialCenters` | Financial hubs (finance) |
+| `centralBanks` | Central banks (finance) |
+| `techHubs` | Startup hubs (tech) |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Panel Management" icon="table-columns" href="/guide/panels">
+    Customize panel layout and order
+  </Card>
+  <Card title="News Feeds" icon="newspaper" href="/guide/news-feeds">
+    Filter and monitor RSS feeds
+  </Card>
+  <Card title="Command Palette" icon="terminal" href="/guide/command-palette">
+    Quick layer commands and search
+  </Card>
+  <Card title="Video Streams" icon="video" href="/guide/video-streams">
+    Configure live video channels
+  </Card>
+</CardGroup>

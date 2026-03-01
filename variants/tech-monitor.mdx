@@ -1,0 +1,306 @@
+---
+title: Tech Monitor
+description: AI & tech industry dashboard tracking startups, cloud infrastructure, and cybersecurity
+---
+
+## Overview
+
+**Tech Monitor** is a specialized variant focused on the **AI & tech industry ecosystem**. It tracks tech giants, AI labs, startup funding rounds, cloud infrastructure, and tech events worldwide.
+
+<Info>
+  **Live Demo:** [tech.worldmonitor.app](https://tech.worldmonitor.app)
+</Info>
+
+---
+
+## Key Features
+
+### Tech Ecosystem Tracking
+
+- **Tech company HQs** (Big Tech, unicorns, public companies) plotted on the map
+- **Startup hubs** with funding data and ecosystem metrics
+- **Cloud regions** (AWS, Azure, GCP) with datacenter locations
+- **Accelerators** (Y Combinator, Techstars, 500 Startups) with batch tracking
+- **Upcoming tech conferences** with event calendar integration
+- **AI lab tracking** (OpenAI, Anthropic, DeepMind, Meta AI, Hugging Face)
+
+### Tech News Aggregation (100+ feeds)
+
+- **AI & ML:** TechCrunch, VentureBeat, MIT Tech Review, Hugging Face blog
+- **Developer news:** Hacker News, GitHub blog, Dev.to, Changelog
+- **Cybersecurity:** Krebs on Security, Dark Reading, CISA alerts
+- **Cloud & DevOps:** The New Stack, DevOps.com, InfoQ
+- **Startup ecosystems:** Crunchbase, Product Hunt, Y Combinator, Axios tech
+- **Venture capital:** a16z, Sequoia, First Round Review, Lenny's Newsletter
+- **Regional startup news:** EU Startups, Sifted, TechCabal (Africa), Tech in Asia
+
+### Infrastructure Monitoring
+
+- **111 AI datacenters** mapped globally with GPU cluster sizes
+- **Cloud provider regions** (AWS 33 regions, Azure 60+ regions, GCP 40+ zones)
+- **Tech layoff tracking** from Layoffs.fyi RSS feed
+- **Service status monitoring** (AWS, Azure, GCP, GitHub, OpenAI, Anthropic)
+
+### Market Intelligence
+
+- **Funding round analytics** with deal size and stage tracking
+- **Tech stock tracking** (FAANG, NASDAQ-100, tech-heavy indices)
+- **IPO tracker** with upcoming and recent tech IPOs
+- **Sector heatmap** showing tech subsector performance
+
+---
+
+## Variant-Specific Configuration
+
+### Build Command
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    npm run dev:tech
+    ```
+  </Tab>
+  <Tab title="Production Build">
+    ```bash
+    npm run build:tech
+    ```
+  </Tab>
+  <Tab title="Desktop App">
+    ```bash
+    npm run desktop:build:tech
+    ```
+  </Tab>
+</Tabs>
+
+### Metadata (vite.config.ts:77-100)
+
+```typescript
+tech: {
+  title: 'Tech Monitor - Real-Time AI & Tech Industry Dashboard',
+  description: 'Real-time AI and tech industry dashboard tracking tech giants, AI labs, startup ecosystems, funding rounds, and tech events worldwide.',
+  keywords: 'tech dashboard, AI industry, startup ecosystem, tech companies, AI labs, venture capital, tech events, tech conferences, cloud infrastructure, datacenters, tech layoffs, funding rounds, unicorns, FAANG, tech HQ, accelerators, Y Combinator, tech news',
+  url: 'https://tech.worldmonitor.app/',
+  siteName: 'Tech Monitor',
+  shortName: 'TechMonitor',
+  subject: 'AI, Tech Industry, and Startup Ecosystem Intelligence',
+  classification: 'Tech Dashboard, AI Tracker, Startup Intelligence',
+  categories: ['news', 'business'],
+  features: [
+    'Tech news aggregation',
+    'AI lab tracking',
+    'Startup ecosystem mapping',
+    'Tech HQ locations',
+    'Conference & event calendar',
+    'Cloud infrastructure monitoring',
+    'Datacenter mapping',
+    'Tech layoff tracking',
+    'Funding round analytics',
+    'Tech stock tracking',
+    'Service status monitoring',
+  ],
+}
+```
+
+---
+
+## Data Sources
+
+### Tech News Feeds (100+)
+
+<AccordionGroup>
+  <Accordion title="AI & Machine Learning">
+    - TechCrunch, VentureBeat, MIT Technology Review
+    - OpenAI blog, Anthropic blog, DeepMind blog
+    - Hugging Face blog, GitHub Next, arXiv (cs.AI, cs.LG)
+  </Accordion>
+
+  <Accordion title="Developer & Engineering">
+    - Hacker News, GitHub blog, Dev.to
+    - The New Stack, DevOps.com, InfoQ
+    - Lobsters, Changelog, Ars Technica
+  </Accordion>
+
+  <Accordion title="Startup Ecosystems">
+    - Crunchbase, Product Hunt, Y Combinator
+    - Axios tech, TechCabal, Tech in Asia
+    - EU Startups, Sifted, Tech.eu, Disrupt Africa
+  </Accordion>
+
+  <Accordion title="Venture Capital">
+    - a16z, Sequoia Capital, First Round Review
+    - Lenny's Newsletter, Stratechery, Both Sides of the Table
+    - SaaStr, NFX, Y Combinator
+  </Accordion>
+
+  <Accordion title="Cybersecurity">
+    - Krebs on Security, Dark Reading, Schneier on Security
+    - CISA alerts, ThreatPost, ZDNet Security
+  </Accordion>
+</AccordionGroup>
+
+### Real-Time APIs
+
+| Source | Data Type | Update Frequency |
+|--------|-----------|------------------|
+| **Crunchbase** | Funding rounds, acquisitions | Daily |
+| **Layoffs.fyi** | Tech layoffs RSS feed | Real-time |
+| **Finnhub** | Tech stock quotes | 1 minute |
+| **GitHub** | Repository activity, releases | Hourly |
+| **AWS Status** | Service health dashboard | Real-time |
+| **Cloudflare Radar** | Internet traffic patterns | Hourly |
+
+---
+
+## Map Layers
+
+Tech Monitor enables these map overlays:
+
+<CardGroup cols={2}>
+  <Card title="Tech HQs" icon="building">
+    FAANG, unicorns, and public tech companies
+  </Card>
+  <Card title="Datacenters" icon="server">
+    111 AI/cloud datacenter clusters worldwide
+  </Card>
+  <Card title="Cloud Regions" icon="cloud">
+    AWS, Azure, GCP region boundaries
+  </Card>
+  <Card title="Accelerators" icon="rocket">
+    Y Combinator, Techstars, 500 Startups locations
+  </Card>
+  <Card title="Tech Conferences" icon="calendar">
+    Upcoming events with registration links
+  </Card>
+  <Card title="Startup Hubs" icon="map-pin">
+    Ecosystem metrics by city (funding, exits)
+  </Card>
+</CardGroup>
+
+---
+
+## Tech-Specific Features
+
+### Tech Hub Index
+
+Each startup hub receives a composite score blending:
+
+- **Funding volume** (last 12 months)
+- **Unicorn density** (number of $1B+ companies)
+- **Exit velocity** (acquisitions + IPOs)
+- **Talent pipeline** (university proximity, tech talent pool)
+- **Accelerator presence** (YC, Techstars, 500 Startups)
+
+**Code reference:** `src/services/tech-hub-index.ts`
+
+### Layoff Tracker
+
+The dashboard ingests Layoffs.fyi RSS feed and correlates layoffs with:
+
+- Stock price movements (Finnhub API)
+- Company funding history (Crunchbase)
+- Prior layoff rounds (historical data)
+
+### Service Status Monitoring
+
+Real-time health checks for:
+
+- **Cloud providers:** AWS, Azure, GCP
+- **AI services:** OpenAI, Anthropic, Replicate
+- **Developer tools:** GitHub, npm, PyPI, Docker Hub
+- **CDNs:** Cloudflare, Fastly, Akamai
+
+---
+
+## Use Cases
+
+### Startup Founders
+
+- **Ecosystem analysis:** Compare funding activity across regions (SF vs. London vs. Singapore)
+- **Accelerator tracking:** Monitor YC/Techstars batch announcements
+- **Market timing:** Track tech stock indices and IPO windows
+
+### Venture Capitalists
+
+- **Deal flow intelligence:** Funding round announcements aggregated from 15+ sources
+- **Sector trends:** Identify emerging categories (AI agents, climate tech, fintech)
+- **Exit tracking:** IPO filings and M&A activity with deal size
+
+### Tech Recruiters
+
+- **Layoff alerts:** Real-time notifications of tech layoffs (Layoffs.fyi RSS)
+- **Company growth signals:** Funding rounds indicate hiring sprees
+- **Talent hubs:** Datacenter openings and cloud region launches signal new offices
+
+### Security Teams
+
+- **Vulnerability tracking:** CVE feeds from CISA, NVD, and GitHub Security Advisories
+- **Threat intelligence:** Cyber IOCs geo-located on the map
+- **Service disruptions:** Cloud outages that may impact SaaS dependencies
+
+---
+
+## Desktop vs. Web
+
+<Tabs>
+  <Tab title="Desktop App (Tauri)">
+    **Download:**
+    - [macOS Apple Silicon (.dmg)](https://worldmonitor.app/api/download?platform=macos-arm64&variant=tech)
+    - [macOS Intel (.dmg)](https://worldmonitor.app/api/download?platform=macos-x64&variant=tech)
+    - [Windows (.exe)](https://worldmonitor.app/api/download?platform=windows-exe&variant=tech)
+    - [Linux (.AppImage)](https://worldmonitor.app/api/download?platform=linux-appimage&variant=tech)
+
+    **Tech-Specific Settings:**
+    - API keys for Crunchbase, PitchBook, CB Insights
+    - GitHub Personal Access Token for private repo tracking
+    - Finnhub API key for tech stock quotes
+  </Tab>
+
+  <Tab title="Web App (PWA)">
+    **Access:**
+    - [tech.worldmonitor.app](https://tech.worldmonitor.app)
+
+    **Features:**
+    - Installable to home screen
+    - Offline map support (datacenter and tech HQ layers cached)
+    - Auto-updating service worker
+  </Tab>
+</Tabs>
+
+---
+
+## E2E Testing
+
+Tech Monitor has variant-specific regression tests:
+
+```bash
+# Run all Tech Monitor E2E tests
+npm run test:e2e:tech
+
+# Visual regression tests
+npm run test:e2e:visual:tech
+
+# Update golden screenshots
+npm run test:e2e:visual:update:tech
+```
+
+Test coverage includes:
+- Datacenter layer rendering
+- Tech HQ marker clustering
+- Funding round timeline accuracy
+- Layoff tracker deduplication
+
+---
+
+## Related Variants
+
+<CardGroup cols={3}>
+  <Card title="World Monitor" icon="globe" href="/variants/world-monitor">
+    Geopolitical intelligence
+  </Card>
+  <Card title="Finance Monitor" icon="chart-line" href="/variants/finance-monitor">
+    Markets & trading
+  </Card>
+  <Card title="Happy Monitor" icon="sun" href="/variants/happy-monitor">
+    Positive news
+  </Card>
+</CardGroup>

@@ -1,0 +1,389 @@
+---
+title: Local LLM Setup
+description: Configure Ollama or LM Studio for privacy-first AI inference
+icon: brain
+---
+
+World Monitor supports **local AI inference** via Ollama or LM Studio. All summarization runs on your hardware — no data leaves your machine, no API keys required.
+
+## Why Local LLMs?
+
+**Privacy**: News headlines never sent to third-party APIs  
+**Cost**: Zero API fees, unlimited usage  
+**Speed**: No network latency for inference  
+**Offline**: Works without internet connection (after model download)  
+**Control**: Choose your own models and parameters
+
+## Ollama Setup
+
+### 1. Install Ollama
+
+Download from https://ollama.com/download:
+
+<CodeGroup>
+
+```bash macOS / Linux
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+```powershell Windows
+winget install Ollama.Ollama
+```
+
+</CodeGroup>
+
+Verify installation:
+
+```bash
+ollama --version
+```
+
+### 2. Download a Model
+
+Recommended models for summarization:
+
+```bash
+# Recommended: Fast and accurate (4.7GB)
+ollama pull llama3.1:8b
+
+# Lightweight option (4.1GB)
+ollama pull mistral
+
+# High quality (5.5GB)
+ollama pull qwen2.5:7b
+
+# Compact option (1.6GB)
+ollama pull gemma2:2b
+```
+
+<Note>
+  Model size = approximate disk + RAM usage. 8GB+ RAM recommended for 7-8B models.
+</Note>
+
+### 3. Start Ollama Server
+
+Ollama runs as a background service after installation. Verify it's running:
+
+```bash
+curl http://localhost:11434/api/tags
+```
+
+You should see a JSON response with available models.
+
+### 4. Configure World Monitor
+
+<Tabs>
+  <Tab title="Desktop App">
+    1. Open Settings (Cmd+, or Ctrl+,)
+    2. Navigate to **AI & Summarization** tab
+    3. Enter Ollama URL: `http://localhost:11434`
+    4. Select model from dropdown (auto-discovered)
+    5. Click **Save & Verify**
+    
+    The desktop app automatically:
+    - Discovers available models
+    - Filters out embedding-only models
+    - Validates the endpoint
+    - Sets the model as the primary provider
+  </Tab>
+  
+  <Tab title="Web / Self-Hosted">
+    Add to `.env.local`:
+    
+    ```bash
+    OLLAMA_API_URL=http://localhost:11434
+    OLLAMA_MODEL=llama3.1:8b
+    ```
+    
+    Restart the development server:
+    
+    ```bash
+    npm run dev
+    ```
+  </Tab>
+</Tabs>
+
+## LM Studio Setup
+
+### 1. Install LM Studio
+
+Download from https://lmstudio.ai/ (available for macOS, Windows, Linux).
+
+### 2. Download a Model
+
+1. Open LM Studio
+2. Navigate to **Discover** tab
+3. Search for models:
+   - `llama-3.1-8b-instruct` (recommended)
+   - `mistral-7b-instruct`
+   - `qwen2.5-7b-instruct`
+4. Click **Download**
+
+### 3. Start Local Server
+
+1. Navigate to **Local Server** tab (icon in left sidebar)
+2. Select your downloaded model
+3. Click **Start Server**
+4. Server starts on `http://localhost:1234` by default
+
+### 4. Configure World Monitor
+
+<Tabs>
+  <Tab title="Desktop App">
+    1. Open Settings (Cmd+, or Ctrl+,)
+    2. Navigate to **AI & Summarization** tab
+    3. Enter LM Studio URL: `http://localhost:1234`
+    4. Select model from dropdown (auto-discovered via `/v1/models`)
+    5. Click **Save & Verify**
+  </Tab>
+  
+  <Tab title="Web / Self-Hosted">
+    Add to `.env.local`:
+    
+    ```bash
+    OLLAMA_API_URL=http://localhost:1234
+    OLLAMA_MODEL=llama-3.1-8b-instruct
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  LM Studio uses the OpenAI-compatible `/v1/chat/completions` endpoint, same as Ollama. The dashboard auto-detects the server type.
+</Note>
+
+## Model Selection Guide
+
+| Model | Size | RAM Required | Speed | Quality | Best For |
+|-------|------|--------------|-------|---------|----------|
+| `llama3.1:8b` | 4.7GB | 8GB+ | Fast | Excellent | **Recommended** |
+| `mistral` | 4.1GB | 6GB+ | Very Fast | Good | Low-resource systems |
+| `qwen2.5:7b` | 5.5GB | 8GB+ | Medium | Excellent | High-quality summaries |
+| `gemma2:2b` | 1.6GB | 4GB+ | Very Fast | Fair | Ultra-lightweight |
+| `gemma2:9b` | 5.4GB | 10GB+ | Slow | Excellent | Maximum quality |
+
+<Warning>
+  Avoid embedding models (e.g., `nomic-embed-text`, `all-minilm`). The dashboard automatically filters these out.
+</Warning>
+
+## Advanced Configuration
+
+### Custom Ollama Port
+
+If Ollama is running on a different port:
+
+```bash
+OLLAMA_HOST=0.0.0.0:8080 ollama serve
+```
+
+Then configure:
+
+```bash
+OLLAMA_API_URL=http://localhost:8080
+```
+
+### Remote Ollama Server
+
+Run Ollama on a different machine:
+
+```bash
+# On the remote machine
+OLLAMA_HOST=0.0.0.0:11434 ollama serve
+```
+
+Configure the client:
+
+```bash
+OLLAMA_API_URL=http://192.168.1.100:11434
+```
+
+<Warning>
+  Do **not** expose Ollama to the public internet without authentication. Use SSH tunneling or VPN for remote access.
+</Warning>
+
+### Custom Token Limit
+
+Override the maximum tokens for summaries:
+
+```bash
+OLLAMA_MAX_TOKENS=500  # Default: 300
+```
+
+### Model Parameters
+
+Ollama models use default parameters optimized for summarization:
+
+- **Temperature**: 0.3 (factual, low creativity)
+- **Max Tokens**: 300 (concise summaries)
+- **Stop Sequences**: None
+
+To customize, edit `server/worldmonitor/news/v1/_shared.ts:166`.
+
+## Desktop Settings
+
+The desktop app provides a **visual model selector**:
+
+1. Open Settings (Cmd+, or Ctrl+,)
+2. Navigate to **AI & Summarization**
+3. Enter Ollama/LM Studio URL
+4. Click outside the input field
+5. Model dropdown populates automatically
+6. Select your preferred model
+7. Click **Save & Verify**
+
+**Model discovery process**:
+
+1. Tries Ollama native endpoint: `GET /api/tags`
+2. Falls back to OpenAI-compatible: `GET /v1/models`
+3. Filters out embedding models (name contains `embed`)
+4. Populates dropdown with valid models
+5. If discovery fails, shows manual text input
+
+**Secret storage**:
+
+- **macOS**: Keychain Access (`secrets-vault` entry)
+- **Windows**: Credential Manager
+- **Linux**: Secret Service API
+
+**Cross-window sync**:
+
+Saving in Settings broadcasts a `localStorage` event. The main dashboard hot-reloads secrets without restart.
+
+## Fallback Chain
+
+AI summarization uses a 4-tier fallback:
+
+```
+1. Ollama/LM Studio (local) → timeout: 5s
+2. Groq (cloud) → timeout: 5s
+3. OpenRouter (cloud) → timeout: 5s
+4. Transformers.js (browser) → no timeout
+```
+
+Each tier attempts inference. On failure/timeout, the chain advances to the next provider.
+
+<Note>
+  Tier 1 (local) is **always attempted first** when `OLLAMA_API_URL` is configured, even if cloud keys are present.
+</Note>
+
+## Performance Tuning
+
+### GPU Acceleration
+
+Ollama automatically uses GPU if available:
+
+- **NVIDIA**: CUDA (automatic)
+- **Apple Silicon**: Metal (automatic)
+- **AMD**: ROCm (requires manual setup)
+
+### RAM Optimization
+
+If you see OOM errors, use smaller quantization:
+
+```bash
+# 4-bit quantization (lower quality, less RAM)
+ollama pull llama3.1:8b-q4_0
+
+# 5-bit quantization (balanced)
+ollama pull llama3.1:8b-q5_0
+```
+
+### Concurrent Requests
+
+Ollama handles 1 request at a time by default. For higher concurrency:
+
+```bash
+OLLAMA_NUM_PARALLEL=4 ollama serve
+```
+
+## Troubleshooting
+
+### "Ollama endpoint unreachable"
+
+1. Verify Ollama is running:
+   ```bash
+   curl http://localhost:11434/api/tags
+   ```
+2. Check firewall settings
+3. Ensure correct port in `OLLAMA_API_URL`
+
+### "No models available"
+
+1. Download at least one model:
+   ```bash
+   ollama pull llama3.1:8b
+   ```
+2. Verify models are listed:
+   ```bash
+   ollama list
+   ```
+
+### "Model not found"
+
+Model name in config doesn't match Ollama:
+
+```bash
+# List available models
+ollama list
+
+# Update config to match exact name
+OLLAMA_MODEL=llama3.1:8b
+```
+
+### Slow inference
+
+1. Check GPU utilization:
+   ```bash
+   nvidia-smi  # NVIDIA
+   # or
+   sudo powermetrics --samplers gpu_power  # Apple Silicon
+   ```
+2. Use smaller model (`mistral` vs `llama3.1:8b`)
+3. Enable GPU acceleration if not already active
+
+### High memory usage
+
+Ollama keeps models in RAM. To unload:
+
+```bash
+# Unload all models
+ollama stop
+
+# Or restart Ollama service
+sudo systemctl restart ollama  # Linux
+```
+
+## Security Considerations
+
+<Warning>
+  **Do not expose Ollama to the public internet**. It has no built-in authentication.
+</Warning>
+
+**Recommended setup**:
+
+- Bind to `localhost` only (default)
+- Use SSH tunneling for remote access
+- Run behind a reverse proxy with auth (Nginx, Caddy)
+
+**Desktop app security**:
+
+- Sidecar API protected by session token
+- Token rotates on each app launch
+- Secrets stored in OS keychain, never in plaintext
+
+## OpenAI-Compatible Servers
+
+Any server implementing `/v1/chat/completions` works:
+
+- **llama.cpp server**: `./server -m model.gguf --port 8080`
+- **vLLM**: `vllm serve model_name --port 8080`
+- **text-generation-webui**: Enable OpenAI extension
+- **LocalAI**: Compatible out of the box
+
+Configure the same way:
+
+```bash
+OLLAMA_API_URL=http://localhost:8080
+OLLAMA_MODEL=your_model_name
+```
+
+The dashboard detects the server type automatically via endpoint discovery.

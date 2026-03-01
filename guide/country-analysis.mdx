@@ -1,0 +1,256 @@
+---
+title: Country Analysis
+description: In-depth intelligence briefs for any country with CII scores and exportable reports
+---
+
+Click any country on the globe to open a **full-page intelligence dossier** — a comprehensive analysis synthesizing news, threat signals, market data, and infrastructure exposure.
+
+## Opening a Country Brief
+
+<Steps>
+  <Step title="Click a country on the map">
+    The map uses local geometry detection (polygon ray-casting) for instant country resolution — no network latency.
+  </Step>
+  
+  <Step title="Or use Cmd+K command palette">
+    Press **Cmd+K** (Mac) or **Ctrl+K** (Windows/Linux), then type a country name. All ~250 ISO countries are searchable with flag emoji icons.
+    
+    **Search aliases**: Typing "kremlin" or "putin" finds Russia, "pentagon" finds USA, etc.
+  </Step>
+  
+  <Step title="Brief loads in full-screen view">
+    A two-column layout displays all intelligence modules for that country.
+  </Step>
+</Steps>
+
+## Country Instability Index (CII)
+
+Every country receives a **real-time instability score (0–100)** computed from four components:
+
+<CardGroup cols={2}>
+  <Card title="Unrest" icon="users">
+    **20% weight**
+    
+    Protests scored logarithmically for democracies (routine protests don't trigger), linearly for authoritarian states (every protest is significant).
+    
+    Boosted for:
+    - Fatalities
+    - Internet outages during protests
+  </Card>
+  
+  <Card title="Conflict" icon="gun">
+    **20% weight**
+    
+    Active conflict zones with escalation tracking (UCDP + ACLED data).
+    
+    Countries with active wars (1,000+ battle deaths/year) receive automatic floor scores.
+  </Card>
+  
+  <Card title="Security" icon="shield">
+    **20% weight**
+    
+    - Own military flights: 3pts each
+    - Own naval vessels: 5pts each
+    - Foreign military presence: **doubled weight**
+    - GPS/GNSS jamming: up to +35pts
+    - OREF rocket alerts (Israel): up to +50pts
+  </Card>
+  
+  <Card title="Information" icon="newspaper">
+    **20% weight**
+    
+    News mention frequency weighted by event severity, log-scaled for high-volume countries.
+  </Card>
+</CardGroup>
+
+### Baseline Risk
+
+The remaining **40% weight** comes from pre-configured baseline risk profiles:
+
+- **23 curated tier-1 nations** (US, Russia, China, Ukraine, Iran, Israel, Taiwan, North Korea, etc.) have individually tuned baselines
+- **All other countries** receive a universal default baseline of **15** when any event data is detected
+
+### Additional Boosts
+
+- **Travel advisories** — Do-Not-Travel warnings force CII ≥ 60
+- **Hotspot proximity** — Being near a conflict zone increases the score
+- **Focal point urgency** — When a country appears in convergence alerts
+- **Conflict-zone floors** — Ukraine ≥ 55, Syria ≥ 50, Yemen ≥ 48
+
+<Tip>
+The CII score updates in real-time as new events are detected. Refresh the brief to see the latest calculation.
+</Tip>
+
+## Brief Layout
+
+### Left Column
+
+<Steps>
+  <Step title="Instability Index Ring">
+    An animated SVG score ring (0–100) with:
+    - **Color-coded severity**: Green (0–30) → Yellow (31–60) → Red (61–100)
+    - **Four component bars**: Unrest, Conflict, Security, Information
+    - **Trend indicator**: ↑ rising, ↓ falling, → stable
+  </Step>
+  
+  <Step title="AI-Generated Intelligence Brief">
+    A narrative analysis synthesized by your configured LLM (Ollama → Groq → OpenRouter fallback).
+    
+    **Inline citations**: Click `[1]`–`[8]` anchors to scroll to the corresponding news source below.
+  </Step>
+  
+  <Step title="Top News (8 headlines)">
+    The most relevant headlines for this country, filtered using:
+    
+    - **Alias matching** — Each country has a curated alias map (e.g., `US → ["united states", "american", "washington", "pentagon", "biden", "trump"]`)
+    - **Negative-match algorithm** — If another country's alias appears earlier in the headline, the headline is excluded (prevents "Washington sanctions Venezuela" from appearing in the US brief)
+    - **Threat-level color coding** — Critical (red), High (orange), Medium (yellow), Low (blue)
+  </Step>
+</Steps>
+
+### Right Column
+
+<Steps>
+  <Step title="Active Signals (Real-time Chips)">
+    Live indicators with counts:
+    - 🚨 Protests
+    - ✈️ Military aircraft
+    - ⚓ Naval vessels
+    - 🌐 Internet outages
+    - 🌍 Earthquakes
+    - 🚶 Displacement flows
+    - 🌡️ Climate stress
+    - ⚔️ Conflict events
+    - 📈 Stock market index (1-week change)
+  </Step>
+  
+  <Step title="7-Day Event Timeline">
+    A D3.js-rendered chart with 4 severity-coded lanes:
+    - **Protest** (blue)
+    - **Conflict** (red)
+    - **Natural** (green)
+    - **Military** (gray)
+    
+    Hover over events for detailed tooltips. The timeline is responsive and resizes with the window.
+  </Step>
+  
+  <Step title="Prediction Markets">
+    Top 3 Polymarket contracts by volume, with:
+    - Probability bars
+    - External links to Polymarket
+  </Step>
+  
+  <Step title="Infrastructure Exposure">
+    Critical assets within 600km of the country centroid, ranked by distance:
+    - Pipelines
+    - Undersea cables
+    - AI datacenters
+    - Military bases
+    - Nuclear facilities
+    - Strategic ports
+  </Step>
+</Steps>
+
+## Exporting Country Data
+
+Every country brief is exportable in multiple formats:
+
+<Tabs>
+  <Tab title="JSON">
+    **Structured data** with all scores, signals, and headlines.
+    
+    ```json
+    {
+      "country": "Ukraine",
+      "cii": 73,
+      "components": {
+        "unrest": 18,
+        "conflict": 42,
+        "security": 31,
+        "information": 28
+      },
+      "signals": {
+        "protests": 12,
+        "militaryFlights": 8,
+        "conflicts": 23
+      },
+      "news": [...],
+      "timeline": [...]
+    }
+    ```
+    
+    **Use case**: API integration, automated analysis, data pipelines
+  </Tab>
+  
+  <Tab title="CSV">
+    **Flattened tabular format** for spreadsheet analysis.
+    
+    ```csv
+    Country,CII,Unrest,Conflict,Security,Information,Protests,Flights,Vessels
+    Ukraine,73,18,42,31,28,12,8,3
+    ```
+    
+    **Use case**: Excel analysis, data science, reporting
+  </Tab>
+  
+  <Tab title="PNG">
+    **Rendered image** of the entire brief with CII ring, signals, and news.
+    
+    **Use case**: Reports, presentations, social sharing
+  </Tab>
+  
+  <Tab title="PDF (Print)">
+    Click the **Print** button to trigger the browser's native print dialog.
+    
+    **Use case**: Archival, offline reports, documentation
+  </Tab>
+</Tabs>
+
+<Tip>
+All export formats include a timestamp and are named with the country code (e.g., `ukraine-brief-2026-03-01.json`).
+</Tip>
+
+## Universal Country Coverage
+
+<Info>
+**Every country with incoming event data receives a live CII score automatically** — not just the 23 curated tier-1 nations.
+</Info>
+
+Clicking any country opens a full brief with available data:
+
+- **Curated countries** (US, Russia, China, etc.) — Individually tuned baselines, custom keyword lists, full alias maps
+- **Non-curated countries** — Sensible default baseline (`DEFAULT_BASELINE_RISK = 15`), display names resolved via `Intl.DisplayNames`
+
+**Example**: If a protest is detected in Lesotho (a non-tier-1 country), Lesotho immediately receives a CII score and a clickable brief with available news, signals, and infrastructure data.
+
+## Headline Relevance Filtering
+
+To prevent cross-contamination between country briefs:
+
+1. Each country has an **alias map** (e.g., `Iran → ["iran", "iranian", "tehran", "khamenei", "irgc"]`)
+2. Headlines are scanned for country mentions using **word-boundary regex** (prevents "Iran" from matching "Ukraine")
+3. **Negative-match algorithm**: If another country's alias appears **earlier** in the headline title than the target country's alias, the headline is excluded
+
+**Example**:
+- Headline: `"US imposes sanctions on Iranian oil exports"`
+- Target country: **Iran**
+  - ✅ **Included** — "Iranian" matches Iran's alias, "US" appears first but doesn't override
+- Target country: **USA**
+  - ❌ **Excluded** — "Iranian" appears earlier and is stronger match
+
+## Refreshing Data
+
+Country briefs pull live data on each load:
+
+- **CII scores** update every 5 minutes based on incoming signals
+- **News headlines** refresh as RSS feeds are polled (every 5–10 minutes)
+- **Timeline events** include the last 7 days of activity
+- **Prediction markets** update every 15 minutes
+
+To see the latest data, close and reopen the brief or click the **Refresh** button.
+
+## Related Features
+
+- [World Brief](/guide/world-brief) — Global intelligence summary across all countries
+- [Signal Intelligence](/guide/signal-intelligence) — Understanding threat signals and convergence
+- [Sharing Stories](/guide/sharing-stories) — Exporting country briefs to social media

@@ -1,0 +1,506 @@
+---
+title: 'Threat Classification Pipeline'
+description: 'Three-stage hybrid classifier: instant keywords, async ML, and batched LLM refinement'
+icon: 'triangle-exclamation'
+---
+
+## Overview
+
+Every news item passes through a **three-stage classification pipeline** that provides instant results while progressively refining threat assessments using ML and LLM:
+
+1. **Keyword classifier** (instant, `source: 'keyword'`) — ~120 threat keywords across 5 severity tiers
+2. **Browser-side ML** (async, `source: 'ml'`) — Transformers.js NER + sentiment analysis
+3. **LLM classifier** (batched async, `source: 'llm'`) — Groq Llama 3.1 8B or Ollama local
+
+<Note>
+  The UI is never blocked waiting for AI. Users see keyword results instantly, with ML/LLM refinements arriving within seconds and persisting for all subsequent visitors.
+</Note>
+
+## Stage 1: Keyword Classifier
+
+Pattern-matches against ~120 threat keywords organized by severity tier and event category.
+
+### Severity Tiers
+
+<AccordionGroup>
+  <Accordion title="CRITICAL (confidence 0.9)">
+    Existential threats and major escalation:
+
+    **Military/Conflict**:
+    - `nuclear strike`, `nuclear attack`, `nuclear war`
+    - `invasion`, `declaration of war`, `declares war`
+    - `all-out war`, `full-scale war`
+    - `martial law`, `coup`, `coup attempt`
+    - `genocide`, `ethnic cleansing`
+    - `massive strikes`, `military strikes`, `retaliatory strikes`
+
+    **Iran-specific** (high geopolitical priority):
+    - `attack iran`, `attacks iran`, `strikes iran`
+    - `war with iran`, `war on iran`
+    - `iran retaliates`, `iran strikes`, `iran attacks`
+
+    **WMD**:
+    - `chemical attack`, `biological attack`, `dirty bomb`
+
+    **Health**:
+    - `pandemic declared`, `health emergency`
+
+    **Military alliance**:
+    - `nato article 5`
+
+    **Disaster**:
+    - `nuclear meltdown`, `evacuation order`
+
+    **Examples**:
+    - "Russia invades Baltic states" → `critical: conflict`
+    - "Iran launches retaliatory strikes" → `critical: military`
+    - "NATO invokes Article 5" → `critical: military`
+  </Accordion>
+
+  <Accordion title="HIGH (confidence 0.8)">
+    Active conflict and severe threats:
+
+    **Conflict**:
+    - `war`, `armed conflict`
+    - `airstrike`, `drone strike`, `bombing`, `shelling`
+    - `casualties`, `killed in`
+    - `strike on`, `attack on`, `launches attack`
+
+    **Military**:
+    - `missile`, `missile launch`, `missiles fired`
+    - `troops deployed`, `military escalation`
+    - `ground offensive`, `military operation`
+    - `ballistic missile`, `cruise missile`
+
+    **Terrorism**:
+    - `hostage`, `terrorist`, `terror attack`, `assassination`
+
+    **Cyber**:
+    - `cyber attack`, `ransomware`, `data breach`
+
+    **Economic**:
+    - `sanctions`, `embargo`
+
+    **Disaster**:
+    - `earthquake`, `tsunami`, `hurricane`, `typhoon`
+
+    **Compound escalation**: HIGH military/conflict + critical geopolitical target → escalated to CRITICAL
+
+    Example: "US and Israel strikes on Iran" → `critical: military` (escalation logic)
+
+    **Source**: `src/services/threat-classifier.ts:329-337`
+  </Accordion>
+
+  <Accordion title="MEDIUM (confidence 0.7)">
+    Political instability and infrastructure disruption:
+
+    - `protest`, `riot`, `unrest`, `demonstration`
+    - `military exercise`, `naval exercise`
+    - `arms deal`, `weapons sale`
+    - `diplomatic crisis`, `ambassador recalled`, `expel diplomats`
+    - `trade war`, `tariff`, `recession`, `inflation`
+    - `market crash`
+    - `flood`, `wildfire`, `volcano`, `eruption`
+    - `outbreak`, `epidemic`
+    - `oil spill`, `pipeline explosion`
+    - `blackout`, `power outage`, `internet outage`
+    - `derailment`
+  </Accordion>
+
+  <Accordion title="LOW (confidence 0.6)">
+    Diplomatic activity and low-intensity events:
+
+    - `election`, `vote`, `referendum`
+    - `summit`, `treaty`, `agreement`, `negotiation`
+    - `talks`, `peacekeeping`, `humanitarian aid`
+    - `ceasefire`, `peace treaty`
+    - `climate change`, `emissions`, `pollution`
+    - `vaccine`, `vaccination`, `disease`, `virus`
+    - `interest rate`, `gdp`, `unemployment`, `regulation`
+  </Accordion>
+
+  <Accordion title="INFO (confidence 0.3)">
+    General news with no specific threat classification.
+
+    **Exclusions**: Headlines containing lifestyle/entertainment keywords are auto-classified as INFO to prevent false positives:
+    - `protein`, `couples`, `relationship`, `dating`
+    - `diet`, `fitness`, `recipe`, `cooking`
+    - `shopping`, `fashion`, `celebrity`, `movie`
+    - `tv show`, `sports`, `game`, `concert`
+    - `strikes deal`, `strikes agreement` (not military strikes)
+  </Accordion>
+</AccordionGroup>
+
+### Event Categories
+
+<CardGroup cols={3}>
+  <Card title="conflict" icon="burst">
+    Wars, battles, armed clashes
+  </Card>
+  <Card title="protest" icon="megaphone">
+    Civil unrest, demonstrations
+  </Card>
+  <Card title="military" icon="jet-fighter">
+    Troop movements, exercises
+  </Card>
+  <Card title="terrorism" icon="mask">
+    Attacks, hostage situations
+  </Card>
+  <Card title="cyber" icon="shield-virus">
+    Hacking, data breaches
+  </Card>
+  <Card title="disaster" icon="house-tsunami">
+    Natural disasters, accidents
+  </Card>
+  <Card title="diplomatic" icon="handshake">
+    Treaties, summits, negotiations
+  </Card>
+  <Card title="economic" icon="chart-line-down">
+    Sanctions, market events
+  </Card>
+  <Card title="health" icon="virus">
+    Pandemics, outbreaks
+  </Card>
+  <Card title="environmental" icon="leaf">
+    Climate, pollution, spills
+  </Card>
+  <Card title="infrastructure" icon="bridge">
+    Outages, pipeline explosions
+  </Card>
+  <Card title="crime" icon="handcuffs">
+    Assassinations, organized crime
+  </Card>
+  <Card title="tech" icon="microchip">
+    Tech-specific events (variant)
+  </Card>
+  <Card title="general" icon="newspaper">
+    Uncategorized news
+  </Card>
+</CardGroup>
+
+### Keyword Matching Logic
+
+<ParamField path="wordBoundary" type="boolean" default="true">
+  Short keywords (≤5 chars) use `\b` word boundaries to prevent false positives:
+  - `war` matches "war in Ukraine" but not "award ceremony"
+  - `riot` matches "riot police" but not "patriot"
+  - `hack` matches "data hack" but not "hackathon"
+
+  **Short keyword list**: `war`, `coup`, `ban`, `vote`, `riot`, `hack`, `talks`, `ipo`, `gdp`, `virus`, `disease`, `flood`, `strikes`
+</ParamField>
+
+<ParamField path="trailingBoundary" type="boolean">
+  Iran-specific keywords use trailing boundary only (allow prefix matches):
+  - `attack iran` uses `(?![\w-])` instead of `\b..\b`
+  - Prevents hyphen breaks: "US-Iran tensions" still matches
+
+  **Trailing boundary keywords**: All Iran-specific phrases from CRITICAL tier
+</ParamField>
+
+<ParamField path="regexCache" type="Map<string, RegExp>">
+  Compiled regexes are cached in a `Map` to avoid recompiling on every headline (10-15x performance improvement).
+</ParamField>
+
+**Source**: `src/services/threat-classifier.ts:286-315`
+
+### Variant-Specific Keywords
+
+The **Tech Monitor** variant includes additional keywords for tech industry threats:
+
+**High**:
+- `major outage`, `global outage`, `service down`
+- `zero-day`, `critical vulnerability`, `supply chain attack`
+- `mass layoff`
+
+**Medium**:
+- `outage`, `breach`, `hack`, `vulnerability`
+- `layoff`, `layoffs`, `antitrust`, `monopoly`
+- `ban`, `shutdown`
+
+**Low**:
+- `ipo`, `funding`, `acquisition`, `merger`
+- `launch`, `release`, `update`, `partnership`
+- `startup`, `ai model`, `open source`
+
+**Source**: `src/services/threat-classifier.ts:241-276`
+
+## Stage 2: Browser-Side ML
+
+Transformers.js runs **Named Entity Recognition (NER)**, **sentiment analysis**, and **topic classification** entirely in the browser:
+
+<ParamField path="models" type="array">
+  - `Xenova/bert-base-NER` — entity extraction
+  - `Xenova/distilbert-base-uncased-finetuned-sst-2-english` — sentiment
+  - Topic classification model (custom fine-tuned)
+
+  **Loading**: ONNX models are downloaded on first use and cached in browser IndexedDB.
+</ParamField>
+
+<ParamField path="optIn" type="boolean" default="false">
+  **User control**: "Browser Local Model" toggle in AI Flow settings. When disabled:
+  - ML worker is never initialized
+  - No ONNX model downloads
+  - No WebGL memory allocation
+  - Keyword classifier remains active
+
+  Toggle propagates dynamically — enabling it mid-session initializes the worker immediately.
+</ParamField>
+
+<ParamField path="confidence" type="number" default="0.7-0.85">
+  ML confidence is typically lower than LLM but higher than keyword-only classification.
+</ParamField>
+
+**Source**: `src/services/ml-worker.ts`
+
+## Stage 3: LLM Classifier
+
+Headlines are collected into a batch queue and fired as parallel `classifyEvent` RPCs:
+
+### Batching Configuration
+
+<ParamField path="BATCH_SIZE" type="number" default="20">
+  Max headlines per batch.
+</ParamField>
+
+<ParamField path="BATCH_DELAY_MS" type="number" default="500">
+  Wait time before flushing partial batch (if fewer than 20 items).
+</ParamField>
+
+<ParamField path="STAGGER_BASE_MS" type="number" default="2100">
+  Base delay between API requests to prevent rate limiting.
+</ParamField>
+
+<ParamField path="STAGGER_JITTER_MS" type="number" default="200">
+  Random jitter (±200ms) added to stagger timing.
+</ParamField>
+
+<ParamField path="MIN_GAP_MS" type="number" default="2000">
+  Minimum gap between requests enforced.
+</ParamField>
+
+<ParamField path="MAX_RETRIES" type="number" default="2">
+  Failed jobs are retried up to 2 times before dropping.
+</ParamField>
+
+<ParamField path="MAX_QUEUE_LENGTH" type="number" default="100">
+  Queue is capped at 100 items. Excess classifications are dropped with console warning.
+</ParamField>
+
+### Error Handling
+
+<AccordionGroup>
+  <Accordion title="429 Rate Limit">
+    - Batch queue pauses for **60 seconds**
+    - Failed job increments attempt counter and is requeued (if attempts < MAX_RETRIES)
+    - Remaining jobs in batch are requeued WITHOUT burning attempts
+    - Console warning: `[Classify] 429 — pausing AI classification for 60s`
+  </Accordion>
+
+  <Accordion title="500+ Server Error">
+    - Batch queue pauses for **30 seconds**
+    - Same retry logic as 429
+    - Prevents wasting API quota on transient failures
+    - Console warning: `[Classify] 500 — pausing AI classification for 30s`
+  </Accordion>
+
+  <Accordion title="Network Error">
+    - Individual job fails (no queue pause)
+    - Job is retried up to MAX_RETRIES
+    - After max retries, returns `null` (keyword classification remains)
+  </Accordion>
+</AccordionGroup>
+
+**Source**: `src/services/threat-classifier.ts:412-495`
+
+### LLM Provider Configuration
+
+<CodeGroup>
+```typescript Groq (Cloud)
+const GROQ_CONFIG = {
+  model: 'llama-3.1-8b-instant',
+  temperature: 0,
+  maxTokens: 50,
+  timeout: 5000
+};
+```
+
+```typescript Ollama (Local)
+const OLLAMA_CONFIG = {
+  endpoint: 'http://localhost:11434/v1/chat/completions',
+  model: 'llama3.1:8b', // auto-discovered
+  temperature: 0.3
+};
+```
+
+```typescript OpenRouter (Fallback)
+const OPENROUTER_CONFIG = {
+  model: 'meta-llama/llama-3.1-8b-instruct',
+  temperature: 0
+};
+```
+</CodeGroup>
+
+### Redis Caching
+
+LLM results are cached with 24h TTL to prevent redundant API calls:
+
+```typescript
+const cacheKey = `classify:${hashHeadline(title)}`;
+const cached = await redis.get(cacheKey);
+if (cached) return JSON.parse(cached);
+
+const result = await classifyClient.classifyEvent({ title, ... });
+await redis.setex(cacheKey, 86400, JSON.stringify(result));
+return result;
+```
+
+**Deduplication**: Same headline viewed by 1,000 concurrent users triggers exactly one LLM call.
+
+## Classification Override Logic
+
+When multiple sources provide results, the **highest confidence wins**:
+
+```typescript
+function selectBestClassification(
+  keyword: ThreatClassification,
+  ml: ThreatClassification | null,
+  llm: ThreatClassification | null
+): ThreatClassification {
+  const candidates = [keyword, ml, llm].filter(Boolean) as ThreatClassification[];
+  return candidates.reduce((best, current) =>
+    current.confidence > best.confidence ? current : best
+  );
+}
+```
+
+**Result tagging**: Each classification carries its `source` tag (`keyword`, `ml`, `llm`) so downstream consumers can weight confidence accordingly.
+
+## Aggregate Threat for Clusters
+
+News clusters (multiple sources reporting same story) aggregate threat levels:
+
+```typescript
+export function aggregateThreats(
+  items: Array<{ threat?: ThreatClassification; tier?: number }>
+): ThreatClassification {
+  // Level = max across items
+  const maxLevel = Math.max(...items.map(i => THREAT_PRIORITY[i.threat!.level]));
+
+  // Category = most frequent
+  const catCounts = new Map<EventCategory, number>();
+  for (const item of withThreat) {
+    const cat = item.threat!.category;
+    catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1);
+  }
+  const topCat = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+
+  // Confidence = weighted avg by source tier (lower tier = higher weight)
+  let weightedSum = 0;
+  let weightTotal = 0;
+  for (const item of withThreat) {
+    const weight = item.tier ? (6 - Math.min(item.tier, 5)) : 1;
+    weightedSum += item.threat!.confidence * weight;
+    weightTotal += weight;
+  }
+
+  return {
+    level: maxLevel,
+    category: topCat,
+    confidence: weightTotal > 0 ? weightedSum / weightTotal : 0.5,
+    source: 'keyword',
+  };
+}
+```
+
+**Source**: `src/services/threat-classifier.ts:521-570`
+
+## Threat Color Mapping
+
+Threat levels are color-coded with CSS variables for theme support:
+
+<CardGroup cols={5}>
+  <Card title="critical" icon="circle" iconType="solid" color="#ef4444">
+    Red `--threat-critical`
+  </Card>
+  <Card title="high" icon="circle" iconType="solid" color="#f97316">
+    Orange `--threat-high`
+  </Card>
+  <Card title="medium" icon="circle" iconType="solid" color="#eab308">
+    Yellow `--threat-medium`
+  </Card>
+  <Card title="low" icon="circle" iconType="solid" color="#22c55e">
+    Green `--threat-low`
+  </Card>
+  <Card title="info" icon="circle" iconType="solid" color="#3b82f6">
+    Blue `--threat-info`
+  </Card>
+</CardGroup>
+
+```typescript
+export function getThreatColor(level: ThreatLevel): string {
+  return getCSSColor(THREAT_VAR_MAP[level] || '--text-dim');
+}
+```
+
+**Runtime reads**: Use `getThreatColor()` instead of static `THREAT_COLORS` object to support light/dark theme switching.
+
+## Example Classifications
+
+<CodeGroup>
+```json Critical: Nuclear Threat
+{
+  "level": "critical",
+  "category": "military",
+  "confidence": 0.9,
+  "source": "keyword",
+  "matchedKeyword": "nuclear strike"
+}
+```
+
+```json High: Military Escalation
+{
+  "level": "high",
+  "category": "conflict",
+  "confidence": 0.85,
+  "source": "llm",
+  "reasoning": "Active military strikes on critical infrastructure"
+}
+```
+
+```json Medium: Protest Activity
+{
+  "level": "medium",
+  "category": "protest",
+  "confidence": 0.7,
+  "source": "keyword",
+  "matchedKeyword": "riots"
+}
+```
+
+```json Low: Diplomatic Talks
+{
+  "level": "low",
+  "category": "diplomatic",
+  "confidence": 0.6,
+  "source": "keyword",
+  "matchedKeyword": "peace treaty"
+}
+```
+
+```json Info: General News
+{
+  "level": "info",
+  "category": "general",
+  "confidence": 0.3,
+  "source": "keyword",
+  "reason": "No threat keywords matched"
+}
+```
+</CodeGroup>
+
+## Key Files
+
+- `src/services/threat-classifier.ts` — Main classification engine
+- `src/services/ml-worker.ts` — Browser-side Transformers.js ML
+- `api/intelligence/classify-event.ts` — LLM classification handler
+- `src/components/ThreatBadge.tsx` — UI threat level indicators

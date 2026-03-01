@@ -1,0 +1,275 @@
+---
+title: Keyword Monitoring
+description: Custom keyword alerts with real-time matching and automatic color coding
+---
+
+World Monitor lets you create **custom keyword alerts** that highlight matching headlines across all RSS feeds. This is useful for tracking specific entities, events, or topics that matter to your intelligence workflow.
+
+## Creating a Keyword Monitor
+
+<Steps>
+  <Step title="Open the Keyword Monitors panel">
+    Located in the left sidebar or main dashboard grid.
+  </Step>
+  
+  <Step title="Click 'Add Monitor'">
+    A text input appears for entering keywords.
+  </Step>
+  
+  <Step title="Enter keywords (comma-separated for multiple)">
+    ```
+    nuclear, uranium, enrichment
+    ```
+    
+    Each keyword is treated as a separate monitor but can be grouped visually.
+  </Step>
+  
+  <Step title="Save the monitor">
+    The keyword is automatically color-coded from a 10-color palette and begins matching immediately.
+  </Step>
+</Steps>
+
+## Word-Boundary Matching
+
+Keyword monitors use **word-boundary regex matching** to prevent false positives:
+
+<Tabs>
+  <Tab title="✅ Correct Matches">
+    **Keyword**: `ai`
+    
+    - ✅ "New **AI** model released"
+    - ✅ "Generative **AI** revolution"
+    - ✅ "**AI** startup funding"
+  </Tab>
+  
+  <Tab title="❌ Rejected Matches">
+    **Keyword**: `ai`
+    
+    - ❌ "New tr**ai**n derailment" (ai is inside "train")
+    - ❌ "Email security up**d**ate" (ai is inside "email")
+    - ❌ "Mount**ai**n rescue operation"
+  </Tab>
+</Tabs>
+
+This ensures "ai" only matches when it's a standalone word, not part of another word.
+
+<Tip>
+Keyword matching is **case-insensitive** — "Nuclear" matches "nuclear", "NUCLEAR", and "NuClEaR".
+</Tip>
+
+## Search Scope
+
+Keyword monitors search across:
+
+1. **Headline titles** (primary match)
+2. **Article descriptions** (secondary match)
+
+Matches in titles are weighted higher than matches in descriptions when calculating relevance scores.
+
+## Real-Time Match Counts
+
+Each monitor displays a **live match count** badge:
+
+```
+🟢 nuclear (12)
+🔵 sanctions (7)
+🟠 cyberattack (3)
+```
+
+Counts update in real-time as new headlines arrive from RSS feeds.
+
+## Multi-Keyword Support
+
+You can enter multiple keywords separated by commas:
+
+```
+iran, iranian, tehran, irgc
+```
+
+All four keywords will:
+- Share the same color
+- Be grouped under a single monitor
+- Show a combined match count
+
+<Warning>
+Avoid overly broad keywords like "the", "and", "is" — they'll match almost every headline and clutter the UI.
+</Warning>
+
+## Color Coding
+
+Monitors are automatically assigned colors from a 10-color palette:
+
+<CardGroup cols={2}>
+  <Card title="Auto-Assignment">
+    Colors are assigned in rotation as you create monitors:
+    
+    1. Green
+    2. Blue
+    3. Orange
+    4. Purple
+    5. Pink
+    6. Teal
+    7. Red
+    8. Yellow
+    9. Indigo
+    10. Gray
+    
+    After 10 monitors, colors repeat.
+  </Card>
+  
+  <Card title="Visual Highlighting">
+    Matching headlines are highlighted with a colored left border and badge in the news panel.
+    
+    This makes it easy to scan hundreds of headlines and instantly spot matches.
+  </Card>
+</CardGroup>
+
+## Managing Monitors
+
+### Editing a Monitor
+
+1. Click the **Edit** icon next to the monitor
+2. Modify the keyword(s)
+3. Save — matches update immediately
+
+### Deleting a Monitor
+
+1. Click the **Delete** icon (trash can)
+2. Confirm deletion
+3. All highlights for this keyword are removed from the news panel
+
+### Pausing a Monitor
+
+Currently, monitors cannot be paused — they're always active. To temporarily disable a monitor, delete it and recreate later.
+
+<Info>
+**Feature request**: Pause/resume toggle is planned for a future release.
+</Info>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Entity Tracking">
+    Track specific organizations, people, or countries:
+    
+    ```
+    hezbollah, hamas, houthis
+    xi jinping, putin, biden
+    israel, palestine, gaza
+    ```
+  </Accordion>
+  
+  <Accordion title="Event Monitoring">
+    Track ongoing events or crises:
+    
+    ```
+    earthquake, tsunami, hurricane
+    coup, revolution, protest
+    cyberattack, ransomware, breach
+    ```
+  </Accordion>
+  
+  <Accordion title="Technology & Finance">
+    Track industry-specific terms:
+    
+    ```
+    bitcoin, ethereum, crypto
+    ai, llm, machine learning
+    ipo, acquisition, funding
+    ```
+  </Accordion>
+  
+  <Accordion title="Threat Intelligence">
+    Track security indicators:
+    
+    ```
+    apt28, apt29, lazarus
+    cve, vulnerability, exploit
+    malware, trojan, phishing
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Integration with Trending Keywords
+
+Keyword monitors complement the **Trending Keywords panel**, which uses spike detection to automatically surface surging terms:
+
+| Feature                  | Keyword Monitors           | Trending Keywords         |
+| ------------------------ | -------------------------- | ------------------------- |
+| **Setup**                | Manual (you define)        | Automatic (AI-detected)   |
+| **Match logic**          | Exact word-boundary match  | Statistical spike (2h vs 7d baseline) |
+| **Persistence**          | Permanent until deleted    | Temporary (spikes fade)   |
+| **Color coding**         | Auto-assigned from palette | Severity-based (red/orange/yellow) |
+
+<Tip>
+If you notice a term in **Trending Keywords** that you want to track permanently, create a **Keyword Monitor** for it.
+</Tip>
+
+## Performance Considerations
+
+Keyword matching is optimized for real-time performance:
+
+- **Client-side regex** — All matching happens in the browser, no server round-trips
+- **Incremental updates** — Only new headlines are scanned as they arrive
+- **Virtual scrolling** — News panels with 15+ items use virtual lists to minimize DOM overhead
+
+**Recommended limits**:
+- ≤ 20 active monitors (10 colors × 2 rounds)
+- ≤ 10 keywords per monitor
+- Avoid regex special characters (use plain text)
+
+## Persistence
+
+Keyword monitors are stored in **localStorage** and persist across sessions:
+
+- ✅ Survive browser restarts
+- ✅ Survive page reloads
+- ❌ Do **not** sync across devices (device-local only)
+
+<Warning>
+Clearing browser cache will delete your keyword monitors. Export your keyword list to a text file before clearing cache.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Monitor not matching expected headlines">
+    Check for:
+    
+    1. **Spelling** — "nucler" won't match "nuclear"
+    2. **Word boundaries** — "ai" won't match "train"
+    3. **Plurals** — "sanction" won't match "sanctions" (add both: `sanction, sanctions`)
+    4. **Abbreviations** — Add both full and short forms: `cve, common vulnerabilities`
+  </Accordion>
+  
+  <Accordion title="Too many matches (noisy)">
+    Your keyword is too broad. Refine it:
+    
+    - Instead of `war`, use `war, conflict zone, ceasefire`
+    - Instead of `ai`, use `artificial intelligence, ai model, llm`
+    - Add qualifiers: `russia ukraine war` instead of just `war`
+  </Accordion>
+  
+  <Accordion title="Match count shows 0 but I see matches">
+    The headline may contain your keyword in a way that doesn't trigger word-boundary matching:
+    
+    - Check if it's inside another word (e.g., "ai" in "email")
+    - Try adding the full phrase: `email security` instead of `email`
+  </Accordion>
+  
+  <Accordion title="Monitor disappeared after reload">
+    This indicates localStorage was cleared. Possible causes:
+    
+    - Browser privacy mode (Incognito/Private Browsing)
+    - Cache clearing extension
+    - Manual cache clear
+    
+    **Solution**: Recreate the monitor or check if your browser is in private mode.
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+- [Signal Intelligence](/guide/signal-intelligence) — Understanding automated threat signals
+- [World Brief](/guide/world-brief) — AI-generated global summaries
+- [Country Analysis](/guide/country-analysis) — Country-specific intelligence briefs

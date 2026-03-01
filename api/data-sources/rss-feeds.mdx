@@ -1,0 +1,443 @@
+---
+title: 'RSS Feed Sources'
+description: 'Comprehensive catalog of 150+ RSS feed sources, categories, and allowlist domains'
+icon: 'rss'
+---
+
+## Overview
+
+World Monitor aggregates **150+ RSS feeds** across geopolitics, defense, energy, tech, and finance. Each variant loads its own curated feed set:
+
+- **Geopolitical variant**: ~25 categories
+- **Tech variant**: ~20 categories
+- **Finance variant**: ~18 categories
+- **Happy variant**: Positive news sources
+
+## RSS Proxy Architecture
+
+All RSS feeds are proxied through `/api/rss-proxy` to prevent CORS issues. The proxy:
+
+- **Domain allowlist** - Only whitelisted domains are permitted (security)
+- **Automatic fallback** - Direct fetch → Railway relay on failure
+- **Per-feed circuit breakers** - Failing feeds don't affect others
+- **5-minute polling** - Each feed refreshed independently
+- **10-minute cooldown** - Failed feeds pause before retry
+
+<Info>
+  The proxy implements a dual-fetch strategy: attempts direct connection first, then falls back to the Railway relay server if the direct fetch fails.
+</Info>
+
+## Allowed Domains
+
+The following domains are permitted through `api/rss-proxy.js` (lines 48-326):
+
+### International News
+
+| Domain | Source | Language |
+|---|---|---|
+| feeds.bbci.co.uk | BBC News | English |
+| www.bbc.com | BBC News | English |
+| www.theguardian.com | The Guardian | English |
+| feeds.npr.org | NPR | English |
+| rss.cnn.com | CNN | English |
+| www.aljazeera.com | Al Jazeera | English |
+| www.aljazeera.net | Al Jazeera Arabic | Arabic |
+| feeds.reuters.com | Reuters | English |
+| www.reutersagency.com | Reuters Agency | English |
+| www.ft.com | Financial Times | English |
+| news.google.com | Google News | Multiple |
+
+### Geopolitical & Defense
+
+| Domain | Source | Focus |
+|---|---|---|
+| www.defenseone.com | Defense One | U.S. defense policy |
+| breakingdefense.com | Breaking Defense | Military procurement |
+| www.defensenews.com | Defense News | Global defense |
+| www.militarytimes.com | Military Times | U.S. military |
+| taskandpurpose.com | Task & Purpose | Military news |
+| news.usni.org | U.S. Naval Institute | Naval operations |
+| www.bellingcat.com | Bellingcat | OSINT investigations |
+| www.thedrive.com | The War Zone (The Drive) | Military tech |
+| www.oryxspioenkop.com | Oryx | Conflict equipment tracking |
+| foreignpolicy.com | Foreign Policy | International relations |
+| www.foreignaffairs.com | Foreign Affairs | Geopolitics |
+| thediplomat.com | The Diplomat | Asia-Pacific |
+| www.politico.com | Politico | U.S. politics |
+| rss.politico.com | Politico RSS | U.S. politics |
+
+### Think Tanks & Research
+
+| Domain | Organization | Region |
+|---|---|---|
+| www.cfr.org | Council on Foreign Relations | Global |
+| www.csis.org | Center for Strategic & International Studies | Global |
+| www.brookings.edu | Brookings Institution | Global |
+| www.atlanticcouncil.org | Atlantic Council | Transatlantic |
+| rusi.org | Royal United Services Institute | UK |
+| warontherocks.com | War on the Rocks | U.S. defense |
+| www.aei.org | American Enterprise Institute | U.S. policy |
+| responsiblestatecraft.org | Responsible Statecraft | U.S. foreign policy |
+| www.fpri.org | Foreign Policy Research Institute | Global |
+| jamestown.org | Jamestown Foundation | Eurasia |
+| www.chathamhouse.org | Chatham House | UK |
+| ecfr.eu | European Council on Foreign Relations | Europe |
+| www.gmfus.org | German Marshall Fund | Transatlantic |
+| www.wilsoncenter.org | Wilson Center | Global |
+| www.lowyinstitute.org | Lowy Institute | Asia-Pacific |
+| www.mei.edu | Middle East Institute | Middle East |
+| www.stimson.org | Stimson Center | Global security |
+| www.cnas.org | Center for New American Security | U.S. security |
+| carnegieendowment.org | Carnegie Endowment | Global |
+| www.rand.org | RAND Corporation | Policy research |
+| fas.org | Federation of American Scientists | Science policy |
+| www.armscontrol.org | Arms Control Association | Arms control |
+| www.nti.org | Nuclear Threat Initiative | Nuclear security |
+| thebulletin.org | Bulletin of the Atomic Scientists | Nuclear risk |
+| www.iss.europa.eu | EU Institute for Security Studies | European security |
+| www.crisisgroup.org | International Crisis Group | Conflict prevention |
+
+### Technology & Cybersecurity
+
+| Domain | Source | Focus |
+|---|---|---|
+| techcrunch.com | TechCrunch | Startups |
+| www.theverge.com | The Verge | Tech news |
+| feeds.arstechnica.com | Ars Technica | Technology |
+| huggingface.co | Hugging Face | AI/ML |
+| www.technologyreview.com | MIT Technology Review | Tech trends |
+| rss.arxiv.org | ArXiv | Research papers |
+| export.arxiv.org | ArXiv API | Research papers |
+| openai.com | OpenAI | AI research |
+| www.zdnet.com | ZDNet | Enterprise tech |
+| www.techmeme.com | Techmeme | Tech news aggregator |
+| www.darkreading.com | Dark Reading | Cybersecurity |
+| www.schneier.com | Schneier on Security | Security research |
+| krebsonsecurity.com | Krebs on Security | Cybersecurity |
+| www.ransomware.live | Ransomware.live | Ransomware tracking |
+| www.anandtech.com | AnandTech | Hardware |
+| www.tomshardware.com | Tom's Hardware | Hardware |
+| www.semianalysis.com | SemiAnalysis | Semiconductor analysis |
+| feed.infoq.com | InfoQ | Software development |
+| thenewstack.io | The New Stack | Cloud native |
+| devops.com | DevOps.com | DevOps |
+| dev.to | Dev.to | Developer community |
+| lobste.rs | Lobsters | Tech community |
+| changelog.com | Changelog | Developer news |
+| www.producthunt.com | Product Hunt | Product launches |
+| www.axios.com | Axios | Tech/business |
+| api.axios.com | Axios API | Tech/business |
+| github.blog | GitHub Blog | Developer platform |
+| githubnext.com | GitHub Next | Experimental projects |
+| www.engadget.com | Engadget | Consumer tech |
+| news.mit.edu | MIT News | Research |
+| dev.events | Dev Events | Tech conferences |
+
+### Venture Capital & Startups
+
+| Domain | Source | Focus |
+|---|---|---|
+| www.ycombinator.com | Y Combinator | Accelerator |
+| a16z.com | Andreessen Horowitz | VC insights |
+| review.firstround.com | First Round Review | Startup advice |
+| www.sequoiacap.com | Sequoia Capital | VC |
+| www.nfx.com | NFX | Network effects |
+| bothsidesofthetable.com | Both Sides of the Table | VC perspective |
+| www.lennysnewsletter.com | Lenny's Newsletter | Product/growth |
+| stratechery.com | Stratechery | Tech strategy |
+| seekingalpha.com | Seeking Alpha | Stock analysis |
+| news.crunchbase.com | Crunchbase News | Funding news |
+| www.saastr.com | SaaStr | SaaS |
+| feeds.feedburner.com | FeedBurner (various) | Multiple sources |
+| pitchbook.com | PitchBook | PE/VC data |
+| www.cbinsights.com | CB Insights | Market intelligence |
+| www.techstars.com | Techstars | Accelerator |
+| layoffs.fyi | Layoffs.fyi | Tech layoffs |
+
+### Regional Startup News
+
+| Domain | Source | Region |
+|---|---|---|
+| www.eu-startups.com | EU-Startups | Europe |
+| tech.eu | Tech.eu | Europe |
+| sifted.eu | Sifted | Europe |
+| www.techinasia.com | Tech in Asia | Asia |
+| kr-asia.com | KrASIA | Asia |
+| techcabal.com | TechCabal | Africa |
+| disrupt-africa.com | Disrupt Africa | Africa |
+| lavca.org | LAVCA | Latin America |
+| contxto.com | Contxto | Latin America |
+| inc42.com | Inc42 | India |
+| yourstory.com | YourStory | India |
+
+### Finance & Markets
+
+| Domain | Source | Focus |
+|---|---|---|
+| www.cnbc.com | CNBC | Markets |
+| feeds.marketwatch.com | MarketWatch | Stocks |
+| finance.yahoo.com | Yahoo Finance | Markets |
+| www.coindesk.com | CoinDesk | Crypto |
+| cointelegraph.com | Cointelegraph | Crypto |
+| asia.nikkei.com | Nikkei Asia | Asian markets |
+
+### U.S. Government
+
+| Domain | Source | Agency |
+|---|---|---|
+| www.whitehouse.gov | White House | Executive |
+| www.state.gov | State Department | Diplomacy |
+| www.defense.gov | Department of Defense | Military |
+| home.treasury.gov | Treasury | Finance |
+| www.justice.gov | Department of Justice | Law enforcement |
+| tools.cdc.gov | CDC | Health |
+| www.fema.gov | FEMA | Emergency |
+| www.dhs.gov | DHS | Homeland security |
+| www.cisa.gov | CISA | Cybersecurity |
+| www.federalreserve.gov | Federal Reserve | Monetary policy |
+| www.sec.gov | SEC | Securities |
+
+### International Organizations
+
+| Domain | Source | Type |
+|---|---|---|
+| news.un.org | United Nations | Intergovernmental |
+| www.iaea.org | IAEA | Nuclear agency |
+| www.who.int | WHO | Health |
+| www.afro.who.int | WHO Africa | Regional health |
+| www.fao.org | FAO | Food/agriculture |
+| worldbank.org | World Bank | Development |
+| www.imf.org | IMF | Financial |
+
+### Regional & Language-Specific
+
+<Tabs>
+  <Tab title="Europe">
+    | Domain | Source | Language |
+    |---|---|---|
+    | www.euronews.com | Euronews | English |
+    | de.euronews.com | Euronews | German |
+    | es.euronews.com | Euronews | Spanish |
+    | fr.euronews.com | Euronews | French |
+    | it.euronews.com | Euronews | Italian |
+    | pt.euronews.com | Euronews | Portuguese |
+    | ru.euronews.com | Euronews | Russian |
+    | www.france24.com | France 24 | English |
+    | rss.dw.com | Deutsche Welle | Multiple |
+    | www.gov.uk | UK Government | English |
+  </Tab>
+
+  <Tab title="Middle East">
+    | Domain | Source | Language |
+    |---|---|---|
+    | english.alarabiya.net | Al Arabiya | English |
+    | www.arabnews.com | Arab News | English |
+    | www.timesofisrael.com | Times of Israel | English |
+    | www.haaretz.com | Haaretz | English |
+    | www.lorientlejour.com | L'Orient-Le Jour | French |
+  </Tab>
+
+  <Tab title="Africa">
+    | Domain | Source | Region |
+    |---|---|---|
+    | www.africanews.com | Africanews | Pan-African |
+    | fr.africanews.com | Africanews | French |
+    | www.jeuneafrique.com | Jeune Afrique | Francophone |
+    | feeds.24.com | News24 | South Africa |
+    | feeds.news24.com | News24 main | South Africa |
+    | feeds.capi24.com | News24 redirect | South Africa |
+    | www.premiumtimesng.com | Premium Times | Nigeria |
+    | www.vanguardngr.com | Vanguard | Nigeria |
+    | www.channelstv.com | Channels TV | Nigeria |
+    | dailytrust.com | Daily Trust | Nigeria |
+    | www.thisdaylive.com | ThisDay | Nigeria |
+  </Tab>
+
+  <Tab title="Asia-Pacific">
+    | Domain | Source | Region |
+    |---|---|---|
+    | www.scmp.com | South China Morning Post | Hong Kong |
+    | www.channelnewsasia.com | Channel NewsAsia | Singapore |
+    | japantoday.com | Japan Today | Japan |
+    | www.asahi.com | Asahi Shimbun | Japan |
+    | www.thehindu.com | The Hindu | India |
+    | indianexpress.com | Indian Express | India |
+    | www.bangkokpost.com | Bangkok Post | Thailand |
+    | vnexpress.net | VnExpress | Vietnam |
+    | www.abc.net.au | ABC Australia | Australia |
+    | islandtimes.org | Island Times | Pacific |
+  </Tab>
+
+  <Tab title="Latin America">
+    | Domain | Source | Country |
+    |---|---|---|
+    | www.clarin.com | Clarín | Argentina |
+    | oglobo.globo.com | O Globo | Brazil |
+    | feeds.folha.uol.com.br | Folha de S.Paulo | Brazil |
+    | www.brasilparalelo.com.br | Brasil Paralelo | Brazil |
+    | www.eltiempo.com | El Tiempo | Colombia |
+    | www.lasillavacia.com | La Silla Vacía | Colombia |
+    | www.eluniversal.com.mx | El Universal | Mexico |
+    | mexiconewsdaily.com | Mexico News Daily | Mexico |
+    | animalpolitico.com | Animal Político | Mexico |
+    | www.proceso.com.mx | Proceso | Mexico |
+    | www.milenio.com | Milenio | Mexico |
+    | insightcrime.org | InSight Crime | Regional |
+  </Tab>
+
+  <Tab title="Eastern Europe">
+    | Domain | Source | Region |
+    |---|---|---|
+    | kyivindependent.com | Kyiv Independent | Ukraine |
+    | www.themoscowtimes.com | Moscow Times | Russia |
+    | www.rt.com | RT (Russia Today) | Russia |
+    | meduza.io | Meduza | Russia |
+    | novayagazeta.eu | Novaya Gazeta Europe | Russia |
+    | tvn24.pl | TVN24 | Poland |
+    | www.polsatnews.pl | Polsat News | Poland |
+    | www.rp.pl | Rzeczpospolita | Poland |
+  </Tab>
+
+  <Tab title="Other Languages">
+    | Domain | Source | Language |
+    |---|---|---|
+    | www.lemonde.fr | Le Monde | French |
+    | www.spiegel.de | Der Spiegel | German |
+    | www.tagesschau.de | Tagesschau | German |
+    | newsfeed.zeit.de | Die Zeit | German |
+    | www.bild.de | Bild | German |
+    | feeds.elpais.com | El País | Spanish |
+    | e00-elmundo.uecdn.es | El Mundo | Spanish |
+    | www.repubblica.it | La Repubblica | Italian |
+    | www.ansa.it | ANSA | Italian |
+    | xml2.corriereobjects.it | Corriere della Sera | Italian |
+    | feeds.nos.nl | NOS | Dutch |
+    | www.nrc.nl | NRC Handelsblad | Dutch |
+    | www.telegraaf.nl | De Telegraaf | Dutch |
+    | www.dn.se | Dagens Nyheter | Swedish |
+    | www.svd.se | Svenska Dagbladet | Swedish |
+    | www.svt.se | SVT | Swedish |
+    | www.hurriyet.com.tr | Hürriyet | Turkish |
+    | www.naftemporiki.gr | Naftemporiki | Greek |
+    | www.in.gr | In.gr | Greek |
+    | www.iefimerida.gr | iefimerida | Greek |
+  </Tab>
+</Tabs>
+
+### Security Advisories
+
+| Domain | Source | Type |
+|---|---|---|
+| travel.state.gov | U.S. State Dept | Travel advisories |
+| www.smartraveller.gov.au | Australia DFAT | Travel advisories |
+| www.safetravel.govt.nz | New Zealand MFAT | Travel advisories |
+| th.usembassy.gov | U.S. Embassy Thailand | Security alerts |
+| ae.usembassy.gov | U.S. Embassy UAE | Security alerts |
+| de.usembassy.gov | U.S. Embassy Germany | Security alerts |
+| ua.usembassy.gov | U.S. Embassy Ukraine | Security alerts |
+| mx.usembassy.gov | U.S. Embassy Mexico | Security alerts |
+| in.usembassy.gov | U.S. Embassy India | Security alerts |
+| pk.usembassy.gov | U.S. Embassy Pakistan | Security alerts |
+| co.usembassy.gov | U.S. Embassy Colombia | Security alerts |
+| pl.usembassy.gov | U.S. Embassy Poland | Security alerts |
+| bd.usembassy.gov | U.S. Embassy Bangladesh | Security alerts |
+| it.usembassy.gov | U.S. Embassy Italy | Security alerts |
+| do.usembassy.gov | U.S. Embassy Dominican Republic | Security alerts |
+| mm.usembassy.gov | U.S. Embassy Myanmar | Security alerts |
+| wwwnc.cdc.gov | CDC | Health advisories |
+| www.ecdc.europa.eu | ECDC | Health advisories |
+
+### Maritime & Aviation
+
+| Domain | Source | Focus |
+|---|---|---|
+| www.twz.com | The War Zone | Military aviation |
+| gcaptain.com | gCaptain | Maritime news |
+
+### Positive News (Happy Variant)
+
+| Domain | Source | Focus |
+|---|---|---|
+| www.goodnewsnetwork.org | Good News Network | Positive stories |
+| www.positive.news | Positive News | Constructive journalism |
+| reasonstobecheerful.world | Reasons to be Cheerful | Solutions journalism |
+| www.optimistdaily.com | Optimist Daily | Positive trends |
+| www.upworthy.com | Upworthy | Inspiring stories |
+| www.dailygood.org | DailyGood | Good deeds |
+| www.goodgoodgood.co | Good Good Good | Positive impact |
+| www.good.is | Good.is | Social progress |
+| www.sunnyskyz.com | Sunny Skyz | Feel-good news |
+| thebetterindia.com | The Better India | Positive India news |
+| singularityhub.com | Singularity Hub | Tech optimism |
+| humanprogress.org | HumanProgress | Progress metrics |
+| greatergood.berkeley.edu | Greater Good | Science of happiness |
+| www.onlygoodnewsdaily.com | Only Good News Daily | Positive headlines |
+| www.sciencedaily.com | ScienceDaily | Research breakthroughs |
+| feeds.nature.com | Nature | Scientific advances |
+| www.nature.com | Nature | Scientific research |
+| www.livescience.com | Live Science | Science discoveries |
+| www.newscientist.com | New Scientist | Science news |
+
+### Community & Discussion
+
+| Domain | Source | Type |
+|---|---|---|
+| news.ycombinator.com | Hacker News | Tech discussion |
+| hnrss.org | Hacker News RSS | Tech discussion |
+
+## Feed Processing
+
+### Instant Flat Render
+
+News items appear immediately as a flat list the moment feed data arrives. ML-based clustering (topic grouping, entity extraction, sentiment analysis) runs asynchronously in the background and progressively upgrades the view.
+
+### Virtual Scrolling
+
+News panels with 15+ items use a custom virtual list renderer:
+- Only visible items + 3-item overscan buffer are rendered
+- `requestAnimationFrame`-batched scroll handling
+- DOM element pooling and recycling
+- Responsive adaptation via `ResizeObserver`
+
+### Custom Keyword Monitors
+
+User-defined keyword alerts with:
+- Word-boundary matching (prevents "ai" from matching "train")
+- Automatic color-coding from 10-color palette
+- Multi-keyword support (comma-separated)
+- Real-time match counts
+- Search across titles and descriptions
+
+## Blocked Domains
+
+The following domains are explicitly blocked (deprecated sources):
+
+- `rsshub.app` - Returns 410 Gone (stale clients still request these)
+
+## Circuit Breaker Behavior
+
+When an RSS feed fails:
+
+1. **Direct fetch attempted** - Standard HTTP request
+2. **Railway relay fallback** - If direct fails, routes through relay
+3. **5-minute cooldown** - Failed feed pauses before retry
+4. **Other feeds unaffected** - Per-feed isolation
+5. **Automatic recovery** - Resumes after cooldown expires
+
+## Feed Deduplication
+
+Headlines are deduplicated before LLM summarization:
+- **Jaccard similarity** threshold of 0.6 (60% word overlap)
+- **Reduces prompt size** by 20-40%
+- **Prevents LLM waste** on repeated stories
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Data Sources Overview" icon="database" href="/api/data-sources/overview">
+    Complete data source catalog
+  </Card>
+  <Card title="External APIs" icon="plug" href="/api/data-sources/external-apis">
+    API integration specifications
+  </Card>
+</CardGroup>

@@ -1,0 +1,264 @@
+---
+title: Getting Started
+description: Set up your development environment and run World Monitor locally
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** 18+ and npm
+- **Go** 1.21+ (for protobuf tooling)
+- **Git**
+- **Make** (optional, for Makefile commands)
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/koala73/worldmonitor.git
+cd worldmonitor
+```
+
+## Install Dependencies
+
+### Option 1: Install Everything (Recommended)
+
+```bash
+make install
+```
+
+This single command installs:
+- Buf CLI for protobuf management
+- Sebuf protoc plugins (TypeScript client/server generators)
+- npm dependencies
+- Playwright browsers for E2E tests
+- Proto dependencies
+
+### Option 2: Manual Installation
+
+If you prefer granular control:
+
+```bash
+# Install buf CLI
+make install-buf
+
+# Install sebuf protoc plugins
+make install-plugins
+
+# Install npm dependencies
+npm install
+
+# Install Playwright browsers
+npm run playwright install chromium
+
+# Install proto dependencies
+make deps
+```
+
+## Environment Configuration
+
+1. Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Configure API keys for the features you want to enable:
+
+<AccordionGroup>
+  <Accordion title="AI Summarization">
+    ```bash
+    # Groq API (primary — 14,400 req/day on free tier)
+    GROQ_API_KEY=your_key_here
+
+    # OpenRouter API (fallback — 50 req/day on free tier)
+    OPENROUTER_API_KEY=your_key_here
+    ```
+  </Accordion>
+
+  <Accordion title="Cache & Rate Limiting">
+    ```bash
+    # Upstash Redis for cross-user cache
+    UPSTASH_REDIS_REST_URL=your_url_here
+    UPSTASH_REDIS_REST_TOKEN=your_token_here
+    ```
+  </Accordion>
+
+  <Accordion title="Market & Economic Data">
+    ```bash
+    # Stock quotes
+    FINNHUB_API_KEY=your_key_here
+
+    # Oil prices and energy data
+    EIA_API_KEY=your_key_here
+
+    # Federal Reserve economic data
+    FRED_API_KEY=your_key_here
+    ```
+  </Accordion>
+
+  <Accordion title="Tracking & Intelligence">
+    ```bash
+    # Conflict and protest data
+    ACLED_ACCESS_TOKEN=your_token_here
+
+    # Aircraft enrichment
+    WINGBITS_API_KEY=your_key_here
+
+    # Internet outages
+    CLOUDFLARE_API_TOKEN=your_token_here
+
+    # Satellite fire detection
+    NASA_FIRMS_API_KEY=your_key_here
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+All API keys are optional. The dashboard works without them, but corresponding features will be disabled.
+</Note>
+
+## Generate Code from Protos
+
+World Monitor uses a proto-first API design. Generate TypeScript clients and servers:
+
+```bash
+make generate
+```
+
+This command:
+1. Cleans previous generated code
+2. Generates TypeScript client code to `src/generated/client/`
+3. Generates TypeScript server code to `src/generated/server/`
+4. Generates OpenAPI v3 documentation to `docs/api/`
+
+## First Run
+
+### Development Server (Web)
+
+Start the development server with hot module replacement:
+
+<CodeGroup>
+```bash Full Variant (default)
+npm run dev
+```
+
+```bash Tech Variant
+npm run dev:tech
+```
+
+```bash Finance Variant
+npm run dev:finance
+```
+
+```bash Happy Variant
+npm run dev:happy
+```
+</CodeGroup>
+
+The dashboard will be available at:
+- **Local:** http://localhost:3000
+- **Network:** http://[your-ip]:3000
+
+### Desktop Application (Tauri)
+
+Run the desktop app with DevTools enabled:
+
+```bash
+npm run desktop:dev
+```
+
+This command:
+1. Syncs version numbers between package.json and Tauri config
+2. Builds the sidecar sebuf gateway
+3. Launches the Tauri app with the `devtools` feature flag
+
+<Note>
+The desktop app runs a local Node.js sidecar that handles all API requests. It auto-discovers available Ollama models and stores API keys in your OS keychain.
+</Note>
+
+## Verify Installation
+
+Open http://localhost:3000 and check:
+
+1. **Map loads** — You should see the 3D globe with base layers
+2. **News panel populates** — RSS feeds should load within 3-5 seconds
+3. **No console errors** — Open DevTools (F12) and check for errors
+
+## Development Workflow
+
+Typical development cycle:
+
+```bash
+# 1. Make changes to source code
+vim src/components/NewsPanel.ts
+
+# 2. Vite hot-reloads automatically (no restart needed)
+# Watch the browser refresh
+
+# 3. If you modify proto files:
+make generate
+
+# 4. Type-check before committing:
+npm run typecheck
+
+# 5. Run E2E tests:
+npm run test:e2e:full
+```
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="buf: command not found">
+    Install buf CLI:
+    ```bash
+    make install-buf
+    ```
+    Or manually:
+    ```bash
+    go install github.com/bufbuild/buf/cmd/buf@v1.64.0
+    ```
+  </Accordion>
+
+  <Accordion title="protoc-gen-ts-client: plugin not found">
+    Install sebuf plugins:
+    ```bash
+    make install-plugins
+    ```
+    Ensure `~/go/bin` is in your `$PATH`.
+  </Accordion>
+
+  <Accordion title="Port 3000 already in use">
+    Kill the existing process or change the port in `vite.config.ts`:
+    ```typescript
+    server: {
+      port: 3001, // Change this
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Map tiles not loading">
+    Check your network connection. MapTiler CDN requires internet access. If you're behind a corporate proxy, configure it:
+    ```bash
+    export HTTP_PROXY=http://proxy.company.com:8080
+    export HTTPS_PROXY=http://proxy.company.com:8080
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Understand the system design and tech stack
+  </Card>
+  <Card title="Proto API" icon="code" href="/development/proto-api">
+    Learn the proto-first API workflow
+  </Card>
+  <Card title="Building" icon="hammer" href="/development/building">
+    Build for production and desktop
+  </Card>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Run E2E, API, and regression tests
+  </Card>
+</CardGroup>

@@ -1,0 +1,297 @@
+---
+title: World Monitor (Full Variant)
+description: Geopolitical intelligence dashboard with military tracking, conflict monitoring, and infrastructure analysis
+---
+
+## Overview
+
+**World Monitor** is the flagship variant focused on **real-time global intelligence and geopolitical situation awareness**. It aggregates data from 150+ sources to provide a unified view of conflicts, military activity, infrastructure vulnerabilities, and natural disasters.
+
+<Info>
+  **Live Demo:** [worldmonitor.app](https://worldmonitor.app)
+</Info>
+
+---
+
+## Key Features
+
+World Monitor includes all core intelligence modules:
+
+### Geopolitical Intelligence
+
+- **Active conflict zones** with escalation tracking (UCDP + ACLED)
+- **Intelligence hotspots** with news correlation
+- **Social unrest events** (ACLED protests + GDELT geo-events, Haversine-deduplicated)
+- **Natural disasters** from 3 sources (USGS earthquakes M4.5+, GDACS alerts, NASA EONET)
+- **Sanctions regimes** and trade restrictions
+- **Cyber threat IOCs** (C2 servers, malware hosts, phishing URLs) geo-located on the globe
+- **GPS/GNSS jamming zones** from ADS-B transponder analysis (H3 hex grid)
+
+### Military & Strategic
+
+- **220+ military bases** from 9 operators (US, Russia, China, NATO, France, UK, India, Israel, Iran)
+- **Live military flight tracking** (ADS-B with OpenSky data)
+- **Naval vessel monitoring** (AIS with chokepoint detection)
+- **Nuclear facilities & gamma irradiators** (IAEA data)
+- **APT cyber threat actor attribution**
+- **Spaceports & launch facilities**
+- **Strategic theater posture assessment** for 9 regions (Iran/Persian Gulf, Taiwan Strait, Baltic, Korean Peninsula, etc.)
+
+### Infrastructure Monitoring
+
+- **Undersea cables** with landing points, cable health advisories (NGA navigational warnings), and cable repair ship tracking
+- **Oil & gas pipelines** with corridor mapping
+- **AI datacenters** (111 major clusters worldwide)
+- **83 strategic ports** across 6 types (container, oil, LNG, naval, mixed, bulk) with throughput rankings
+- **Internet outages** (Cloudflare Radar API)
+- **Critical mineral deposits** (lithium, cobalt, rare earths)
+- **NASA FIRMS satellite fire detection** (VIIRS thermal hotspots)
+- **19 global trade routes** (container, energy, bulk) with multi-segment arcs through strategic chokepoints
+- **Airport delays and closures** across 128 monitored airports (FAA + AviationStack + ICAO NOTAM)
+
+### AI-Powered Analysis
+
+- **World Brief** — LLM-synthesized summary of top global developments (Ollama → Groq → OpenRouter → browser T5 fallback chain)
+- **Country Instability Index (CII)** — real-time stability scores for every country with incoming data (23 curated tier-1 nations + universal scoring for all others)
+- **Focal Point Detection** — correlates entities across news, military activity, protests, outages, and markets to identify convergence zones
+- **Trending Keyword Spike Detection** — 2-hour rolling window vs 7-day baseline flags surging terms across RSS feeds
+- **Strategic Posture Assessment** — composite risk score combining all intelligence modules
+
+### Live News & Video
+
+- **150+ RSS feeds** across geopolitics, defense, energy, government, and think tanks
+- **8+ default live video streams** (Bloomberg, Sky News, Al Jazeera, Euronews, DW, France24, CNBC, Al Arabiya) with automatic live detection
+- **22 live webcams** from geopolitical hotspots (Iran/Attacks, Middle East, Europe, Americas, Asia-Pacific)
+- **Custom keyword monitors** with word-boundary matching and real-time match counts
+
+---
+
+## Variant-Specific Configuration
+
+### Build Command
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    npm run dev
+    # or explicitly:
+    npm run dev:full
+    ```
+  </Tab>
+  <Tab title="Production Build">
+    ```bash
+    npm run build:full
+    ```
+  </Tab>
+  <Tab title="Desktop App">
+    ```bash
+    npm run desktop:build:full
+    ```
+  </Tab>
+</Tabs>
+
+### Metadata (vite.config.ts:52-76)
+
+```typescript
+full: {
+  title: 'World Monitor - Real-Time Global Intelligence Dashboard',
+  description: 'Real-time global intelligence dashboard with live news, markets, military tracking, infrastructure monitoring, and geopolitical data. OSINT in one view.',
+  keywords: 'global intelligence, geopolitical dashboard, world news, market data, military bases, nuclear facilities, undersea cables, conflict zones, real-time monitoring, situation awareness, OSINT, flight tracking, AIS ships, earthquake monitor, protest tracker, power outages, oil prices, government spending, polymarket predictions',
+  url: 'https://worldmonitor.app/',
+  siteName: 'World Monitor',
+  shortName: 'WorldMonitor',
+  subject: 'Real-Time Global Intelligence and Situation Awareness',
+  classification: 'Intelligence Dashboard, OSINT Tool, News Aggregator',
+  categories: ['news', 'productivity'],
+  features: [
+    'Real-time news aggregation',
+    'Stock market tracking',
+    'Military flight monitoring',
+    'Ship AIS tracking',
+    'Earthquake alerts',
+    'Protest tracking',
+    'Power outage monitoring',
+    'Oil price analytics',
+    'Government spending data',
+    'Prediction markets',
+    'Infrastructure monitoring',
+    'Geopolitical intelligence',
+  ],
+}
+```
+
+---
+
+## Data Sources
+
+World Monitor aggregates data from 60+ authoritative sources:
+
+### News Feeds (150+)
+
+<AccordionGroup>
+  <Accordion title="Geopolitical (40+ sources)">
+    - BBC, The Guardian, NPR, Al Jazeera, CNN, Reuters
+    - Foreign Policy, The Diplomat, Defense One, Breaking Defense
+    - Bellingcat, War on the Rocks, CFR, CSIS, Brookings
+    - Regional: France24, DW, Kyiv Independent, SCMP, The Hindu
+  </Accordion>
+
+  <Accordion title="Defense & Security (20+ sources)">
+    - Defense News, Military Times, Task & Purpose, USNI News
+    - DoD, State Dept, White House, DHS, CISA
+    - Krebs on Security, Dark Reading, NATO
+  </Accordion>
+
+  <Accordion title="Economic & Energy (15+ sources)">
+    - CNBC, MarketWatch, Financial Times, Yahoo Finance
+    - Federal Reserve, SEC, Treasury, EIA
+    - OPEC, IEA, World Bank, IMF
+  </Accordion>
+
+  <Accordion title="Think Tanks (10+ sources)">
+    - RUSI, Chatham House, ECFR, Atlantic Council
+    - Stimson Center, Carnegie Endowment, RAND
+    - Crisis Group, Arms Control Association
+  </Accordion>
+</AccordionGroup>
+
+### Real-Time Data APIs
+
+| Source | Data Type | Update Frequency |
+|--------|-----------|------------------|
+| **OpenSky Network** | Military flights (ADS-B) | 10 seconds |
+| **AISStream** | Naval vessels (AIS) | Real-time WebSocket |
+| **USGS** | Earthquakes M4.5+ | 5 minutes |
+| **ACLED** | Conflicts & protests | Daily |
+| **GDELT** | Geo-events | 15 minutes |
+| **Cloudflare Radar** | Internet outages | Hourly |
+| **NASA FIRMS** | Satellite fire detection | 3 hours |
+| **UCDP** | Armed conflict zones | Weekly |
+| **Polymarket** | Prediction markets | 2 minutes |
+| **OREF** | Israeli rocket alerts | Near real-time |
+
+---
+
+## Map Layers
+
+World Monitor enables the following map overlays:
+
+<CardGroup cols={2}>
+  <Card title="Conflicts" icon="explosion">
+    UCDP armed conflict zones + ACLED conflict events
+  </Card>
+  <Card title="Protests" icon="people-group">
+    ACLED protests + GDELT demonstrations (deduplicated)
+  </Card>
+  <Card title="Military Bases" icon="fort">
+    220+ bases from 9 operators with facility metadata
+  </Card>
+  <Card title="Nuclear Facilities" icon="radiation">
+    IAEA nuclear reactors + gamma irradiators
+  </Card>
+  <Card title="Undersea Cables" icon="network-wired">
+    Cable routes + landing points + health advisories
+  </Card>
+  <Card title="Pipelines" icon="oil-well">
+    Oil & gas pipeline corridors worldwide
+  </Card>
+  <Card title="Military Flights" icon="plane-departure">
+    Live ADS-B tracking with enrichment metadata
+  </Card>
+  <Card title="Naval Vessels" icon="ship">
+    AIS ship tracking + chokepoint detection
+  </Card>
+  <Card title="Earthquakes" icon="house-crack">
+    USGS + GDACS + NASA EONET seismic events
+  </Card>
+  <Card title="Internet Outages" icon="wifi-slash">
+    Cloudflare Radar annotations API
+  </Card>
+  <Card title="Datacenters" icon="server">
+    111 major AI/cloud datacenter clusters
+  </Card>
+  <Card title="Fires" icon="fire">
+    NASA VIIRS thermal hotspot detection
+  </Card>
+</CardGroup>
+
+---
+
+## Use Cases
+
+### OSINT Analysts
+
+- **Multi-source correlation:** Cross-reference news, military activity, and infrastructure events in one view
+- **Convergence detection:** Identify when multiple signal types (protests + military + outages) co-occur in the same region
+- **Temporal baselines:** Z-score anomaly detection flags deviations from 90-day historical norms
+
+### Security Teams
+
+- **Threat intelligence:** Cyber IOCs geo-located on the map with severity classification
+- **GPS jamming zones:** H3 hex cells with >2% interference from ADS-B data
+- **Travel advisories:** 4-government consensus (US, UK, Australia, NZ) with CII score floors
+
+### Researchers
+
+- **Country Brief Pages:** Full-page intelligence dossiers with CII score, AI analysis, 7-day timeline, and infrastructure exposure
+- **Export capabilities:** JSON, CSV, PNG image export for offline analysis
+- **Historical playback:** IndexedDB snapshots with time slider for rewinding to past states
+
+### Investors
+
+- **Geopolitical risk scoring:** CII index tracks instability across 250+ countries
+- **Market correlation:** Prediction markets (Polymarket) linked to country briefs
+- **Infrastructure exposure:** 600km radius search for pipelines, cables, datacenters, and ports
+
+---
+
+## Desktop vs. Web
+
+<Tabs>
+  <Tab title="Desktop App (Tauri)">
+    **Advantages:**
+    - Local API sidecar runs all 60+ handlers locally (no cloud dependency)
+    - OS keychain integration for API key storage (macOS Keychain, Windows Credential Manager)
+    - Ollama/LM Studio auto-discovery for local LLM models
+    - Settings window (Cmd+,) with 3 tabs: LLMs, API Keys, Debug & Logs
+    - Verbose debug mode with last 200 request logs
+    - Auto-update checker (polls every 6 hours)
+
+    **Download:**
+    - [macOS Apple Silicon (.dmg)](https://worldmonitor.app/api/download?platform=macos-arm64)
+    - [macOS Intel (.dmg)](https://worldmonitor.app/api/download?platform=macos-x64)
+    - [Windows (.exe)](https://worldmonitor.app/api/download?platform=windows-exe)
+    - [Linux (.AppImage)](https://worldmonitor.app/api/download?platform=linux-appimage)
+  </Tab>
+
+  <Tab title="Web App (PWA)">
+    **Advantages:**
+    - No installation required (progressive web app)
+    - Installable to home screen on mobile/desktop
+    - Offline map support (MapTiler tiles cached, 500-tile limit, 30-day TTL)
+    - Auto-updating service worker (checks every 60 minutes)
+    - Smart caching strategies (NetworkOnly for APIs, CacheFirst for map tiles)
+
+    **Access:**
+    - [worldmonitor.app](https://worldmonitor.app) (full variant)
+    - [tech.worldmonitor.app](https://tech.worldmonitor.app) (tech variant)
+    - [finance.worldmonitor.app](https://finance.worldmonitor.app) (finance variant)
+    - [happy.worldmonitor.app](https://happy.worldmonitor.app) (happy variant)
+  </Tab>
+</Tabs>
+
+---
+
+## Related Variants
+
+<CardGroup cols={3}>
+  <Card title="Tech Monitor" icon="laptop-code" href="/variants/tech-monitor">
+    AI & tech industry tracking
+  </Card>
+  <Card title="Finance Monitor" icon="chart-line" href="/variants/finance-monitor">
+    Markets & trading dashboard
+  </Card>
+  <Card title="Happy Monitor" icon="sun" href="/variants/happy-monitor">
+    Positive news & progress
+  </Card>
+</CardGroup>
