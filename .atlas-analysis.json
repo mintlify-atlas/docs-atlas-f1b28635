@@ -1,0 +1,194 @@
+{
+  "projectType": "saas",
+  "projectName": "World Monitor",
+  "projectDescription": "Real-time global intelligence dashboard with AI-powered news aggregation, geopolitical monitoring, and infrastructure tracking",
+  "theme": "aspen",
+  "primaryColor": "#0891b2",
+  "lightColor": "#06b6d4",
+  "darkColor": "#0e7490",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/interactive-globe",
+              "features/data-layers",
+              "features/ai-intelligence",
+              "features/live-news",
+              "features/desktop-app"
+            ]
+          },
+          {
+            "group": "Data & Intelligence",
+            "pages": [
+              "intelligence/country-briefs",
+              "intelligence/instability-index",
+              "intelligence/threat-classification",
+              "intelligence/hotspot-detection",
+              "intelligence/signal-aggregation"
+            ]
+          },
+          {
+            "group": "Variants",
+            "pages": [
+              "variants/overview",
+              "variants/world-monitor",
+              "variants/tech-monitor",
+              "variants/finance-monitor",
+              "variants/happy-monitor"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment-variables",
+              "configuration/api-keys",
+              "configuration/local-llm",
+              "configuration/feature-toggles"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/getting-started",
+              "development/architecture",
+              "development/proto-api",
+              "development/building",
+              "development/testing"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/vercel",
+              "deployment/desktop-builds",
+              "deployment/pwa"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication",
+              "api/rate-limits"
+            ]
+          },
+          {
+            "group": "Services",
+            "pages": [
+              "api/services/conflict",
+              "api/services/military",
+              "api/services/maritime",
+              "api/services/aviation",
+              "api/services/intelligence",
+              "api/services/news",
+              "api/services/market",
+              "api/services/cyber",
+              "api/services/infrastructure",
+              "api/services/climate",
+              "api/services/seismology",
+              "api/services/displacement",
+              "api/services/prediction",
+              "api/services/economic",
+              "api/services/trade"
+            ]
+          },
+          {
+            "group": "Data Sources",
+            "pages": [
+              "api/data-sources/overview",
+              "api/data-sources/rss-feeds",
+              "api/data-sources/external-apis"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "User Guide",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "guide/overview",
+              "guide/interface",
+              "guide/navigation"
+            ]
+          },
+          {
+            "group": "Using the Dashboard",
+            "pages": [
+              "guide/map-controls",
+              "guide/panels",
+              "guide/news-feeds",
+              "guide/video-streams",
+              "guide/command-palette"
+            ]
+          },
+          {
+            "group": "Intelligence Features",
+            "pages": [
+              "guide/world-brief",
+              "guide/country-analysis",
+              "guide/keyword-monitoring",
+              "guide/signal-intelligence",
+              "guide/sharing-stories"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "guide/themes",
+              "guide/layouts",
+              "guide/localization"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time global intelligence with 100+ curated news feeds",
+    "Interactive 3D globe with 40+ toggleable data layers",
+    "AI-powered intelligence synthesis with local LLM support",
+    "Live military flight and naval vessel tracking",
+    "Country Instability Index with multi-signal analysis",
+    "Proto-first API architecture with 20+ typed services",
+    "Native desktop app for macOS, Windows, and Linux",
+    "Multiple themed variants (geopolitics, tech, finance, happy news)",
+    "Multilingual support with 16 languages",
+    "Progressive Web App with offline capabilities"
+  ],
+  "publicApiSurface": [
+    "ConflictService - ACLED events, UCDP data, humanitarian summaries",
+    "MilitaryService - Military bases, aircraft tracking, theater posture",
+    "MaritimeService - AIS vessel tracking, USNI fleet intelligence",
+    "AviationService - Airport delays, flight monitoring",
+    "IntelligenceService - Country briefs, hotspot detection, threat classification",
+    "NewsService - RSS aggregation, feed management, entity extraction",
+    "MarketService - Crypto prices, market signals, prediction markets",
+    "CyberService - Threat intelligence, IOC geolocation, APT tracking",
+    "InfrastructureService - Cables, pipelines, datacenters, ports",
+    "ClimateService - Climate anomalies, weather alerts",
+    "SeismologyService - Earthquake monitoring, natural disasters",
+    "DisplacementService - Refugee flows, humanitarian data",
+    "PredictionService - Polymarket integration, forecast aggregation",
+    "EconomicService - Government spending, economic indicators",
+    "TradeService - WTO data, trade routes, tariff tracking"
+  ]
+}
